@@ -7,6 +7,14 @@ import 'package:instagram_flutter/models/user.dart' as model;
 class AuthMethods {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<model.User> getUserDetails() async {
+    User currentUser = _auth.currentUser!;
+
+    DocumentSnapshot snap = await _firestore.collection('user').doc(currentUser.uid).get();
+
+    return model.User.fromSnap(snap);
+  }
   
   Future<String>signUpUser({required String email, required String password, required String username, required String bio, Uint8List? file}) async {
     String res = "Random error occurred";
