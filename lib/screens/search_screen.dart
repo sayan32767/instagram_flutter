@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
@@ -52,14 +54,23 @@ class _SearchScreenState extends State<SearchScreen> {
                     return ListView.builder(
                         itemCount: snapshot.data!.docs.length,
                         itemBuilder: (context, index) {
-                          return ListTile(
-                            leading: CircleAvatar(
-                                backgroundImage: NetworkImage(snapshot
-                                        .data!.docs[index]
-                                        .data()['photoUrl'] ??
-                                    'https://images.unsplash.com/photo-1720123076542-3a1d5687c6c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')),
-                            title: Text(
-                                snapshot.data!.docs[index].data()['username']),
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                                return ProfileScreen(uid: snapshot
+                                          .data!.docs[index]
+                                          .data()['uid']);
+                              }));
+                            },
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                  backgroundImage: NetworkImage(snapshot
+                                          .data!.docs[index]
+                                          .data()['photoUrl'] ??
+                                      'https://images.unsplash.com/photo-1720123076542-3a1d5687c6c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')),
+                              title: Text(
+                                  snapshot.data!.docs[index].data()['username']),
+                            ),
                           );
                         });
                   }
