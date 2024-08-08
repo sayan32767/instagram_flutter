@@ -3,10 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/resources/auth_methods.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
+import 'package:instagram_flutter/screens/edit_profile_screen.dart';
+import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/utils.dart';
+import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/follow_button.dart';
+import 'package:instagram_flutter/widgets/loading_builder_images.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -75,14 +79,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.grey,
-                            backgroundImage: NetworkImage(userData != null
-                                ? userData['photoUrl'] ??
-                                    'https://images.unsplash.com/photo-1720123076542-3a1d5687c6c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-                                : 'https://images.unsplash.com/photo-1720123076542-3a1d5687c6c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                            radius: 40,
-                          ),
+                          userData == null ? CircleAvatar(
+                              radius: 40,
+                              backgroundImage: AssetImage('assets/images/placeholder.jpg'),
+                              backgroundColor: Colors.grey[300],
+                            ) : userData['photoUrl'] == null ?
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundImage: AssetImage('assets/images/placeholder.jpg'),
+                              backgroundColor: Colors.grey[300],
+                            ) : ProgressImageDots(url: userData['photoUrl'], radius: 40),
                           Expanded(
                             child: Column(
                               children: [
@@ -151,20 +157,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ],
                       ),
-                      Container(
-                        alignment: Alignment.centerLeft,
-                        padding: const EdgeInsets.only(top: 15),
-                        child: Text(
-                          userData != null ? userData['username'] : "",
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.only(top: 15),
+                            child: Text(
+                              userData != null ? userData['username'] : "",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        
+                          FirebaseAuth.instance.currentUser!.uid == widget.uid ?
+
+                          GestureDetector(
+
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                                return EditProfileScreen(userData: userData);
+                              }));
+                            },
+
+                            child: Container(
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.only(top: 15),
+                              child: Text(
+                                ' | Edit Profile',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ) : 
+
+                          Container(),
+                        ],
                       ),
                       Container(
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.only(top: 1),
-                        child: Text(
+                        child: userData != null ? userData['bio'] == "" ? null : Text(
                           userData != null ? userData['bio'] : "",
-                        ),
+                        ) : null // BAD LOGIC IK, BUT WORKS
                       )
                     ],
                   ),
@@ -173,40 +205,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 FutureBuilder(
                     future: FirebaseFirestore.instance
                         .collection('posts')
-                        .where('uid', isEqualTo: widget.uid)
+                        .where('uid', isEqualTo: widget.uid).orderBy('datePublished', descending: true)
                         .get(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
-                          child: CircularProgressIndicator(),
+                          // child: CircularProgressIndicator(
+                          //   color: const Color.fromARGB(255, 48, 47, 47),
+                          // ),
                         );
                       } else {
-                        return GridView.builder(
-                            shrinkWrap: true,
-                            itemCount: snapshot.data!.docs.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 5,
-                              mainAxisSpacing: 1.5,
-                              childAspectRatio: 1,
-                            ),
-                            itemBuilder: (context, index) {
-                              DocumentSnapshot snap =
-                                  snapshot.data!.docs[index];
-                              return Container(
-                                child: Image(
-                                  image: NetworkImage(
-                                      snap['postUrl']),
-                                  fit: BoxFit.fill,
-                                ),
-                              );
-                            });
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: GridView.builder(
+                              shrinkWrap: true,
+                              itemCount: snapshot.data!.docs.length,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 5,
+                                mainAxisSpacing: 1.5,
+                                childAspectRatio: 1,
+                              ),
+                              itemBuilder: (context, index) {
+                                DocumentSnapshot snap =
+                                    snapshot.data!.docs[index];
+                                return Container(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      final url = snap['postUrl'];
+                                      final uid = widget.uid;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ProfileScreenPosts(url: url, uid: uid),
+                                        ),
+                                      );
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(2.0),
+                                      child: CustomImageLoader(imageUrl: snap['postUrl'])
+                                    ),
+                                  ),
+                                );
+                              }),
+                        );
                       }
                     })
               ],
             ))
-        : Center(child: CircularProgressIndicator());
+        : const Center(
+                // child: CircularProgressIndicator(
+                //   color: const Color.fromARGB(255, 48, 47, 47),
+                // ),
+              );
   }
 
   Column buildStatColumn(int num, String label) {

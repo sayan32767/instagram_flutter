@@ -5,6 +5,7 @@ import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/widgets/comment_card.dart';
+import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:provider/provider.dart';
 
 class CommentsScreen extends StatefulWidget {
@@ -43,9 +44,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(
+                // child: CircularProgressIndicator(
+                //   color: const Color.fromARGB(255, 48, 47, 47),
+                // ),
+              );
           }
           return ListView.builder(
             itemCount: snapshot.data!.docs.length,
@@ -66,11 +69,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundImage: NetworkImage(user.photoUrl ??
-                    'https://images.unsplash.com/photo-1720123076542-3a1d5687c6c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'),
-                radius: 18,
-              ),
+              user.photoUrl == null ?
+
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundImage: AssetImage('assets/images/placeholder.jpg'),
+                    backgroundColor: Colors.grey[300],
+                  ) : ProgressImageDots(url: user.photoUrl!),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(

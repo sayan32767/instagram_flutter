@@ -8,30 +8,44 @@ import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
+import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/utils.dart';
+import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/text_field_input.dart';
 import 'package:instagram_flutter/resources/auth_methods.dart';
 
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+class EditProfileScreen extends StatefulWidget {
+  dynamic userData;
+  EditProfileScreen({super.key, required this.userData});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _bioController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late TextEditingController _bioController;
+  late TextEditingController _usernameController;
   Uint8List? _image;
+  bool clickFlag = false;
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+
+    _bioController = TextEditingController(
+      text: widget.userData == null ? '' : widget.userData['bio'],
+    );
+
+    _usernameController = TextEditingController(
+      text: widget.userData == null ? '' : widget.userData['username'],
+    );
+
+  }
+
+  @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
     _bioController.dispose();
     _usernameController.dispose();
     super.dispose();
@@ -59,13 +73,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void selectImage() async {
     Uint8List? img = await pickImage(ImageSource.gallery);
+    
     if (img == null) return;
     setState(() {
       _image = img;
+      clickFlag = true;
     });
   }
 
-  void signUpUser() async {
+  void updateUser() async {
     setState(() {
       _isLoading = true;
     });
@@ -88,12 +104,11 @@ class _SignupScreenState extends State<SignupScreen> {
       });
       showSnackBar(context, res);
     } else {
-      String res = await AuthMethods().signUpUser(
-      email: _emailController.text,
-      password: _passwordController.text,
+      String res = await AuthMethods().updateUser(
       username: _usernameController.text,
       bio: _bioController.text,
-      file: _image 
+      file: _image,
+      clickFlag: clickFlag,
     );
     setState(() {
       _isLoading = false;
@@ -101,18 +116,23 @@ class _SignupScreenState extends State<SignupScreen> {
     if (res != 'success') {
       showSnackBar(context, res);
     } else {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const ResponsiveLayout(webScreenLayout: WebScreenLayout(), mobileScreenLayout: MobileScreenLayout())));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => ProfileScreen(uid: widget.userData['uid'])));
+      // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const ResponsiveLayout(webScreenLayout: WebScreenLayout(), mobileScreenLayout: MobileScreenLayout())));
     }
     }
-  }
-
-  void navigateToLogin() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
+      appBar: AppBar(
+        backgroundColor: mobileBackgroundColor,
+        centerTitle: false,
+        title: Text('Edit Profile'),
+        actions: [],
+      ),
+
       body: SafeArea(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -121,23 +141,27 @@ class _SignupScreenState extends State<SignupScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(flex: 2, child: Container()),
-              SvgPicture.asset(
-                'assets/images/ic_instagram.svg',
-                height: 64,
-                color: primaryColor,
-              ),
-              const SizedBox(height: 64),
               Stack(
                 children: [
-                  _image != null ?
+                   _image != null ?
                   CircleAvatar(
                     radius: 64,
                     backgroundImage: MemoryImage(_image!)
                   )
-                  : const CircleAvatar(
+                  : clickFlag ? CircleAvatar(
                     radius: 64,
                     backgroundImage: AssetImage('assets/images/placeholder.jpg'),
-                  ),
+                    backgroundColor: Colors.grey[300],
+                  ) : widget.userData == null ? CircleAvatar(
+                    radius: 64,
+                    backgroundImage: AssetImage('assets/images/placeholder.jpg'),
+                    backgroundColor: Colors.grey[300],
+                  ) : widget.userData['photoUrl'] == null ?
+                  CircleAvatar(
+                    radius: 64,
+                    backgroundImage: AssetImage('assets/images/placeholder.jpg'),
+                    backgroundColor: Colors.grey[300],
+                  ) : ProgressImageDots(url: widget.userData['photoUrl'], radius: 64), 
                   Positioned(
                     bottom: -10,
                     left: 80,
@@ -149,34 +173,36 @@ class _SignupScreenState extends State<SignupScreen> {
                 ],
               ),
               const SizedBox(height: 24),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    clickFlag = true;
+                    _image = null;
+                  });
+                },
+                child: Text(
+                  'Remove photo',
+                  style: TextStyle(
+                    color: blueColor,
+                  ),
+                )
+              ),
               TextFieldInput(
                 textEditingController: _usernameController,
                 textInputFormatter: LowerCaseTextFormatter(),
                 textInputType: TextInputType.text,
-                hintText: 'Enter your username'
+                hintText: 'Enter new username'
               ),
               const SizedBox(height: 24),
-              TextFieldInput(
-                textEditingController: _emailController,
-                textInputType: TextInputType.emailAddress,
-                hintText: 'Enter your email'
-              ),
-              const SizedBox(height: 24),
-              TextFieldInput(
-                textEditingController: _passwordController,
-                textInputType: TextInputType.visiblePassword,
-                isPass: true,
-                hintText: 'Enter your password'
-              ),
-              const SizedBox(height: 24),
+              
               TextFieldInput(
                 textEditingController: _bioController,
                 textInputType: TextInputType.text,
-                hintText: 'Enter your bio'
+                hintText: 'Enter new bio'
               ),
               const SizedBox(height: 24),
               InkWell(
-                onTap: signUpUser,
+                onTap: updateUser,
                 child: Container(
                   width: double.infinity,
                   height: 60,
@@ -189,7 +215,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     color: blueColor
                   ),
                   child: _isLoading ? const Center(child: CircularProgressIndicator()) : const Text(
-                    'Signup',
+                    'Update Details',
                   ),
                 ),
               ),
@@ -198,29 +224,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 flex: 2,
                 child: Container(),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: const Text(
-                      'Already have an account?'
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: navigateToLogin,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold
-                        ),
-                      ),
-                    ),
-                  )
-                ],
-              )
             ],
           ),
         )

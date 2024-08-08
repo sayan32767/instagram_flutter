@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
+import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -13,6 +15,54 @@ class CommentCard extends StatefulWidget {
 }
 
 class _CommentCardState extends State<CommentCard> {
+  String username = "";
+  String photoUrl = "";
+
+  void fetchUserProfilePic(String uid) async {
+    try {
+      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('user')
+          .where('uid', isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        
+        // Retrieve the username from the document
+        final DocumentSnapshot document = querySnapshot.docs.first;
+        photoUrl = document['photoUrl'] ?? "";
+      }
+    } catch (_) {}
+    setState(() {});
+  }
+
+  void fetchUsername(String uid) async {
+    try {
+      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('user')
+          .where('uid', isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        
+        // Retrieve the username from the document
+        final DocumentSnapshot document = querySnapshot.docs.first;
+        username = document['username'] as String;
+      } else {
+        username = 'unknown user';
+      }
+    } catch (_) {}
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUsername(widget.snap['uid']);
+    fetchUserProfilePic(widget.snap['uid']);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -22,11 +72,13 @@ class _CommentCardState extends State<CommentCard> {
       ),
       child: Row(
         children: [
+          photoUrl == "" ?
+
           CircleAvatar(
-            backgroundImage: NetworkImage(
-              widget.snap['profilePic'] == "" ? 'https://images.unsplash.com/photo-1720123076542-3a1d5687c6c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' : widget.snap['profilePic']),
-            radius: 18,
-          ),
+            radius: 16,
+            backgroundImage: AssetImage('assets/images/placeholder.jpg'),
+            backgroundColor: Colors.grey[300],
+          ) : ProgressImageDots(url: widget.snap['profilePic']),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(left: 16),
@@ -37,7 +89,7 @@ class _CommentCardState extends State<CommentCard> {
                   RichText(
                     text: TextSpan(children: [
                       TextSpan(
-                        text: '${widget.snap['name']}',
+                        text: username,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
@@ -63,10 +115,10 @@ class _CommentCardState extends State<CommentCard> {
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            child: const Icon(Icons.favorite),
-          )
+          // Container(
+          //   padding: const EdgeInsets.all(8),
+          //   child: const Icon(Icons.favorite),
+          // )
         ],
       ),
     );

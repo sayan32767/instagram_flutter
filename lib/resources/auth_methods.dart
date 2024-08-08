@@ -73,6 +73,73 @@ class AuthMethods {
     return res;
   }
 
+
+  Future<String> updateUser({required String username, required String bio, required Uint8List? file, required bool clickFlag}) async {
+    String res = 'Random error occurred.';
+    try {
+      if (username.isNotEmpty) { 
+        User currentUser = _auth.currentUser!;
+        DocumentReference docRef = _firestore.collection('user').doc(currentUser.uid);
+
+        String? photoUrl = await StorageMethods().uploadImageToStorage('profilePics', file, false);
+
+        // await docRef.update({
+        //   'username': username,
+        //   'bio': bio,
+        //   'photoUrl': photoUrl,
+        // });
+
+        
+        
+        if (clickFlag) {
+          await docRef.update({
+            'username': username,
+            'bio': bio,
+            'photoUrl': photoUrl,
+          });
+        } else {
+          await docRef.update({
+            'username': username,
+            'bio': bio,
+            // 'photoUrl': photoUrl,
+          });
+        }
+
+        res = 'success';
+      } else {
+        res = 'Please enter all the fields.';
+      }
+    } catch(e) {
+      res = e.toString();
+    }
+    return res;
+  }
+
+
+  Future<String> checkAndAddUsername(String username) async {
+    String res = 'Random error occurred.';
+
+    try {
+      final QuerySnapshot result = await _firestore
+          .collection('user')
+          .where('username', isEqualTo: username)
+          .get();
+
+      final List<DocumentSnapshot> documents = result.docs;
+
+      if (documents.isEmpty) {
+        res = 'success';
+      } else if (documents.first.id == _auth.currentUser!.uid) {
+        res = 'success';
+      } else {
+        'Username already taken. Please choose another.';
+      }
+    } catch (e) {
+      res = e.toString();
+    }
+    return res;
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }

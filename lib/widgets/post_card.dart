@@ -4,11 +4,14 @@ import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
+import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/utils.dart';
+import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/like_animation.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:skeleton_loader/skeleton_loader.dart';
 
 class PostCard extends StatefulWidget {
   final snap;
@@ -21,11 +24,53 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard> {
   bool isLikeAnimating = false;
   int commentLength = 0;
+  String username = "";
+  String photoUrl = "";
 
   @override
   void initState() {
     super.initState();
     getComments();
+    fetchUsername(widget.snap['uid']);
+    fetchUserProfilePic(widget.snap['uid']);
+  }
+
+  void fetchUserProfilePic(String uid) async {
+    try {
+      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('user')
+          .where('uid', isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        
+        // Retrieve the username from the document
+        final DocumentSnapshot document = querySnapshot.docs.first;
+        photoUrl = document['photoUrl'] ?? "";
+      }
+    } catch (_) {}
+    setState(() {});
+  }
+
+  void fetchUsername(String uid) async {
+    try {
+      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('user')
+          .where('uid', isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        
+        // Retrieve the username from the document
+        final DocumentSnapshot document = querySnapshot.docs.first;
+        username = document['username'] as String;
+      } else {
+        username = 'unknown user';
+      }
+    } catch (_) {}
+    setState(() {});
   }
 
   void getComments() async {
@@ -52,71 +97,84 @@ class _PostCardState extends State<PostCard> {
               vertical: 4,
               horizontal: 16,
             ).copyWith(right: 0),
-            child: Row(
-              children: [
-                CircleAvatar(
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfileScreen(uid: widget.snap['uid']),
+                  ),
+                );
+              },
+              child: Row(
+                children: [
+                  photoUrl == "" ?
+
+                  CircleAvatar(
                     radius: 16,
-                    backgroundImage: NetworkImage(widget.snap['profImage'] != ''
-                        ? widget.snap['profImage']
-                        : 'https://images.unsplash.com/photo-1720123076542-3a1d5687c6c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 8,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.snap['username'],
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => Dialog(
-                        child: ListView(
-                          padding: EdgeInsets.symmetric(
-                            vertical: 16,
-                          ),
-                          shrinkWrap: true,
-                          children: ['Delete']
-                              .map(
-                                (e) => InkWell(
-                                  onTap: () async {
-                                    await FirestoreMethods().deletePost(widget.snap['postId']);
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                      horizontal: 16,
-                                    ),
-                                    child: Text(e),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
+                    backgroundImage: AssetImage('assets/images/placeholder.jpg'),
+                    backgroundColor: Colors.grey[300],
+                  ) : ProgressImageDots(url: widget.snap['profImage']),
+
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 8,
                       ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.more_vert,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            username,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
                   ),
-                )
-              ],
+                  // IconButton(
+                  //   onPressed: () {
+                  //     showDialog(
+                  //       context: context,
+                  //       builder: (context) => Dialog(
+                  //         child: ListView(
+                  //           padding: EdgeInsets.symmetric(
+                  //             vertical: 16,
+                  //           ),
+                  //           shrinkWrap: true,
+                  //           children: ['Delete']
+                  //               .map(
+                  //                 (e) => InkWell(
+                  //                   onTap: () async {
+                  //                     await FirestoreMethods().deletePost(widget.snap['postId']);
+                  //                     Navigator.of(context).pop();
+                  //                   },
+                  //                   child: Container(
+                  //                     padding: const EdgeInsets.symmetric(
+                  //                       vertical: 12,
+                  //                       horizontal: 16,
+                  //                     ),
+                  //                     child: Text(e),
+                  //                   ),
+                  //                 ),
+                  //               )
+                  //               .toList(),
+                  //         ),
+                  //       ),
+                  //     );
+                  //   },
+                  //   icon: const Icon(
+                  //     Icons.more_vert,
+                  //   ),
+                  // )
+                ],
+              ),
             ),
           ),
-
+          SizedBox(height: 5),
           // IMAGE SECTION
           GestureDetector(
             onDoubleTap: () async {
@@ -130,11 +188,56 @@ class _PostCardState extends State<PostCard> {
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.35,
-                  width: double.infinity,
+                  // height: MediaQuery.of(context).size.width * 9 / 16,
+                  // width: MediaQuery.of(context).size.width,
                   child: Image.network(
                     widget.snap['postUrl'],
                     fit: BoxFit.cover,
+
+                    loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                      if (loadingProgress == null) {
+                        return child;
+                      } else {
+                        return SkeletonLoader(
+                          baseColor: const Color.fromARGB(255, 12, 12, 12),
+                          builder: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                            child: Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: Column(
+                                    children: <Widget>[
+                                      Container(
+                                        width: double.infinity,
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(16.0),
+                                          color: const Color.fromARGB(255, 48, 47, 47),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          items: 4,
+                          period: Duration(seconds: 2),
+                          highlightColor: const Color.fromARGB(255, 21, 21, 21),
+                          direction: SkeletonDirection.ltr
+                        );
+                      }
+                    },
+                    errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            Text('Could not load image'),
+                            Icon(Icons.error),
+                          ],
+                        ), // Display an error icon if the image fails to load
+                      );
+                    }
                   ),
                 ),
                 AnimatedOpacity(
@@ -200,23 +303,23 @@ class _PostCardState extends State<PostCard> {
                   Icons.comment_outlined,
                 ),
               ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.send,
-                ),
-              ),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.bottomRight,
-                  child: IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.bookmark_border,
-                    ),
-                  ),
-                ),
-              )
+              // IconButton(
+              //   onPressed: () {},
+              //   icon: const Icon(
+              //     Icons.send,
+              //   ),
+              // ),
+              // Expanded(
+              //   child: Align(
+              //     alignment: Alignment.bottomRight,
+              //     child: IconButton(
+              //       onPressed: () {},
+              //       icon: const Icon(
+              //         Icons.bookmark_border,
+              //       ),
+              //     ),
+              //   ),
+              // )
             ],
           ),
 
@@ -234,7 +337,7 @@ class _PostCardState extends State<PostCard> {
                         fontWeight: FontWeight.w800,
                       ),
                   child: Text(
-                    '${widget.snap['likes'].length} likes',
+                    widget.snap['likes'].length == 0 ? 'No likes yet' : widget.snap['likes'].length == 1 ? '${widget.snap['likes'].length} like' : '${widget.snap['likes'].length} likes',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
@@ -248,7 +351,7 @@ class _PostCardState extends State<PostCard> {
                         ),
                         children: [
                           TextSpan(
-                              text: widget.snap['username'],
+                              text: username,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                               )),
@@ -259,11 +362,21 @@ class _PostCardState extends State<PostCard> {
                   ),
                 ),
                 InkWell(
-                  onTap: () {},
+                  onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) {
+                        return CommentsScreen(
+                          snap: widget.snap,
+                        );
+                      },
+                    ),
+                  );
+                },
                   child: Container(
                     padding: EdgeInsets.symmetric(vertical: 4),
                     child: Text(
-                      'View all $commentLength comments',
+                      commentLength == 0 ? 'Write a comment' : 'View all $commentLength comments',
                       style: TextStyle(fontSize: 16, color: secondaryColor),
                     ),
                   ),

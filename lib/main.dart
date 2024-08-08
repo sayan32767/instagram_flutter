@@ -8,6 +8,7 @@ import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
+import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -29,12 +30,21 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => UserProvider(),
         ),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Instagram Clone',
-          theme: ThemeData.dark()
-              .copyWith(scaffoldBackgroundColor: mobileBackgroundColor),
+          title: 'Instagram',
+          theme: ThemeData.dark().copyWith(
+            primaryColor: blueColor,
+            scaffoldBackgroundColor: mobileBackgroundColor,
+            brightness: Brightness.dark,
+            textSelectionTheme: TextSelectionThemeData(
+              cursorColor: blueColor,
+              selectionColor: blueColor.withOpacity(0.5),
+              selectionHandleColor: blueColor,
+            ),
+          ),
           // home: const ResponsiveLayout(webScreenLayout: WebScreenLayout(), mobileScreenLayout: MobileScreenLayout())
           home: StreamBuilder(
               stream: FirebaseAuth.instance.authStateChanges(),
@@ -56,7 +66,7 @@ class MyApp extends StatelessWidget {
                   );
                 }
 
-                return const LoginScreen();
+                return LoginScreen();
               })),
     );
   }

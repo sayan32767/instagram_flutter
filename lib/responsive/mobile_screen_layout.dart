@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
+import 'package:provider/provider.dart';
 
 class MobileScreenLayout extends StatefulWidget {
   const MobileScreenLayout({super.key});
@@ -13,6 +14,7 @@ class MobileScreenLayout extends StatefulWidget {
 class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   int _page = 0;
   late PageController pageController;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -29,20 +31,30 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   }
 
   void navigationTapped(int page) {
-    pageController.jumpToPage(page);
-    setState(() {
+     setState(() {
       _page = page;
     });
+    _navigatorKey.currentState?.pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation1, animation2) => Provider.of<NavigationProvider>(context, listen: false).homeScreenItems[page],
+        transitionDuration: Duration.zero,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final homeScreenItems = Provider.of<NavigationProvider>(context, listen: false).homeScreenItems;
+
     return Scaffold(
-      body: PageView(
-        children: homeScreenItems,
-        controller: pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        // onPageChanged: onPageChanged,
+      body: Navigator(
+        key: _navigatorKey,
+        onGenerateRoute: (settings) {
+          return MaterialPageRoute(
+            builder: (context) => homeScreenItems[_page],
+          );
+        },
       ),
       bottomNavigationBar: CupertinoTabBar(
         height: 75,
@@ -72,23 +84,24 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
             label: '',
             backgroundColor: primaryColor,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.favorite,
-              color: _page == 3 ? primaryColor : secondaryColor,
-            ),
-            label: '',
-            backgroundColor: primaryColor,
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(
+          //     Icons.favorite,
+          //     color: _page == 3 ? primaryColor : secondaryColor,
+          //   ),
+          //   label: '',
+          //   backgroundColor: primaryColor,
+          // ),
           BottomNavigationBarItem(
             icon: Icon(
               Icons.person,
-              color: _page == 4 ? primaryColor : secondaryColor,
+              color: _page == 3 ? primaryColor : secondaryColor,
             ),
             label: '',
             backgroundColor: primaryColor,
           )
         ],
+        currentIndex: _page,
         onTap: navigationTapped,
       ),
     );

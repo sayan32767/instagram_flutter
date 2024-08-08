@@ -6,6 +6,7 @@ import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/utils.dart';
+import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:provider/provider.dart';
 
 class AddPostScreen extends StatefulWidget {
@@ -140,7 +141,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
             body: Column(
               children: [
                 _isLoading
-                    ? const LinearProgressIndicator()
+                    ? const LinearProgressIndicator(
+                      color: blueColor,
+                    )
                     : Padding(
                         padding: const EdgeInsets.only(top: 0),
                       ),
@@ -149,12 +152,13 @@ class _AddPostScreenState extends State<AddPostScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      backgroundImage: NetworkImage(
-                        user.photoUrl ??
-                            'https://images.unsplash.com/photo-1720123076542-3a1d5687c6c0?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-                      ),
-                    ),
+                  user.photoUrl == null ?
+
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundImage: AssetImage('assets/images/placeholder.jpg'),
+                    backgroundColor: Colors.grey[300],
+                  ) : ProgressImageDots(url: user.photoUrl!),
                     SizedBox(
                       width: MediaQuery.of(context).size.width * 0.45,
                       child: TextField(

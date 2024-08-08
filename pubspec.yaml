@@ -45,6 +45,10 @@ dependencies:
   uuid:
   intl:
   flutter_staggered_grid_view:
+  flutter_image_compress:
+  image:
+  skeleton_loader:
+  flutter_native_splash: ^2.4.1
 
 dev_dependencies:
   flutter_test:
