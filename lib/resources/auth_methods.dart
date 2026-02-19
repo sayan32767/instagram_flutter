@@ -35,6 +35,8 @@ class AuthMethods {
           followers: [],
           following: [],
           photoUrl: photoUrl,
+          userType: 'NOTADMIN',
+          tagline: '',
         );
 
         await _firestore.collection('user').doc(cred.user!.uid).set(user.toJson());
@@ -132,7 +134,7 @@ class AuthMethods {
       } else if (documents.first.id == _auth.currentUser!.uid) {
         res = 'success';
       } else {
-        'Username already taken. Please choose another.';
+        res = 'Username already taken. Please choose another.';
       }
     } catch (e) {
       res = e.toString();

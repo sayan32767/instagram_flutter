@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/utils/image_cache_manager.dart';
 
 class CustomImageLoader extends StatelessWidget {
   final String imageUrl;
@@ -9,19 +11,20 @@ class CustomImageLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      imageUrl,
+    return CachedNetworkImage(
+      cacheManager: InstaCacheManager(), // ⭐ long-term cache
+      imageUrl: imageUrl,
       fit: BoxFit.cover,
-      loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-        if (loadingProgress == null) {
-          return child;
-        } else {
-          return Container(
-            color: const Color.fromARGB(255, 24, 24, 24),
-          );
-        }
+
+      /// While loading
+      placeholder: (context, url) {
+        return Container(
+          color: const Color.fromARGB(255, 24, 24, 24),
+        );
       },
-      errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+
+      /// On error
+      errorWidget: (context, url, error) {
         return const Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

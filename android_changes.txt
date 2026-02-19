@@ -1,0 +1,784 @@
+diff '--color=auto' -ruN android_old/app/build.gradle android/app/build.gradle
+--- android_old/app/build.gradle	2026-02-15 01:44:25.298087091 +0530
++++ android/app/build.gradle	1970-01-01 05:30:00.000000000 +0530
+@@ -1,67 +0,0 @@
+-plugins {
+-    id "com.android.application"
+-    id "kotlin-android"
+-    id "dev.flutter.flutter-gradle-plugin"
+-}
+-
+-def localProperties = new Properties()
+-def localPropertiesFile = rootProject.file('local.properties')
+-if (localPropertiesFile.exists()) {
+-    localPropertiesFile.withReader('UTF-8') { reader ->
+-        localProperties.load(reader)
+-    }
+-}
+-
+-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+-if (flutterVersionCode == null) {
+-    flutterVersionCode = '1'
+-}
+-
+-def flutterVersionName = localProperties.getProperty('flutter.versionName')
+-if (flutterVersionName == null) {
+-    flutterVersionName = '1.0'
+-}
+-
+-android {
+-    namespace "com.example.instagram_flutter"
+-    compileSdkVersion flutter.compileSdkVersion
+-    ndkVersion flutter.ndkVersion
+-
+-    compileOptions {
+-        sourceCompatibility JavaVersion.VERSION_1_8
+-        targetCompatibility JavaVersion.VERSION_1_8
+-    }
+-
+-    kotlinOptions {
+-        jvmTarget = '1.8'
+-    }
+-
+-    sourceSets {
+-        main.java.srcDirs += 'src/main/kotlin'
+-    }
+-
+-    defaultConfig {
+-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+-        applicationId "com.example.instagram_flutter"
+-        // You can update the following values to match your application needs.
+-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
+-        minSdkVersion flutter.minSdkVersion
+-        targetSdkVersion flutter.targetSdkVersion
+-        versionCode flutterVersionCode.toInteger()
+-        versionName flutterVersionName
+-    }
+-
+-    buildTypes {
+-        release {
+-            // TODO: Add your own signing config for the release build.
+-            // Signing with the debug keys for now, so `flutter run --release` works.
+-            signingConfig signingConfigs.debug
+-        }
+-    }
+-}
+-
+-flutter {
+-    source '../..'
+-}
+-
+-dependencies {}
+diff '--color=auto' -ruN android_old/app/build.gradle.kts android/app/build.gradle.kts
+--- android_old/app/build.gradle.kts	1970-01-01 05:30:00.000000000 +0530
++++ android/app/build.gradle.kts	2026-02-15 02:14:18.783112441 +0530
+@@ -0,0 +1,44 @@
++plugins {
++    id("com.android.application")
++    id("kotlin-android")
++    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
++    id("dev.flutter.flutter-gradle-plugin")
++}
++
++android {
++    namespace = "com.example.instagram_flutter"
++    compileSdk = flutter.compileSdkVersion
++    ndkVersion = flutter.ndkVersion
++
++    compileOptions {
++        sourceCompatibility = JavaVersion.VERSION_17
++        targetCompatibility = JavaVersion.VERSION_17
++    }
++
++    kotlinOptions {
++        jvmTarget = JavaVersion.VERSION_17.toString()
++    }
++
++    defaultConfig {
++        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
++        applicationId = "com.example.instagram_flutter"
++        // You can update the following values to match your application needs.
++        // For more information, see: https://flutter.dev/to/review-gradle-config.
++        minSdk = flutter.minSdkVersion
++        targetSdk = flutter.targetSdkVersion
++        versionCode = flutter.versionCode
++        versionName = flutter.versionName
++    }
++
++    buildTypes {
++        release {
++            // TODO: Add your own signing config for the release build.
++            // Signing with the debug keys for now, so `flutter run --release` works.
++            signingConfig = signingConfigs.getByName("debug")
++        }
++    }
++}
++
++flutter {
++    source = "../.."
++}
+diff '--color=auto' -ruN android_old/app/google-services.json android/app/google-services.json
+--- android_old/app/google-services.json	2024-08-17 10:51:28.350151600 +0530
++++ android/app/google-services.json	1970-01-01 05:30:00.000000000 +0530
+@@ -1,29 +0,0 @@
+-{
+-  "project_info": {
+-    "project_number": "923254007203",
+-    "project_id": "instagram-clone-1b720",
+-    "storage_bucket": "instagram-clone-1b720.appspot.com"
+-  },
+-  "client": [
+-    {
+-      "client_info": {
+-        "mobilesdk_app_id": "1:923254007203:android:a86bf29b39b3d453e6a616",
+-        "android_client_info": {
+-          "package_name": "com.example.instagram_flutter"
+-        }
+-      },
+-      "oauth_client": [],
+-      "api_key": [
+-        {
+-          "current_key": "AIzaSyCDn-GwMZhHDgzeck2hnZ-Ye3jknPzDPZs"
+-        }
+-      ],
+-      "services": {
+-        "appinvite_service": {
+-          "other_platform_oauth_client": []
+-        }
+-      }
+-    }
+-  ],
+-  "configuration_version": "1"
+-}
+\ No newline at end of file
+diff '--color=auto' -ruN android_old/app/src/debug/AndroidManifest.xml android/app/src/debug/AndroidManifest.xml
+--- android_old/app/src/debug/AndroidManifest.xml	2023-12-30 16:26:41.947529700 +0530
++++ android/app/src/debug/AndroidManifest.xml	2026-02-15 02:14:18.764111981 +0530
+@@ -1,7 +1,7 @@
+-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+-    <!-- The INTERNET permission is required for development. Specifically,
+-         the Flutter tool needs it to communicate with the running application
+-         to allow setting breakpoints, to provide hot reload, etc.
+-    -->
+-    <uses-permission android:name="android.permission.INTERNET"/>
+-</manifest>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
++    <!-- The INTERNET permission is required for development. Specifically,
++         the Flutter tool needs it to communicate with the running application
++         to allow setting breakpoints, to provide hot reload, etc.
++    -->
++    <uses-permission android:name="android.permission.INTERNET"/>
++</manifest>
+diff '--color=auto' -ruN android_old/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+--- android_old/app/src/main/AndroidManifest.xml	2024-08-17 15:54:29.937132200 +0530
++++ android/app/src/main/AndroidManifest.xml	2026-02-15 02:14:18.774112223 +0530
+@@ -1,35 +1,45 @@
+-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+-    <uses-permission android:name="android.permission.INTERNET" />
+-    
+-    <application
+-        android:label="@string/appName"
+-        android:name="${applicationName}"
+-        android:icon="@mipmap/ic_launcher">
+-        <activity
+-            android:name=".MainActivity"
+-            android:exported="true"
+-            android:launchMode="singleTop"
+-            android:theme="@style/LaunchTheme"
+-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+-            android:hardwareAccelerated="true"
+-            android:windowSoftInputMode="adjustResize">
+-            <!-- Specifies an Android theme to apply to this Activity as soon as
+-                 the Android process has started. This theme is visible to the user
+-                 while the Flutter UI initializes. After that, this theme continues
+-                 to determine the Window background behind the Flutter UI. -->
+-            <meta-data
+-              android:name="io.flutter.embedding.android.NormalTheme"
+-              android:resource="@style/NormalTheme"
+-              />
+-            <intent-filter>
+-                <action android:name="android.intent.action.MAIN"/>
+-                <category android:name="android.intent.category.LAUNCHER"/>
+-            </intent-filter>
+-        </activity>
+-        <!-- Don't delete the meta-data below.
+-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+-        <meta-data
+-            android:name="flutterEmbedding"
+-            android:value="2" />
+-    </application>
+-</manifest>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
++    <application
++        android:label="instagram_flutter"
++        android:name="${applicationName}"
++        android:icon="@mipmap/ic_launcher">
++        <activity
++            android:name=".MainActivity"
++            android:exported="true"
++            android:launchMode="singleTop"
++            android:taskAffinity=""
++            android:theme="@style/LaunchTheme"
++            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
++            android:hardwareAccelerated="true"
++            android:windowSoftInputMode="adjustResize">
++            <!-- Specifies an Android theme to apply to this Activity as soon as
++                 the Android process has started. This theme is visible to the user
++                 while the Flutter UI initializes. After that, this theme continues
++                 to determine the Window background behind the Flutter UI. -->
++            <meta-data
++              android:name="io.flutter.embedding.android.NormalTheme"
++              android:resource="@style/NormalTheme"
++              />
++            <intent-filter>
++                <action android:name="android.intent.action.MAIN"/>
++                <category android:name="android.intent.category.LAUNCHER"/>
++            </intent-filter>
++        </activity>
++        <!-- Don't delete the meta-data below.
++             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
++        <meta-data
++            android:name="flutterEmbedding"
++            android:value="2" />
++    </application>
++    <!-- Required to query activities that can process text, see:
++         https://developer.android.com/training/package-visibility and
++         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
++
++         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
++    <queries>
++        <intent>
++            <action android:name="android.intent.action.PROCESS_TEXT"/>
++            <data android:mimeType="text/plain"/>
++        </intent>
++    </queries>
++</manifest>
+diff '--color=auto' -ruN android_old/app/src/main/kotlin/com/example/instagram_flutter/MainActivity.kt android/app/src/main/kotlin/com/example/instagram_flutter/MainActivity.kt
+--- android_old/app/src/main/kotlin/com/example/instagram_flutter/MainActivity.kt	2023-12-30 16:26:41.915994600 +0530
++++ android/app/src/main/kotlin/com/example/instagram_flutter/MainActivity.kt	2026-02-15 02:14:18.782112417 +0530
+@@ -1,6 +1,5 @@
+-package com.example.instagram_flutter
+-
+-import io.flutter.embedding.android.FlutterActivity
+-
+-class MainActivity: FlutterActivity() {
+-}
++package com.example.instagram_flutter
++
++import io.flutter.embedding.android.FlutterActivity
++
++class MainActivity : FlutterActivity()
+Binary files android_old/app/src/main/res/drawable/background.png and android/app/src/main/res/drawable/background.png differ
+diff '--color=auto' -ruN android_old/app/src/main/res/drawable/launch_background.xml android/app/src/main/res/drawable/launch_background.xml
+--- android_old/app/src/main/res/drawable/launch_background.xml	2024-08-17 15:54:29.938445000 +0530
++++ android/app/src/main/res/drawable/launch_background.xml	2026-02-15 02:14:18.771307152 +0530
+@@ -1,6 +1,12 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+-    <item>
+-        <bitmap android:gravity="fill" android:src="@drawable/background"/>
+-    </item>
+-</layer-list>
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Modify this file to customize your launch splash screen -->
++<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
++    <item android:drawable="@android:color/white" />
++
++    <!-- You can insert your own image assets here -->
++    <!-- <item>
++        <bitmap
++            android:gravity="center"
++            android:src="@mipmap/launch_image" />
++    </item> -->
++</layer-list>
+Binary files android_old/app/src/main/res/drawable-v21/background.png and android/app/src/main/res/drawable-v21/background.png differ
+diff '--color=auto' -ruN android_old/app/src/main/res/drawable-v21/launch_background.xml android/app/src/main/res/drawable-v21/launch_background.xml
+--- android_old/app/src/main/res/drawable-v21/launch_background.xml	2024-08-17 15:54:29.938445000 +0530
++++ android/app/src/main/res/drawable-v21/launch_background.xml	2026-02-15 02:14:18.767112053 +0530
+@@ -1,6 +1,12 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+-    <item>
+-        <bitmap android:gravity="fill" android:src="@drawable/background"/>
+-    </item>
+-</layer-list>
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Modify this file to customize your launch splash screen -->
++<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
++    <item android:drawable="?android:colorBackground" />
++
++    <!-- You can insert your own image assets here -->
++    <!-- <item>
++        <bitmap
++            android:gravity="center"
++            android:src="@mipmap/launch_image" />
++    </item> -->
++</layer-list>
+Binary files android_old/app/src/main/res/mipmap-hdpi/ic_launcher.png and android/app/src/main/res/mipmap-hdpi/ic_launcher.png differ
+Binary files android_old/app/src/main/res/mipmap-mdpi/ic_launcher.png and android/app/src/main/res/mipmap-mdpi/ic_launcher.png differ
+Binary files android_old/app/src/main/res/mipmap-xhdpi/ic_launcher.png and android/app/src/main/res/mipmap-xhdpi/ic_launcher.png differ
+Binary files android_old/app/src/main/res/mipmap-xxhdpi/ic_launcher.png and android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png differ
+Binary files android_old/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png and android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png differ
+diff '--color=auto' -ruN android_old/app/src/main/res/values/strings.xml android/app/src/main/res/values/strings.xml
+--- android_old/app/src/main/res/values/strings.xml	2024-08-17 15:54:29.941547600 +0530
++++ android/app/src/main/res/values/strings.xml	1970-01-01 05:30:00.000000000 +0530
+@@ -1,4 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<resources>
+-  <string name="appName">Insta</string>
+-</resources>
+\ No newline at end of file
+diff '--color=auto' -ruN android_old/app/src/main/res/values/styles.xml android/app/src/main/res/values/styles.xml
+--- android_old/app/src/main/res/values/styles.xml	2024-08-17 15:54:29.942547100 +0530
++++ android/app/src/main/res/values/styles.xml	2026-02-15 02:14:18.766114878 +0530
+@@ -1,22 +1,18 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<resources>
+-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
+-    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+-        <!-- Show a splash screen on the activity. Automatically removed when
+-             the Flutter engine draws its first frame -->
+-        <item name="android:windowBackground">@drawable/launch_background</item>
+-        <item name="android:forceDarkAllowed">false</item>
+-        <item name="android:windowFullscreen">false</item>
+-        <item name="android:windowDrawsSystemBarBackgrounds">false</item>
+-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+-    </style>
+-    <!-- Theme applied to the Android Window as soon as the process has started.
+-         This theme determines the color of the Android Window while your
+-         Flutter UI initializes, as well as behind your Flutter UI while its
+-         running.
+-
+-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
+-    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+-        <item name="android:windowBackground">?android:colorBackground</item>
+-    </style>
+-</resources>
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
++    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
++        <!-- Show a splash screen on the activity. Automatically removed when
++             the Flutter engine draws its first frame -->
++        <item name="android:windowBackground">@drawable/launch_background</item>
++    </style>
++    <!-- Theme applied to the Android Window as soon as the process has started.
++         This theme determines the color of the Android Window while your
++         Flutter UI initializes, as well as behind your Flutter UI while its
++         running.
++
++         This Theme is only used starting with V2 of Flutter's Android embedding. -->
++    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
++        <item name="android:windowBackground">?android:colorBackground</item>
++    </style>
++</resources>
+diff '--color=auto' -ruN android_old/app/src/main/res/values-night/styles.xml android/app/src/main/res/values-night/styles.xml
+--- android_old/app/src/main/res/values-night/styles.xml	2024-08-17 15:54:29.941547600 +0530
++++ android/app/src/main/res/values-night/styles.xml	2026-02-15 02:14:18.769838141 +0530
+@@ -1,22 +1,18 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<resources>
+-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is on -->
+-    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+-        <!-- Show a splash screen on the activity. Automatically removed when
+-             the Flutter engine draws its first frame -->
+-        <item name="android:windowBackground">@drawable/launch_background</item>
+-        <item name="android:forceDarkAllowed">false</item>
+-        <item name="android:windowFullscreen">false</item>
+-        <item name="android:windowDrawsSystemBarBackgrounds">false</item>
+-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+-    </style>
+-    <!-- Theme applied to the Android Window as soon as the process has started.
+-         This theme determines the color of the Android Window while your
+-         Flutter UI initializes, as well as behind your Flutter UI while its
+-         running.
+-
+-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
+-    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+-        <item name="android:windowBackground">?android:colorBackground</item>
+-    </style>
+-</resources>
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is on -->
++    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
++        <!-- Show a splash screen on the activity. Automatically removed when
++             the Flutter engine draws its first frame -->
++        <item name="android:windowBackground">@drawable/launch_background</item>
++    </style>
++    <!-- Theme applied to the Android Window as soon as the process has started.
++         This theme determines the color of the Android Window while your
++         Flutter UI initializes, as well as behind your Flutter UI while its
++         running.
++
++         This Theme is only used starting with V2 of Flutter's Android embedding. -->
++    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
++        <item name="android:windowBackground">?android:colorBackground</item>
++    </style>
++</resources>
+diff '--color=auto' -ruN android_old/app/src/main/res/values-night-v31/styles.xml android/app/src/main/res/values-night-v31/styles.xml
+--- android_old/app/src/main/res/values-night-v31/styles.xml	2024-08-17 15:54:29.940547200 +0530
++++ android/app/src/main/res/values-night-v31/styles.xml	1970-01-01 05:30:00.000000000 +0530
+@@ -1,20 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<resources>
+-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is on -->
+-    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+-        <item name="android:forceDarkAllowed">false</item>
+-        <item name="android:windowFullscreen">false</item>
+-        <item name="android:windowDrawsSystemBarBackgrounds">false</item>
+-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+-        <item name="android:windowSplashScreenBackground">#000000</item>
+-    </style>
+-    <!-- Theme applied to the Android Window as soon as the process has started.
+-         This theme determines the color of the Android Window while your
+-         Flutter UI initializes, as well as behind your Flutter UI while its
+-         running.
+-         
+-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
+-    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+-        <item name="android:windowBackground">?android:colorBackground</item>
+-    </style>
+-</resources>
+diff '--color=auto' -ruN android_old/app/src/main/res/values-v31/styles.xml android/app/src/main/res/values-v31/styles.xml
+--- android_old/app/src/main/res/values-v31/styles.xml	2024-08-17 15:54:29.941547600 +0530
++++ android/app/src/main/res/values-v31/styles.xml	1970-01-01 05:30:00.000000000 +0530
+@@ -1,20 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<resources>
+-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
+-    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+-        <item name="android:forceDarkAllowed">false</item>
+-        <item name="android:windowFullscreen">false</item>
+-        <item name="android:windowDrawsSystemBarBackgrounds">false</item>
+-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+-        <item name="android:windowSplashScreenBackground">#000000</item>
+-    </style>
+-    <!-- Theme applied to the Android Window as soon as the process has started.
+-         This theme determines the color of the Android Window while your
+-         Flutter UI initializes, as well as behind your Flutter UI while its
+-         running.
+-         
+-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
+-    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+-        <item name="android:windowBackground">?android:colorBackground</item>
+-    </style>
+-</resources>
+diff '--color=auto' -ruN android_old/app/src/profile/AndroidManifest.xml android/app/src/profile/AndroidManifest.xml
+--- android_old/app/src/profile/AndroidManifest.xml	2023-12-30 16:26:41.991975200 +0530
++++ android/app/src/profile/AndroidManifest.xml	2026-02-15 02:14:18.776943440 +0530
+@@ -1,7 +1,7 @@
+-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+-    <!-- The INTERNET permission is required for development. Specifically,
+-         the Flutter tool needs it to communicate with the running application
+-         to allow setting breakpoints, to provide hot reload, etc.
+-    -->
+-    <uses-permission android:name="android.permission.INTERNET"/>
+-</manifest>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
++    <!-- The INTERNET permission is required for development. Specifically,
++         the Flutter tool needs it to communicate with the running application
++         to allow setting breakpoints, to provide hot reload, etc.
++    -->
++    <uses-permission android:name="android.permission.INTERNET"/>
++</manifest>
+diff '--color=auto' -ruN android_old/build.gradle android/build.gradle
+--- android_old/build.gradle	2024-09-06 17:48:01.287031000 +0530
++++ android/build.gradle	1970-01-01 05:30:00.000000000 +0530
+@@ -1,30 +0,0 @@
+-buildscript {
+-    ext.kotlin_version = '1.7.10'
+-    repositories {
+-        google()
+-        mavenCentral()
+-    }
+-
+-    dependencies {
+-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+-    }
+-}
+-
+-allprojects {
+-    repositories {
+-        google()
+-        mavenCentral()
+-    }
+-}
+-
+-rootProject.buildDir = '../build'
+-subprojects {
+-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+-}
+-subprojects {
+-    project.evaluationDependsOn(':app')
+-}
+-
+-tasks.register("clean", Delete) {
+-    delete rootProject.buildDir
+-}
+diff '--color=auto' -ruN android_old/build.gradle.kts android/build.gradle.kts
+--- android_old/build.gradle.kts	1970-01-01 05:30:00.000000000 +0530
++++ android/build.gradle.kts	2026-02-15 02:14:18.780270801 +0530
+@@ -0,0 +1,24 @@
++allprojects {
++    repositories {
++        google()
++        mavenCentral()
++    }
++}
++
++val newBuildDir: Directory =
++    rootProject.layout.buildDirectory
++        .dir("../../build")
++        .get()
++rootProject.layout.buildDirectory.value(newBuildDir)
++
++subprojects {
++    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
++    project.layout.buildDirectory.value(newSubprojectBuildDir)
++}
++subprojects {
++    project.evaluationDependsOn(":app")
++}
++
++tasks.register<Delete>("clean") {
++    delete(rootProject.layout.buildDirectory)
++}
+diff '--color=auto' -ruN android_old/.gitignore android/.gitignore
+--- android_old/.gitignore	2022-12-16 03:24:35.109631700 +0530
++++ android/.gitignore	2026-02-15 02:14:18.762787476 +0530
+@@ -1,13 +1,14 @@
+-gradle-wrapper.jar
+-/.gradle
+-/captures/
+-/gradlew
+-/gradlew.bat
+-/local.properties
+-GeneratedPluginRegistrant.java
+-
+-# Remember to never publicly share your keystore.
+-# See https://flutter.dev/docs/deployment/android#reference-the-keystore-from-the-app
+-key.properties
+-**/*.keystore
+-**/*.jks
++gradle-wrapper.jar
++/.gradle
++/captures/
++/gradlew
++/gradlew.bat
++/local.properties
++GeneratedPluginRegistrant.java
++.cxx/
++
++# Remember to never publicly share your keystore.
++# See https://flutter.dev/to/reference-keystore
++key.properties
++**/*.keystore
++**/*.jks
+Binary files android_old/.gradle/7.5/checksums/checksums.lock and android/.gradle/7.5/checksums/checksums.lock differ
+Binary files android_old/.gradle/7.5/checksums/md5-checksums.bin and android/.gradle/7.5/checksums/md5-checksums.bin differ
+Binary files android_old/.gradle/7.5/checksums/sha1-checksums.bin and android/.gradle/7.5/checksums/sha1-checksums.bin differ
+Binary files android_old/.gradle/7.5/dependencies-accessors/dependencies-accessors.lock and android/.gradle/7.5/dependencies-accessors/dependencies-accessors.lock differ
+Binary files android_old/.gradle/7.5/fileChanges/last-build.bin and android/.gradle/7.5/fileChanges/last-build.bin differ
+Binary files android_old/.gradle/7.5/fileHashes/fileHashes.bin and android/.gradle/7.5/fileHashes/fileHashes.bin differ
+Binary files android_old/.gradle/7.5/fileHashes/fileHashes.lock and android/.gradle/7.5/fileHashes/fileHashes.lock differ
+Binary files android_old/.gradle/8.14/checksums/checksums.lock and android/.gradle/8.14/checksums/checksums.lock differ
+Binary files android_old/.gradle/8.14/checksums/md5-checksums.bin and android/.gradle/8.14/checksums/md5-checksums.bin differ
+Binary files android_old/.gradle/8.14/checksums/sha1-checksums.bin and android/.gradle/8.14/checksums/sha1-checksums.bin differ
+Binary files android_old/.gradle/8.14/executionHistory/executionHistory.bin and android/.gradle/8.14/executionHistory/executionHistory.bin differ
+Binary files android_old/.gradle/8.14/executionHistory/executionHistory.lock and android/.gradle/8.14/executionHistory/executionHistory.lock differ
+Binary files android_old/.gradle/8.14/fileChanges/last-build.bin and android/.gradle/8.14/fileChanges/last-build.bin differ
+Binary files android_old/.gradle/8.14/fileHashes/fileHashes.bin and android/.gradle/8.14/fileHashes/fileHashes.bin differ
+Binary files android_old/.gradle/8.14/fileHashes/fileHashes.lock and android/.gradle/8.14/fileHashes/fileHashes.lock differ
+Binary files android_old/.gradle/8.14/fileHashes/resourceHashesCache.bin and android/.gradle/8.14/fileHashes/resourceHashesCache.bin differ
+Binary files android_old/.gradle/8.7/checksums/checksums.lock and android/.gradle/8.7/checksums/checksums.lock differ
+Binary files android_old/.gradle/8.7/checksums/md5-checksums.bin and android/.gradle/8.7/checksums/md5-checksums.bin differ
+Binary files android_old/.gradle/8.7/checksums/sha1-checksums.bin and android/.gradle/8.7/checksums/sha1-checksums.bin differ
+Binary files android_old/.gradle/8.7/fileChanges/last-build.bin and android/.gradle/8.7/fileChanges/last-build.bin differ
+Binary files android_old/.gradle/8.7/fileHashes/fileHashes.bin and android/.gradle/8.7/fileHashes/fileHashes.bin differ
+Binary files android_old/.gradle/8.7/fileHashes/fileHashes.lock and android/.gradle/8.7/fileHashes/fileHashes.lock differ
+Binary files android_old/.gradle/8.7/fileHashes/resourceHashesCache.bin and android/.gradle/8.7/fileHashes/resourceHashesCache.bin differ
+Binary files android_old/.gradle/buildOutputCleanup/buildOutputCleanup.lock and android/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff '--color=auto' -ruN android_old/.gradle/buildOutputCleanup/cache.properties android/.gradle/buildOutputCleanup/cache.properties
+--- android_old/.gradle/buildOutputCleanup/cache.properties	2026-02-15 02:12:27.554561430 +0530
++++ android/.gradle/buildOutputCleanup/cache.properties	2026-02-15 02:18:07.805709090 +0530
+@@ -1,2 +1,2 @@
+-#Sun Feb 15 02:12:27 IST 2026
+-gradle.version=8.7
++#Sun Feb 15 02:18:07 IST 2026
++gradle.version=8.14
+Binary files android_old/.gradle/buildOutputCleanup/outputFiles.bin and android/.gradle/buildOutputCleanup/outputFiles.bin differ
+Binary files android_old/.gradle/file-system.probe and android/.gradle/file-system.probe differ
+Binary files android_old/.gradle/nb-cache/android-936352036/project-info.ser and android/.gradle/nb-cache/android-936352036/project-info.ser differ
+Binary files android_old/.gradle/nb-cache/app-641699730/project-info.ser and android/.gradle/nb-cache/app-641699730/project-info.ser differ
+Binary files android_old/.gradle/nb-cache/subprojects.ser and android/.gradle/nb-cache/subprojects.ser differ
+diff '--color=auto' -ruN android_old/.gradle/nb-cache/trust/4D85A62080D6948B8503EA24262F195555F725BB8063BDCC5058C74734205587 android/.gradle/nb-cache/trust/4D85A62080D6948B8503EA24262F195555F725BB8063BDCC5058C74734205587
+--- android_old/.gradle/nb-cache/trust/4D85A62080D6948B8503EA24262F195555F725BB8063BDCC5058C74734205587	2026-02-15 11:38:55.427342630 +0530
++++ android/.gradle/nb-cache/trust/4D85A62080D6948B8503EA24262F195555F725BB8063BDCC5058C74734205587	1970-01-01 05:30:00.000000000 +0530
+@@ -1 +0,0 @@
+-7866301A035F099BBBA17C6B82658A69005C1DC8E682F0E4426349C7D6A70C96
+diff '--color=auto' -ruN android_old/.gradle/nb-cache/trust/F3648480E6D8F31345E89BC3774BF322008FD936FABEB7CC974E35DA61D15DB5 android/.gradle/nb-cache/trust/F3648480E6D8F31345E89BC3774BF322008FD936FABEB7CC974E35DA61D15DB5
+--- android_old/.gradle/nb-cache/trust/F3648480E6D8F31345E89BC3774BF322008FD936FABEB7CC974E35DA61D15DB5	1970-01-01 05:30:00.000000000 +0530
++++ android/.gradle/nb-cache/trust/F3648480E6D8F31345E89BC3774BF322008FD936FABEB7CC974E35DA61D15DB5	2026-02-15 11:38:55.425342685 +0530
+@@ -0,0 +1 @@
++1FF3009C13817EE6308F02B3A1A562C8011FAA6A898F3BB1A10B23D3E3A44777
+Binary files android_old/.gradle/noVersion/buildLogic.lock and android/.gradle/noVersion/buildLogic.lock differ
+diff '--color=auto' -ruN android_old/gradle/wrapper/gradle-wrapper.properties android/gradle/wrapper/gradle-wrapper.properties
+--- android_old/gradle/wrapper/gradle-wrapper.properties	2026-02-15 02:07:41.108484105 +0530
++++ android/gradle/wrapper/gradle-wrapper.properties	2026-02-15 02:14:18.762086945 +0530
+@@ -1,5 +1,5 @@
+-distributionBase=GRADLE_USER_HOME
+-distributionPath=wrapper/dists
+-zipStoreBase=GRADLE_USER_HOME
+-zipStorePath=wrapper/dists
+-distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-all.zip
++distributionBase=GRADLE_USER_HOME
++distributionPath=wrapper/dists
++zipStoreBase=GRADLE_USER_HOME
++zipStorePath=wrapper/dists
++distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip
+diff '--color=auto' -ruN android_old/gradle.properties android/gradle.properties
+--- android_old/gradle.properties	2023-12-30 16:26:42.004467400 +0530
++++ android/gradle.properties	2026-02-15 02:14:18.763111957 +0530
+@@ -1,3 +1,2 @@
+-org.gradle.jvmargs=-Xmx4G
+-android.useAndroidX=true
+-android.enableJetifier=true
++org.gradle.jvmargs=-Xmx8G -XX:MaxMetaspaceSize=4G -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError
++android.useAndroidX=true
+diff '--color=auto' -ruN android_old/instagram_flutter_android.iml android/instagram_flutter_android.iml
+--- android_old/instagram_flutter_android.iml	2023-12-30 16:26:41.931219200 +0530
++++ android/instagram_flutter_android.iml	2026-02-15 02:14:18.778112320 +0530
+@@ -1,29 +1,29 @@
+-<?xml version="1.0" encoding="UTF-8"?>
+-<module type="JAVA_MODULE" version="4">
+-  <component name="FacetManager">
+-    <facet type="android" name="Android">
+-      <configuration>
+-        <option name="ALLOW_USER_CONFIGURATION" value="false" />
+-        <option name="GEN_FOLDER_RELATIVE_PATH_APT" value="/gen" />
+-        <option name="GEN_FOLDER_RELATIVE_PATH_AIDL" value="/gen" />
+-        <option name="MANIFEST_FILE_RELATIVE_PATH" value="/app/src/main/AndroidManifest.xml" />
+-        <option name="RES_FOLDER_RELATIVE_PATH" value="/app/src/main/res" />
+-        <option name="ASSETS_FOLDER_RELATIVE_PATH" value="/app/src/main/assets" />
+-        <option name="LIBS_FOLDER_RELATIVE_PATH" value="/app/src/main/libs" />
+-        <option name="PROGUARD_LOGS_FOLDER_RELATIVE_PATH" value="/app/src/main/proguard_logs" />
+-      </configuration>
+-    </facet>
+-  </component>
+-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+-    <exclude-output />
+-    <content url="file://$MODULE_DIR$">
+-      <sourceFolder url="file://$MODULE_DIR$/app/src/main/java" isTestSource="false" />
+-      <sourceFolder url="file://$MODULE_DIR$/app/src/main/kotlin" isTestSource="false" />
+-      <sourceFolder url="file://$MODULE_DIR$/gen" isTestSource="false" generated="true" />
+-    </content>
+-    <orderEntry type="jdk" jdkName="Android API 29 Platform" jdkType="Android SDK" />
+-    <orderEntry type="sourceFolder" forTests="false" />
+-    <orderEntry type="library" name="Flutter for Android" level="project" />
+-    <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
+-  </component>
+-</module>
++<?xml version="1.0" encoding="UTF-8"?>
++<module type="JAVA_MODULE" version="4">
++  <component name="FacetManager">
++    <facet type="android" name="Android">
++      <configuration>
++        <option name="ALLOW_USER_CONFIGURATION" value="false" />
++        <option name="GEN_FOLDER_RELATIVE_PATH_APT" value="/gen" />
++        <option name="GEN_FOLDER_RELATIVE_PATH_AIDL" value="/gen" />
++        <option name="MANIFEST_FILE_RELATIVE_PATH" value="/app/src/main/AndroidManifest.xml" />
++        <option name="RES_FOLDER_RELATIVE_PATH" value="/app/src/main/res" />
++        <option name="ASSETS_FOLDER_RELATIVE_PATH" value="/app/src/main/assets" />
++        <option name="LIBS_FOLDER_RELATIVE_PATH" value="/app/src/main/libs" />
++        <option name="PROGUARD_LOGS_FOLDER_RELATIVE_PATH" value="/app/src/main/proguard_logs" />
++      </configuration>
++    </facet>
++  </component>
++  <component name="NewModuleRootManager" inherit-compiler-output="true">
++    <exclude-output />
++    <content url="file://$MODULE_DIR$">
++      <sourceFolder url="file://$MODULE_DIR$/app/src/main/java" isTestSource="false" />
++      <sourceFolder url="file://$MODULE_DIR$/app/src/main/kotlin" isTestSource="false" />
++      <sourceFolder url="file://$MODULE_DIR$/gen" isTestSource="false" generated="true" />
++    </content>
++    <orderEntry type="jdk" jdkName="Android API 24 Platform" jdkType="Android SDK" />
++    <orderEntry type="sourceFolder" forTests="false" />
++    <orderEntry type="library" name="Flutter for Android" level="project" />
++    <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
++  </component>
++</module>
+diff '--color=auto' -ruN android_old/local.properties android/local.properties
+--- android_old/local.properties	2026-02-15 01:44:00.349458971 +0530
++++ android/local.properties	2026-02-15 13:47:21.672166092 +0530
+@@ -1,5 +1,5 @@
+ sdk.dir=/home/sayan/Android/Sdk
+ flutter.sdk=/home/sayan/flutter
+-flutter.buildMode=debug
++flutter.buildMode=release
+ flutter.versionName=1.0.0
+ flutter.versionCode=1
+\ No newline at end of file
+diff '--color=auto' -ruN android_old/settings.gradle android/settings.gradle
+--- android_old/settings.gradle	2023-12-30 16:26:42.011679400 +0530
++++ android/settings.gradle	1970-01-01 05:30:00.000000000 +0530
+@@ -1,29 +0,0 @@
+-pluginManagement {
+-    def flutterSdkPath = {
+-        def properties = new Properties()
+-        file("local.properties").withInputStream { properties.load(it) }
+-        def flutterSdkPath = properties.getProperty("flutter.sdk")
+-        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+-        return flutterSdkPath
+-    }
+-    settings.ext.flutterSdkPath = flutterSdkPath()
+-
+-    includeBuild("${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle")
+-
+-    repositories {
+-        google()
+-        mavenCentral()
+-        gradlePluginPortal()
+-    }
+-
+-    plugins {
+-        id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+-    }
+-}
+-
+-plugins {
+-    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+-    id "com.android.application" version "7.3.0" apply false
+-}
+-
+-include ":app"
+diff '--color=auto' -ruN android_old/settings.gradle.kts android/settings.gradle.kts
+--- android_old/settings.gradle.kts	1970-01-01 05:30:00.000000000 +0530
++++ android/settings.gradle.kts	2026-02-15 02:14:18.760111884 +0530
+@@ -0,0 +1,26 @@
++pluginManagement {
++    val flutterSdkPath =
++        run {
++            val properties = java.util.Properties()
++            file("local.properties").inputStream().use { properties.load(it) }
++            val flutterSdkPath = properties.getProperty("flutter.sdk")
++            require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
++            flutterSdkPath
++        }
++
++    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
++
++    repositories {
++        google()
++        mavenCentral()
++        gradlePluginPortal()
++    }
++}
++
++plugins {
++    id("dev.flutter.flutter-plugin-loader") version "1.0.0"
++    id("com.android.application") version "8.11.1" apply false
++    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
++}
++
++include(":app")

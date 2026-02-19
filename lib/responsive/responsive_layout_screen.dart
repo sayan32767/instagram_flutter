@@ -28,13 +28,18 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // if (constraints.maxWidth > webScreenSize) {
-        //   return widget.webScreenLayout;
-        // }
-        return widget.mobileScreenLayout;
-      }
+    // return LayoutBuilder(
+    //   builder: (context, constraints) {
+    //     // if (constraints.maxWidth > webScreenSize) {
+    //     //   return widget.webScreenLayout;
+    //     // }
+    //     return widget.mobileScreenLayout;
+    //   }
+    // );
+    return Provider.of<UserProvider>(context).getUser != null ? widget.mobileScreenLayout : Center(
+      child: CircularProgressIndicator(
+        color: const Color.fromARGB(255, 24, 24, 24),
+      ),
     );
   }
 }

@@ -1,7 +1,20 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/user_provider.dart';
+import 'package:instagram_flutter/screens/add_post_screen.dart';
+import 'package:instagram_flutter/screens/feed_screen.dart';
+import 'package:instagram_flutter/screens/inbox_screen.dart';
+import 'package:instagram_flutter/screens/profile_screen.dart';
+import 'package:instagram_flutter/screens/reels_screen.dart';
+// import 'package:instagram_flutter/screens/reels_screen.dart';
+import 'package:instagram_flutter/screens/search_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
+import 'package:instagram_flutter/utils/image_cache_manager.dart';
+import 'package:instagram_flutter/utils/presence_servoce.dart';
 import 'package:provider/provider.dart';
 
 class MobileScreenLayout extends StatefulWidget {
@@ -13,18 +26,26 @@ class MobileScreenLayout extends StatefulWidget {
 
 class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   int _page = 0;
+
+  late GlobalKey globalKey;
   late PageController pageController;
+
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  late PresenceService _presence;
 
   @override
   void initState() {
     super.initState();
     pageController = PageController();
+    _presence = PresenceService()..start();
+    globalKey = GlobalKey();
   }
 
   @override
   void dispose() {
     pageController.dispose();
+    _presence.dispose();
     super.dispose();
   }
 
@@ -34,9 +55,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   }
 
   void onPageChanged(int page) {
-    setState(() {
-      _page = page;
-    });
+    Provider.of<NavigationProvider>(context, listen: false).setPage(page);
   }
 
   Future<bool> _onWillPop() async {
@@ -44,31 +63,40 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
       _navigatorKey.currentState?.pop();
       return false;
     }
-    if (_page > 0) {
-      pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.decelerate,
-      );
+
+    if (_page != 0) {
+      pageController.jumpToPage(0);
       return false;
     }
+
     return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    final homeScreenItems =
-        Provider.of<NavigationProvider>(context, listen: false).homeScreenItems;
+    Provider.of<GlobalKeyProvier>(context, listen: false)
+        .setGlobalKey(globalKey);
+    Provider.of<NavigationProvider>(context).setController(pageController);
+
+    _page = Provider.of<NavigationProvider>(context).page ?? 0;
+
+    final homeScreenItems = [
+      FeedScreen(key: globalKey),
+      const ReelsScreen(),
+      const InboxScreen(),
+      const SearchScreen(),
+      ProfileScreen(uid: FirebaseAuth.instance.currentUser!.uid)
+    ];
 
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
+        backgroundColor: mobileBackgroundColor,
         body: Navigator(
           key: _navigatorKey,
           onGenerateRoute: (settings) {
             return MaterialPageRoute(
-              builder: (context) => Stack(
-                fit: StackFit.expand,
-                children: [
+              builder: (context) => Stack(fit: StackFit.expand, children: [
                 PageView(
                   controller: pageController,
                   onPageChanged: onPageChanged,
@@ -93,7 +121,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
             ),
             BottomNavigationBarItem(
               icon: Icon(
-                Icons.search,
+                Icons.play_circle_outline,
                 color: _page == 1 ? primaryColor : secondaryColor,
               ),
               label: '',
@@ -101,7 +129,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
             ),
             BottomNavigationBarItem(
               icon: Icon(
-                Icons.add_circle,
+                Icons.messenger_outline,
                 color: _page == 2 ? primaryColor : secondaryColor,
               ),
               label: '',
@@ -109,8 +137,29 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
             ),
             BottomNavigationBarItem(
               icon: Icon(
-                Icons.person,
+                Icons.search,
                 color: _page == 3 ? primaryColor : secondaryColor,
+              ),
+              label: '',
+              backgroundColor: primaryColor,
+            ),
+            BottomNavigationBarItem(
+              // icon: Icon(
+              //   Icons.person,
+              //   color: _page == 4 ? primaryColor : secondaryColor,
+              // ),
+              icon: CircleAvatar(
+                backgroundColor: secondaryColor,
+                radius: _page == 4 ? 16 : 14,
+                backgroundImage: Provider.of<UserProvider>(context)
+                            .getUser
+                            ?.photoUrl !=
+                        null
+                    ? CachedNetworkImageProvider(
+                        Provider.of<UserProvider>(context).getUser!.photoUrl!,
+                        cacheManager: InstaCacheManager())
+                    : AssetImage('assets/images/placeholder.jpg')
+                        as ImageProvider,
               ),
               label: '',
               backgroundColor: primaryColor,

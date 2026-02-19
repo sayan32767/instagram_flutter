@@ -1,7 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/firebase_options.dart';
+import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
@@ -20,6 +23,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+
   runApp(const MyApp());
 }
 
@@ -35,6 +43,8 @@ class MyApp extends StatelessWidget {
           create: (_) => UserProvider(),
         ),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
+        ChangeNotifierProvider(create: (_) => PlayerStateProvider()),
+        ChangeNotifierProvider(create: (_) => GlobalKeyProvier()),
       ],
       child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -66,7 +76,9 @@ class MyApp extends StatelessWidget {
                 }
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(
+                      color: Colors.white70,
+                    ),
                   );
                 }
 

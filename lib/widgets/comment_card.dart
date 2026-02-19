@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
+import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -16,51 +17,59 @@ class CommentCard extends StatefulWidget {
 
 class _CommentCardState extends State<CommentCard> {
   String username = "";
-  String photoUrl = "";
+  String photoUrl = "_";
+  String userType = "";
 
-  void fetchUserProfilePic(String uid) async {
+  QuerySnapshot? querySnapshot;
+
+  Future fetchUserProfilePic() async {
     try {
-      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('user')
-          .where('uid', isEqualTo: uid)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        
-        // Retrieve the username from the document
-        final DocumentSnapshot document = querySnapshot.docs.first;
+      if (querySnapshot!.docs.isNotEmpty) {
+        final DocumentSnapshot document = querySnapshot!.docs.first;
         photoUrl = document['photoUrl'] ?? "";
       }
     } catch (_) {}
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
-  void fetchUsername(String uid) async {
+  Future fetchUsername() async {
     try {
-      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('user')
-          .where('uid', isEqualTo: uid)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        
-        // Retrieve the username from the document
-        final DocumentSnapshot document = querySnapshot.docs.first;
+      if (querySnapshot!.docs.isNotEmpty) {
+        final DocumentSnapshot document = querySnapshot!.docs.first;
         username = document['username'] as String;
       } else {
         username = 'unknown user';
       }
     } catch (_) {}
-    setState(() {});
+    if (mounted) setState(() {});
+  }
+
+  Future fetchUserType() async {
+    try {
+      if (querySnapshot!.docs.isNotEmpty) {
+        final DocumentSnapshot document = querySnapshot!.docs.first;
+        userType = document['userType'] ?? "";
+      }
+    } catch (_) {}
+    if (mounted) setState(() {});
+  }
+
+  void fetchUserDetails() async {
+    querySnapshot = await FirebaseFirestore.instance
+        .collection('user')
+        .where('uid', isEqualTo: widget.snap['uid'])
+        .limit(1)
+        .get();
+
+    await fetchUsername();
+    await fetchUserProfilePic();
+    await fetchUserType();
   }
 
   @override
   void initState() {
     super.initState();
-    fetchUsername(widget.snap['uid']);
-    fetchUserProfilePic(widget.snap['uid']);
+    fetchUserDetails();
   }
 
   @override
@@ -72,13 +81,40 @@ class _CommentCardState extends State<CommentCard> {
       ),
       child: Row(
         children: [
-          photoUrl == "" ?
-
-          CircleAvatar(
-            radius: 16,
-            backgroundImage: AssetImage('assets/images/placeholder.jpg'),
-            backgroundColor: Colors.grey[300],
-          ) : ProgressImageDots(url: widget.snap['profilePic']),
+          photoUrl == "_"
+              ? CircleAvatar(
+                  radius: 16,
+                  backgroundColor: const Color.fromARGB(255, 24, 24, 24),
+                )
+              : photoUrl == ""
+                  ? GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ProfileScreen(uid: widget.snap['uid']),
+                          ),
+                        );
+                      },
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundImage:
+                            AssetImage('assets/images/placeholder.jpg'),
+                        backgroundColor: Colors.grey[300],
+                      ),
+                    )
+                  : GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ProfileScreen(uid: widget.snap['uid']),
+                          ),
+                        );
+                      },
+                      child: ProgressImageDots(url: photoUrl)),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(left: 16),
@@ -86,43 +122,66 @@ class _CommentCardState extends State<CommentCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                  username == ""
+                      ? Container(
+                          color: const Color.fromARGB(255, 24, 24, 24),
+                          width: 140,
+                          height: 12)
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ProfileScreen(uid: widget.snap['uid']),
+                                  ),
+                                );
+                              },
+                              child: Row(
+                                children: [
+                                  Text(
+                                    username,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  if (userType == 'ADMIN')
+                                    SizedBox(
+                                      height: 18,
+                                      child: Image.asset(
+                                          'assets/images/verification_badge.png'),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.snap['text'],
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500),
+                              softWrap: true,
+                            ),
+                          ],
                         ),
-                      ),
-
-                      SizedBox(width: 5),
-                      widget.snap['uid'] == 'un7YMrEEi0hBjfZmKH1pcL2dG662' ?
-                      SizedBox(
-                        height: 20,
-                        child: Image.asset(
-                          'assets/images/verification_badge.png'
-                        ),
-                      ) : Container(),
-
-                      Text(
-                        '  ${widget.snap['text']}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ]
-                  ),
                   Padding(
                     padding: EdgeInsets.only(top: 4),
-                    child: Text(
-                      DateFormat.yMMMd().format(
-                        widget.snap['datePublished'].toDate(),
-                      ),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
+                    child: username == ""
+                        ? Container(
+                            color: const Color.fromARGB(255, 24, 24, 24),
+                            width: 70,
+                            height: 12)
+                        : Text(
+                            DateFormat.yMMMd()
+                                .add_jm()
+                                .format(widget.snap['datePublished'].toDate()),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                   )
                 ],
               ),
