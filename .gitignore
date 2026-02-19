@@ -35,7 +35,7 @@ macos/
 test/
 web/
 windows/
-
+andorid_old/
 
 # Symbolication related
 app.*.symbols
