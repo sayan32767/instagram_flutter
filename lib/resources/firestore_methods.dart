@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/resources/storage_methods.dart';
 import 'package:uuid/uuid.dart';
@@ -118,8 +118,7 @@ class FirestoreMethods {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
       // Fetch all posts
-      QuerySnapshot allPostsSnapshot =
-          await firestore.collection('posts').get();
+      QuerySnapshot allPostsSnapshot = await AppFirestore.posts().get();
 
       // Map to store image hashes
       Map<String, String> imageHashes = {};
@@ -144,8 +143,7 @@ class FirestoreMethods {
       }
 
       for (String url in imageUrlsToDelete.keys) {
-        await firestore
-            .collection('posts')
+        await AppFirestore.posts()
             .where('postUrl', isEqualTo: url)
             .get()
             .then((snapshot) {
@@ -177,8 +175,7 @@ class FirestoreMethods {
   Future<void> cleanUpDuplicatePosts() async {
     try {
       // Fetch all posts from the 'posts' collection
-      QuerySnapshot allPostsSnapshot =
-          await _firestore.collection('posts').get();
+      QuerySnapshot allPostsSnapshot = await AppFirestore.posts().get();
 
       // A map to keep track of seen descriptions
       Map<String, String> seenDescriptions = {};
@@ -191,7 +188,7 @@ class FirestoreMethods {
 
         if (seenDescriptions.containsKey(description)) {
           // If the description is already seen, delete the current document
-          await _firestore.collection('posts').doc(doc.id).delete();
+          await AppFirestore.posts().doc(doc.id).delete();
           print('Deleted duplicate post with description: $description');
         } else {
           // Otherwise, add it to the seen descriptions map
@@ -242,7 +239,7 @@ class FirestoreMethods {
               profImage: profImage,
               likes: []);
 
-          _firestore.collection('posts').doc(postId).set(post.toJson());
+          AppFirestore.posts().doc(postId).set(post.toJson());
 
           await _firestore.collection('user').doc(uid).update({
             'lastPostTime': DateTime.now(),
@@ -264,7 +261,7 @@ class FirestoreMethods {
             profImage: profImage,
             likes: []);
 
-        _firestore.collection('posts').doc(postId).set(post.toJson());
+        AppFirestore.posts().doc(postId).set(post.toJson());
 
         await _firestore.collection('user').doc(uid).update({
           'lastPostTime': DateTime.now(),
@@ -282,11 +279,11 @@ class FirestoreMethods {
       String collectionName, String uid, String postId, List likes) async {
     try {
       if (likes.contains(uid)) {
-        await _firestore.collection(collectionName).doc(postId).update({
+        await AppFirestore.collection(collectionName).doc(postId).update({
           'likes': FieldValue.arrayRemove([uid]),
         });
       } else {
-        await _firestore.collection(collectionName).doc(postId).update({
+        await AppFirestore.collection(collectionName).doc(postId).update({
           'likes': FieldValue.arrayUnion([uid]),
         });
       }
@@ -302,7 +299,7 @@ class FirestoreMethods {
     try {
       if (text.isNotEmpty) {
         String commentId = const Uuid().v1();
-        final docRef = _firestore.collection(collectionName).doc(postId);
+        final docRef = AppFirestore.collection(collectionName).doc(postId);
         await docRef.collection('comments').doc(commentId).set({
           'profilePic': profilePic,
           'name': name,
@@ -326,7 +323,7 @@ class FirestoreMethods {
 
   Future<void> deletePost(String postId) async {
     try {
-      await _firestore.collection('posts').doc(postId).delete();
+      await AppFirestore.posts().doc(postId).delete();
     } catch (e) {
       print(e.toString());
     }
@@ -377,7 +374,7 @@ class FirestoreMethods {
       /// 2️⃣ create thumbnail
       // final thumbnailUrl = generateThumbnail(fileId);
 
-      await _firestore.collection('reels').doc(reelId).set({
+      await AppFirestore.reels().doc(reelId).set({
         "description": description,
         "uid": uid,
         "reelId": reelId,
@@ -396,7 +393,7 @@ class FirestoreMethods {
         final thumbnailUrl = await StorageMethods()
             .uploadImageToStorage("reelThumbnails", thumbnailFile, false);
 
-        await _firestore.collection('reels').doc(reelId).update({
+        await AppFirestore.reels().doc(reelId).update({
           "thumbnailUrl": thumbnailUrl,
         });
       } catch (e) {
@@ -424,7 +421,7 @@ class FirestoreMethods {
     final uid = _auth.currentUser!.uid;
     final chatId = getChatId(uid, receiverId);
 
-    final chatRef = _firestore.collection('chats').doc(chatId);
+    final chatRef = AppFirestore.chats().doc(chatId);
     final msgRef = chatRef.collection('messages').doc();
 
     final now = FieldValue.serverTimestamp();

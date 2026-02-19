@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/screens/chat_screen.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 
@@ -53,8 +54,7 @@ class _InboxScreenState extends State<InboxScreen> {
 
   // ================= REALTIME TOP CHATS =================
   void _listenTopChatsRealtime() {
-    _topChatsSub = FirebaseFirestore.instance
-        .collection('chats')
+    _topChatsSub = AppFirestore.chats()
         .where('participants', arrayContains: uid)
         .orderBy('lastMessageTime', descending: true)
         .limit(_limit)
@@ -82,8 +82,7 @@ class _InboxScreenState extends State<InboxScreen> {
     _isFetchingMore = true;
     setState(() {});
 
-    final snap = await FirebaseFirestore.instance
-        .collection('chats')
+    final snap = await AppFirestore.chats()
         .where('participants', arrayContains: uid)
         .orderBy('lastMessageTime', descending: true)
         .startAfterDocument(_lastDoc!)

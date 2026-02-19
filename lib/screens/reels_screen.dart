@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
@@ -88,9 +89,15 @@ class _ReelsScreenState extends State<ReelsScreen> {
     throw Exception("Failed after retries");
   }
 
+  Future<Map<String, dynamic>?> _fetchUser(String uid) async {
+    final snap =
+        await FirebaseFirestore.instance.collection('user').doc(uid).get();
+
+    return snap.data(); // contains username, photoUrl, userType, etc.
+  }
+
   Future<void> _loadInitialReels() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('reels')
+    final snap = await AppFirestore.reels()
         .orderBy('datePublished', descending: true)
         .limit(_limit)
         .get();
@@ -113,8 +120,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('reels')
+    final snap = await AppFirestore.reels()
         .orderBy('datePublished', descending: true)
         .startAfterDocument(_lastDoc!)
         .limit(_limit)
@@ -292,10 +298,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
                 final controller = _controllers[index];
 
                 return StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('reels')
-                      .doc(data['reelId'])
-                      .snapshots(),
+                  stream: AppFirestore.reels().doc(data['reelId']).snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox();
 
@@ -373,40 +376,72 @@ class _ReelsScreenState extends State<ReelsScreen> {
                           ),
 
                           /// Bottom text + avatar
-                          Positioned(
-                            left: 16,
-                            right: 16,
-                            bottom: 24,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => _openProfile(data['uid']),
-                                      child: CircleAvatar(
-                                        radius: 16,
-                                        backgroundImage:
-                                            CachedNetworkImageProvider(
-                                                data['profImage'] ?? ''),
+                          FutureBuilder(
+                              future: _fetchUser(data['uid']),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) return const SizedBox();
+
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return Center(
+                                    child: const CircularProgressIndicator(
+                                        color: Colors.white70),
+                                  );
+                                }
+
+                                final user = snapshot.data!;
+
+                                return Positioned(
+                                  left: 16,
+                                  right: 16,
+                                  bottom: 24,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () =>
+                                                _openProfile(user['uid']),
+                                            child: CircleAvatar(
+                                              radius: 16,
+                                              backgroundImage: user[
+                                                          'photoUrl'] !=
+                                                      null
+                                                  ? CachedNetworkImageProvider(
+                                                      user['photoUrl'])
+                                                  : const AssetImage(
+                                                          'assets/images/placeholder.jpg')
+                                                      as ImageProvider,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(user['username'] ?? ''),
+                                          SizedBox(width: 5),
+                                          (user['userType'] != null &&
+                                                  user['userType'] == 'ADMIN')
+                                              ? SizedBox(
+                                                  height: 20,
+                                                  child: Image.asset(
+                                                      'assets/images/verification_badge.png'),
+                                                )
+                                              : Container(),
+                                          const Spacer(),
+                                          Text(_timeAgo(data['datePublished']),
+                                              style: const TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 12)),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(data['username'] ?? ''),
-                                    const SizedBox(width: 8),
-                                    Text(_timeAgo(data['datePublished']),
-                                        style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12)),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(data['description'] ?? '',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis),
-                              ],
-                            ),
-                          ),
+                                      const SizedBox(height: 6),
+                                      Text(data['description'] ?? '',
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis),
+                                    ],
+                                  ),
+                                );
+                              }),
 
                           /// Right actions
                           Positioned(

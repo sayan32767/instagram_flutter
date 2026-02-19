@@ -11,6 +11,7 @@ import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
+import 'package:instagram_flutter/screens/feed_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
@@ -126,9 +127,19 @@ class _AddPostScreenState extends State<AddPostScreen> {
         clearImage();
 
         Provider.of<NavigationProvider>(context, listen: false).setPage(0);
+
         Provider.of<NavigationProvider>(context, listen: false)
             .pageController!
             .jumpToPage(0);
+
+        /// 🔥 refresh home feed
+        final key =
+            Provider.of<GlobalKeyProvier>(context, listen: false).globalKey;
+
+        if (key?.currentState is FeedScreenState) {
+          (key?.currentState as FeedScreenState).refresh();
+        }
+
         Navigator.pop(context);
       } else {
         setState(() {

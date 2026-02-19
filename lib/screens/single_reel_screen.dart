@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
@@ -20,9 +21,9 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 class SingleReelScreen extends StatefulWidget {
-  final String? initialReelId;
+  final Map snap;
 
-  const SingleReelScreen({super.key, this.initialReelId});
+  const SingleReelScreen({super.key, required this.snap});
 
   @override
   State<SingleReelScreen> createState() => _SingleReelScreenState();
@@ -44,8 +45,24 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
   @override
   void initState() {
     super.initState();
-    _warmUpServer();
-    _loadReel();
+    _warmUpServer(); // background
+    _fetchUserData(); // UI data
+    _loadReel(); // heavy work
+  }
+
+  Map<String, dynamic>? usersSnapshot;
+
+  Future<void> _fetchUserData() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('user') // ✅ fixed name
+        .doc(widget.snap['uid']) // ✅ direct lookup
+        .get();
+
+    if (!mounted) return;
+
+    setState(() {
+      usersSnapshot = snap.data(); // null-safe automatically
+    });
   }
 
   Future<void> _warmUpServer() async {
@@ -83,9 +100,8 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
   }
 
   Future<void> _loadReel() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('reels')
-        .where('reelId', isEqualTo: widget.initialReelId)
+    final snap = await AppFirestore.reels()
+        .where('reelId', isEqualTo: widget.snap['reelId'])
         .get();
 
     _reels.addAll(snap.docs);
@@ -177,6 +193,9 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (usersSnapshot == null) {
+      return const SizedBox();
+    }
     return Scaffold(
       extendBodyBehindAppBar: true, // ⭐ important
       appBar: AppBar(
@@ -218,10 +237,7 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
                 final controller = _controllers[index];
 
                 return StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('reels')
-                      .doc(data['reelId'])
-                      .snapshots(),
+                  stream: AppFirestore.reels().doc(data['reelId']).snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox();
 
@@ -312,14 +328,28 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
                                       onTap: () => _openProfile(data['uid']),
                                       child: CircleAvatar(
                                         radius: 16,
-                                        backgroundImage:
-                                            CachedNetworkImageProvider(
-                                                data['profImage'] ?? ''),
+                                        backgroundImage: usersSnapshot?[
+                                                    'photoUrl'] !=
+                                                null
+                                            ? CachedNetworkImageProvider(
+                                                usersSnapshot?['photoUrl'],
+                                              )
+                                            : const AssetImage(
+                                                    'assets/images/placeholder.jpg')
+                                                as ImageProvider,
                                       ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Text(data['username'] ?? ''),
-                                    const SizedBox(width: 8),
+                                    Text(usersSnapshot?['username'] ?? ''),
+                                    SizedBox(width: 5),
+                                    (usersSnapshot?['userType'] == 'ADMIN')
+                                        ? SizedBox(
+                                            height: 20,
+                                            child: Image.asset(
+                                                'assets/images/verification_badge.png'),
+                                          )
+                                        : Container(),
+                                    const Spacer(),
                                     Text(_timeAgo(data['datePublished']),
                                         style: const TextStyle(
                                             color: Colors.white70,

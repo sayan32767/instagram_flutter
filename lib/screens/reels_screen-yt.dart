@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
@@ -85,10 +86,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
   Future<void> _loadInitialReels() async {
     /// 🔹 CASE 1 — Open specific reel
     if (widget.initialReelId != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('reels')
-          .doc(widget.initialReelId)
-          .get();
+      final doc = await AppFirestore.reels().doc(widget.initialReelId).get();
 
       if (doc.exists) {
         _reels.add(doc);
@@ -102,8 +100,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
     /// 🔹 CASE 2 — Normal feed
     else {
-      final snap = await FirebaseFirestore.instance
-          .collection('reels')
+      final snap = await AppFirestore.reels()
           .orderBy('datePublished', descending: true)
           .limit(_limit)
           .get();
@@ -129,8 +126,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('reels')
+    final snap = await AppFirestore.reels()
         .orderBy('datePublished', descending: true)
         .startAfterDocument(_lastDoc!)
         .limit(_limit)
@@ -299,8 +295,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
                       }
 
                       return StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('reels')
+                        stream: AppFirestore.reels()
                             .doc(data['reelId'])
                             .snapshots(),
                         builder: (context, snapshot) {

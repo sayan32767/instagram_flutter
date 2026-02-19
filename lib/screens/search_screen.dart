@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
@@ -27,7 +28,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Future? posts;
 
   getPosts() {
-    posts = FirebaseFirestore.instance.collection('posts').get();
+    posts = AppFirestore.posts().get();
   }
 
   @override
@@ -137,8 +138,7 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
 
   // 🔹 Load first posts
   Future<void> _loadInitial() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('posts')
+    final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
         .limit(_limit)
         .get();
@@ -160,8 +160,7 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('posts')
+    final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
         .startAfterDocument(_lastDoc!)
         .limit(_limit)
@@ -417,7 +416,19 @@ class _SearchUsersListState extends State<SearchUsersList> {
                 : const AssetImage('assets/images/placeholder.jpg')
                     as ImageProvider,
           ),
-          title: Text(userData['username']),
+          title: Row(
+            children: [
+              Flexible(
+                  child: Text(userData['username'],
+                      overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 5),
+              if (userData['userType'] == 'ADMIN')
+                SizedBox(
+                  height: 20,
+                  child: Image.asset('assets/images/verification_badge.png'),
+                ),
+            ],
+          ),
           trailing: IconButton(
             icon: const Icon(Icons.close, size: 18),
             onPressed: () => _removeFromHistory(currentUid, searchedUid),

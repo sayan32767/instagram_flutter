@@ -9,6 +9,7 @@ import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
+import 'package:instagram_flutter/screens/feed_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
@@ -125,11 +126,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _isLoading = false;
         });
 
-        Navigator.of(context).pop();
+        showSnackBar(context, 'Profile updated successfully');
+
         Provider.of<NavigationProvider>(context, listen: false).setPage(0);
+
         Provider.of<NavigationProvider>(context, listen: false)
             .pageController!
             .jumpToPage(0);
+
+        /// 🔥 refresh home feed
+        final key =
+            Provider.of<GlobalKeyProvier>(context, listen: false).globalKey;
+
+        if (key?.currentState is FeedScreenState) {
+          (key?.currentState as FeedScreenState).refresh();
+        }
+
+        Navigator.pop(context);
       }
     }
   }

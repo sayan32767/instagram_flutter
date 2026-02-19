@@ -1,10 +1,10 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/auth_methods.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
@@ -13,6 +13,7 @@ import 'package:instagram_flutter/screens/profile_photo_viewer.dart';
 import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/screens/reels_screen.dart';
+import 'package:instagram_flutter/screens/single_reel_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/utils.dart';
@@ -48,10 +49,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isLoading = true;
     });
     try {
-      QuerySnapshot postSnap = await _firestore
-          .collection('posts')
-          .where('uid', isEqualTo: widget.uid)
-          .get();
+      QuerySnapshot postSnap =
+          await AppFirestore.posts().where('uid', isEqualTo: widget.uid).get();
       DocumentSnapshot snap =
           await _firestore.collection('user').doc(widget.uid).get();
       postLen = postSnap.docs.length;
@@ -256,33 +255,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
 
                         /// 🛠 Admin tools (subtle danger style)
-                        if (user.userType == 'ADMIN') ...[
-                          const SizedBox(width: 8),
-                          TextButton(
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                            ),
-                            onPressed: _firestoreMethods.cleanUpDuplicatePosts,
-                            child: const Text(
-                              'Clean Up!',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                          TextButton(
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                            ),
-                            onPressed: _firestoreMethods.deleteDuplicatePhotos,
-                            child: const Text(
-                              'Clean Up V2!',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ],
+                        // if (user.userType == 'ADMIN') ...[
+                        //   const SizedBox(width: 8),
+                        //   TextButton(
+                        //     style: TextButton.styleFrom(
+                        //       foregroundColor: Colors.red,
+                        //       padding:
+                        //           const EdgeInsets.symmetric(horizontal: 12),
+                        //     ),
+                        //     onPressed: _firestoreMethods.cleanUpDuplicatePosts,
+                        //     child: const Text(
+                        //       'Clean Up!',
+                        //       style: TextStyle(fontWeight: FontWeight.w600),
+                        //     ),
+                        //   ),
+                        //   TextButton(
+                        //     style: TextButton.styleFrom(
+                        //       foregroundColor: Colors.red,
+                        //       padding:
+                        //           const EdgeInsets.symmetric(horizontal: 12),
+                        //     ),
+                        //     onPressed: _firestoreMethods.deleteDuplicatePhotos,
+                        //     child: const Text(
+                        //       'Clean Up V2!',
+                        //       style: TextStyle(fontWeight: FontWeight.w600),
+                        //     ),
+                        //   ),
+                        // ],
                       ],
                     ),
                   ),
@@ -403,13 +402,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                             Navigator.of(context).pop();
 
-                            Provider.of<NavigationProvider>(context,
-                                    listen: false)
-                                .setPage(0);
-                            Provider.of<NavigationProvider>(context,
-                                    listen: false)
-                                .pageController!
-                                .jumpToPage(0);
+                            // Provider.of<NavigationProvider>(context,
+                            //         listen: false)
+                            //     .setPage(0);
+                            // Provider.of<NavigationProvider>(context,
+                            //         listen: false)
+                            //     .pageController!
+                            //     .jumpToPage(0);
+
+                            showSnackBar(context, 'Emoji updated successfully');
                           },
                           // : null, // Disable button if no image is selected
                           child: Text(
@@ -510,13 +511,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                             Navigator.of(context).pop();
 
-                            Provider.of<NavigationProvider>(context,
-                                    listen: false)
-                                .setPage(0);
-                            Provider.of<NavigationProvider>(context,
-                                    listen: false)
-                                .pageController!
-                                .jumpToPage(0);
+                            // Provider.of<NavigationProvider>(context,
+                            //         listen: false)
+                            //     .setPage(0);
+                            // Provider.of<NavigationProvider>(context,
+                            //         listen: false)
+                            //     .pageController!
+                            //     .jumpToPage(0);
+                            showSnackBar(
+                                context, 'Tagline updated successfully');
                           },
                           child: Text(
                             "Save",
@@ -682,8 +685,7 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
 
   // 🔹 Load first batch
   Future<void> _loadInitialPosts() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('posts')
+    final snap = await AppFirestore.posts()
         .where('uid', isEqualTo: widget.uid)
         .orderBy('datePublished', descending: true)
         .limit(_limit)
@@ -706,8 +708,7 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('posts')
+    final snap = await AppFirestore.posts()
         .where('uid', isEqualTo: widget.uid)
         .orderBy('datePublished', descending: true)
         .startAfterDocument(_lastDoc!)
@@ -840,8 +841,7 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
 
   // 🔹 Initial load
   Future<void> _loadInitialReels() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('reels')
+    final snap = await AppFirestore.reels()
         .where('uid', isEqualTo: widget.uid)
         .orderBy('datePublished', descending: true)
         .limit(_limit)
@@ -864,8 +864,7 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('reels')
+    final snap = await AppFirestore.reels()
         .where('uid', isEqualTo: widget.uid)
         .orderBy('datePublished', descending: true)
         .startAfterDocument(_lastDoc!)
@@ -933,14 +932,14 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
                 (context, index) {
                   final snap = _reels[index];
                   final data = snap.data() as Map<String, dynamic>;
-                  final reelId = snap.id;
+                  // final reelId = snap.id;
 
                   return GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ReelsScreen(initialReelId: reelId),
+                          builder: (_) => SingleReelScreen(snap: data),
                         ),
                       );
                     },

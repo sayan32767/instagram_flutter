@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
@@ -42,8 +43,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   // 🔹 Initial load
   Future<void> _loadInitialComments() async {
-    final snap = await FirebaseFirestore.instance
-        .collection(widget.collectionName)
+    final snap = await AppFirestore.collection(widget.collectionName)
         .doc(_docId)
         .collection('comments')
         .orderBy('datePublished', descending: true)
@@ -69,8 +69,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection(widget.collectionName)
+    final snap = await AppFirestore.collection(widget.collectionName)
         .doc(_docId)
         .collection('comments')
         .orderBy('datePublished', descending: true)
@@ -106,8 +105,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     );
 
     // 🔥 Add instantly to UI (Instagram behavior)
-    final newCommentSnap = await FirebaseFirestore.instance
-        .collection(widget.collectionName)
+    final newCommentSnap = await AppFirestore.collection(widget.collectionName)
         .doc(_docId)
         .collection('comments')
         .orderBy('datePublished', descending: true)

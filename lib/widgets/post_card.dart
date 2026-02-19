@@ -2,11 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/user.dart';
+import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
+import 'package:instagram_flutter/screens/feed_screen.dart';
 import 'package:instagram_flutter/screens/full_screen_post_page.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
@@ -80,8 +83,7 @@ class _PostCardState extends State<PostCard> {
   }
 
   Future fetchPostSnapshot(String uid) async {
-    snap = await FirebaseFirestore.instance
-        .collection('posts')
+    snap = await AppFirestore.posts()
         .doc(widget.snap['postId'])
         .collection('comments')
         .get();
@@ -296,7 +298,21 @@ class _PostCardState extends State<PostCard> {
                                                         widget.snap['postId']);
                                               } else if (e ==
                                                   'Something Else') {}
-                                              Navigator.of(context).pop();
+
+                                              final key =
+                                                  Provider.of<GlobalKeyProvier>(
+                                                          context,
+                                                          listen: false)
+                                                      .globalKey;
+
+                                              if (key?.currentState
+                                                  is FeedScreenState) {
+                                                (key?.currentState
+                                                        as FeedScreenState)
+                                                    .refresh();
+                                              }
+
+                                              Navigator.pop(context);
                                             },
                                             child: e != null
                                                 ? Container(

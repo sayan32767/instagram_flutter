@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/widgets/post_card.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 
@@ -34,10 +35,7 @@ class _ProfileScreenPostsState extends State<ProfileScreenPosts> {
   // ---------------- INITIAL LOAD ----------------
   Future<void> _loadInitialPosts() async {
     /// 1️⃣ get the selected post
-    final selectedDoc = await FirebaseFirestore.instance
-        .collection('posts')
-        .doc(widget.postId)
-        .get();
+    final selectedDoc = await AppFirestore.posts().doc(widget.postId).get();
 
     if (!selectedDoc.exists) {
       _isLoading = false;
@@ -48,8 +46,7 @@ class _ProfileScreenPostsState extends State<ProfileScreenPosts> {
     _posts.add(selectedDoc);
 
     /// 2️⃣ load next posts of same user
-    final snap = await FirebaseFirestore.instance
-        .collection('posts')
+    final snap = await AppFirestore.posts()
         .where('uid', isEqualTo: widget.uid)
         .orderBy('datePublished', descending: true)
         .startAfter([selectedDoc['datePublished']])
@@ -74,8 +71,7 @@ class _ProfileScreenPostsState extends State<ProfileScreenPosts> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('posts')
+    final snap = await AppFirestore.posts()
         .where('uid', isEqualTo: widget.uid)
         .orderBy('datePublished', descending: true)
         .startAfterDocument(_lastDoc!)

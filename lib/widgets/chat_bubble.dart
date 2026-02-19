@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/reels_screen.dart';
 import 'package:instagram_flutter/screens/single_reel_screen.dart';
@@ -140,7 +141,7 @@ class _ReelPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('reels').doc(reelId).get(),
+      future: AppFirestore.reels().doc(reelId).get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SizedBox(
@@ -162,7 +163,7 @@ class _ReelPreview extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SingleReelScreen(initialReelId: reelId),
+                builder: (_) => SingleReelScreen(snap: data),
               ),
             );
           },
@@ -225,7 +226,7 @@ class _PostPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('posts').doc(postId).get(),
+      future: AppFirestore.posts().doc(postId).get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SizedBox(

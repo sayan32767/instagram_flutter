@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/inbox_screen.dart';
 import 'package:instagram_flutter/screens/story_screen.dart';
@@ -16,10 +17,10 @@ class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
 
   @override
-  State<FeedScreen> createState() => _FeedScreenState();
+  State<FeedScreen> createState() => FeedScreenState();
 }
 
-class _FeedScreenState extends State<FeedScreen> {
+class FeedScreenState extends State<FeedScreen> {
   QuerySnapshot? usersSnapshot;
 
   final List<DocumentSnapshot> _posts = [];
@@ -42,6 +43,11 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
+  Future<void> refresh() async {
+    // whatever you use to reload posts
+    await _refreshPosts();
+  }
+
   // REFRESH FEED
   Future<void> _refreshPosts() async {
     setState(() {
@@ -58,8 +64,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
   // ---------- INITIAL POSTS ----------
   Future<void> _loadInitialPosts() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('posts')
+    final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
         .limit(_limit)
         .get();
@@ -83,8 +88,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('posts')
+    final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
         .startAfterDocument(_lastDoc!)
         .limit(_limit)

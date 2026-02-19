@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
@@ -58,8 +59,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ================= NEW MESSAGES LISTENER =================
   void _listenForNewMessages() {
-    _newMsgSub = FirebaseFirestore.instance
-        .collection('chats')
+    _newMsgSub = AppFirestore.chats()
         .doc(widget.chatId)
         .collection('messages')
         .orderBy('createdAt', descending: true)
@@ -85,16 +85,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ================= MARK READ =================
   Future<void> _markAsRead() async {
-    await FirebaseFirestore.instance
-        .collection('chats')
-        .doc(widget.chatId)
-        .update({'unreadCount_$uid': 0});
+    AppFirestore.chats().doc(widget.chatId).update({'unreadCount_$uid': 0});
   }
 
   // ================= LOAD LATEST =================
   Future<void> _loadLatestMessages() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('chats')
+    final snap = await AppFirestore.chats()
         .doc(widget.chatId)
         .collection('messages')
         .orderBy('createdAt', descending: true) // ⭐ IMPORTANT
@@ -123,8 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _isFetchingMore = true;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('chats')
+    final snap = await AppFirestore.chats()
         .doc(widget.chatId)
         .collection('messages')
         .orderBy('createdAt', descending: true)
@@ -163,20 +158,14 @@ class _ChatScreenState extends State<ChatScreen> {
   // ================= TYPING =================
   void _onTypingChanged(String text) {
     if (!_typingSent) {
-      FirebaseFirestore.instance
-          .collection('chats')
-          .doc(widget.chatId)
-          .update({'typing.$uid': true});
+      AppFirestore.chats().doc(widget.chatId).update({'typing.$uid': true});
 
       _typingSent = true;
     }
 
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 2), () {
-      FirebaseFirestore.instance
-          .collection('chats')
-          .doc(widget.chatId)
-          .update({'typing.$uid': false});
+      AppFirestore.chats().doc(widget.chatId).update({'typing.$uid': false});
 
       _typingSent = false;
     });
@@ -203,10 +192,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // ================= DISPOSE =================
   @override
   void dispose() {
-    FirebaseFirestore.instance
-        .collection('chats')
-        .doc(widget.chatId)
-        .update({'typing.$uid': false});
+    AppFirestore.chats().doc(widget.chatId).update({'typing.$uid': false});
 
     _typingTimer?.cancel();
     _scrollController.dispose();
@@ -308,10 +294,7 @@ class _ChatHeader extends StatelessWidget {
           }
 
           return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('chats')
-                .doc(chatId)
-                .snapshots(),
+            stream: AppFirestore.chats().doc(chatId).snapshots(),
             builder: (context, chatSnap) {
               if (!chatSnap.hasData) return const SizedBox();
 
