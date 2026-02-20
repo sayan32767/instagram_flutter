@@ -9,6 +9,7 @@ import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
+import 'package:instagram_flutter/screens/group_gate_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
@@ -65,9 +66,7 @@ class MyApp extends StatelessWidget {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.active) {
                   if (snapshot.hasData) {
-                    return const ResponsiveLayout(
-                        webScreenLayout: WebScreenLayout(),
-                        mobileScreenLayout: MobileScreenLayout());
+                    return const GroupGateScreen();
                   } else if (snapshot.hasError) {
                     return Center(
                       child: Text('${snapshot.error}'),

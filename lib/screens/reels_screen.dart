@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:instagram_flutter/core/app_firestore.dart';
@@ -33,7 +34,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
   final PageController _pageController = PageController();
 
   final Map<int, VideoPlayerController> _controllers = {};
-  final Map<int, bool> _isMuted = {};
+  bool _isMutedGlobal = false;
   final List<DocumentSnapshot> _reels = [];
 
   final Map<String, String> _videoUrlCache = {};
@@ -94,6 +95,11 @@ class _ReelsScreenState extends State<ReelsScreen> {
         await FirebaseFirestore.instance.collection('user').doc(uid).get();
 
     return snap.data(); // contains username, photoUrl, userType, etc.
+  }
+
+  final Map<String, Future<Map<String, dynamic>?>> _userFutureCache = {};
+  Future<Map<String, dynamic>?> _getUserFuture(String uid) {
+    return _userFutureCache.putIfAbsent(uid, () => _fetchUser(uid));
   }
 
   Future<void> _loadInitialReels() async {
@@ -159,7 +165,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
       controller.setLooping(true);
       _controllers[index] = controller;
-      _isMuted[index] = false;
+      controller.setVolume(_isMutedGlobal ? 0 : 1);
 
       if (index == _currentIndex && mounted) {
         setState(() {});
@@ -168,14 +174,14 @@ class _ReelsScreenState extends State<ReelsScreen> {
     } catch (_) {}
   }
 
-  void _toggleMute(int index) {
-    final controller = _controllers[index];
-    if (controller == null) return;
+  void _toggleMute() {
+    _isMutedGlobal = !_isMutedGlobal;
 
-    final muted = _isMuted[index] ?? false;
-    controller.setVolume(muted ? 1 : 0);
+    for (final controller in _controllers.values) {
+      controller.setVolume(_isMutedGlobal ? 0 : 1);
+    }
 
-    setState(() => _isMuted[index] = !muted);
+    setState(() {});
   }
 
   void _preloadNext(int index) {
@@ -187,23 +193,28 @@ class _ReelsScreenState extends State<ReelsScreen> {
   }
 
   void _disposeFarControllers(int index) {
-    final keys = _controllers.keys.where((i) => (i - index).abs() > 2).toList();
+    final keysToRemove =
+        _controllers.keys.where((i) => (i - index).abs() > 2).toList();
 
-    for (final k in keys) {
-      _controllers[k]?.pause();
-      _controllers[k]?.dispose();
+    for (final k in keysToRemove) {
+      final controller = _controllers[k];
+      if (controller != null) {
+        if (controller.value.isInitialized) {
+          controller.pause();
+        }
+        controller.dispose();
+      }
       _controllers.remove(k);
-      _isMuted.remove(k);
     }
   }
 
-  void _onPageChanged(int index) {
+  Future<void> _onPageChanged(int index) async {
     _controllers[_currentIndex]?.pause();
     _currentIndex = index;
 
     final fileId = (_reels[index].data() as Map)['fileId'];
 
-    _createController(index, fileId);
+    await _createController(index, fileId); // ⭐ WAIT here
     _controllers[index]?.play();
 
     _preloadNext(index);
@@ -313,7 +324,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
                     final commentCount = reel['commentCount'] ?? 0;
 
                     return GestureDetector(
-                      onTap: () => _toggleMute(index),
+                      onTap: _toggleMute,
                       onDoubleTap: () async {
                         _likeAnim.value = true;
                         await FirestoreMethods().likePost(
@@ -377,7 +388,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
                           /// Bottom text + avatar
                           FutureBuilder(
-                              future: _fetchUser(data['uid']),
+                              future: _getUserFuture(data['uid']),
                               builder: (context, snapshot) {
                                 if (!snapshot.hasData) return const SizedBox();
 
@@ -417,7 +428,20 @@ class _ReelsScreenState extends State<ReelsScreen> {
                                             ),
                                           ),
                                           const SizedBox(width: 10),
-                                          Text(user['username'] ?? ''),
+                                          GestureDetector(
+                                              onTap: () {
+                                                // Navigate to user profile screen
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        ProfileScreen(
+                                                      uid: user['uid'],
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              child:
+                                                  Text(user['username'] ?? '')),
                                           SizedBox(width: 5),
                                           (user['userType'] != null &&
                                                   user['userType'] == 'ADMIN')
@@ -502,7 +526,11 @@ class _ReelsScreenState extends State<ReelsScreen> {
                                         color: Colors.white70, fontSize: 12)),
                                 const SizedBox(height: 8),
                                 IconButton(
-                                  onPressed: () => _openShareSheet(data),
+                                  onPressed: () {
+                                    HapticFeedback
+                                        .lightImpact(); // subtle tap feel
+                                    _openShareSheet(data);
+                                  },
                                   icon: const Icon(Icons.send_outlined,
                                       color: Colors.white),
                                 ),
@@ -512,11 +540,11 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
                           /// Mute icon
                           AnimatedOpacity(
-                            opacity: (_isMuted[index] ?? false) ? 1 : 0,
+                            opacity: _isMutedGlobal ? 1 : 0,
                             duration: const Duration(milliseconds: 250),
                             child: Center(
                               child: Icon(
-                                  (_isMuted[index] ?? true)
+                                  _isMutedGlobal
                                       ? Icons.volume_off
                                       : Icons.volume_up,
                                   size: 28),

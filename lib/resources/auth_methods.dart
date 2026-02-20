@@ -1,8 +1,10 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/resources/storage_methods.dart';
 import 'package:instagram_flutter/models/user.dart' as model;
+import 'package:instagram_flutter/utils/group_storage.dart';
 
 class AuthMethods {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -11,12 +13,18 @@ class AuthMethods {
   Future<model.User> getUserDetails() async {
     User currentUser = _auth.currentUser!;
 
-    DocumentSnapshot snap = await _firestore.collection('user').doc(currentUser.uid).get();
+    DocumentSnapshot snap =
+        await _firestore.collection('user').doc(currentUser.uid).get();
 
     return model.User.fromSnap(snap);
   }
-  
-  Future<String>signUpUser({required String email, required String password, required String username, required String bio, Uint8List? file}) async {
+
+  Future<String> signUpUser(
+      {required String email,
+      required String password,
+      required String username,
+      required String bio,
+      Uint8List? file}) async {
     String res = "Random error occurred";
     try {
       if (email.isNotEmpty && password.isNotEmpty && username.isNotEmpty) {
@@ -25,7 +33,8 @@ class AuthMethods {
           password: password,
         );
 
-        String? photoUrl = await StorageMethods().uploadImageToStorage('profilePics', file, false);
+        String? photoUrl = await StorageMethods()
+            .uploadImageToStorage('profilePics', file, false);
 
         model.User user = model.User(
           username: username,
@@ -39,25 +48,29 @@ class AuthMethods {
           tagline: '',
         );
 
-        await _firestore.collection('user').doc(cred.user!.uid).set(user.toJson());
-        
+        await _firestore
+            .collection('user')
+            .doc(cred.user!.uid)
+            .set(user.toJson());
+
         res = 'success';
       } else {
         res = 'Please fill the form (bio could be empty)';
       }
-    // } on FirebaseAuthException catch(e) {
-    //   if (e.code == 'invalid-email') {
-    //     res = 'The email address is badly formatted';
-    //   } else if (e.code == 'weak-password') {
-    //     res = 'Password should be atleast 8 characters';
-    //   }
-    } catch(e) {
+      // } on FirebaseAuthException catch(e) {
+      //   if (e.code == 'invalid-email') {
+      //     res = 'The email address is badly formatted';
+      //   } else if (e.code == 'weak-password') {
+      //     res = 'Password should be atleast 8 characters';
+      //   }
+    } catch (e) {
       res = e.toString();
     }
     return res;
   }
 
-  Future<String> loginUser({required String email, required String password}) async {
+  Future<String> loginUser(
+      {required String email, required String password}) async {
     String res = 'Random error occurred.';
     try {
       if (email.isNotEmpty && password.isNotEmpty) {
@@ -69,21 +82,26 @@ class AuthMethods {
       } else {
         res = 'Please enter all the fields.';
       }
-    } catch(e) {
+    } catch (e) {
       res = e.toString();
     }
     return res;
   }
 
-
-  Future<String> updateUser({required String username, required String bio, required Uint8List? file, required bool clickFlag}) async {
+  Future<String> updateUser(
+      {required String username,
+      required String bio,
+      required Uint8List? file,
+      required bool clickFlag}) async {
     String res = 'Random error occurred.';
     try {
-      if (username.isNotEmpty) { 
+      if (username.isNotEmpty) {
         User currentUser = _auth.currentUser!;
-        DocumentReference docRef = _firestore.collection('user').doc(currentUser.uid);
+        DocumentReference docRef =
+            _firestore.collection('user').doc(currentUser.uid);
 
-        String? photoUrl = await StorageMethods().uploadImageToStorage('profilePics', file, false);
+        String? photoUrl = await StorageMethods()
+            .uploadImageToStorage('profilePics', file, false);
 
         // await docRef.update({
         //   'username': username,
@@ -91,8 +109,6 @@ class AuthMethods {
         //   'photoUrl': photoUrl,
         // });
 
-        
-        
         if (clickFlag) {
           await docRef.update({
             'username': username,
@@ -111,12 +127,11 @@ class AuthMethods {
       } else {
         res = 'Please enter all the fields.';
       }
-    } catch(e) {
+    } catch (e) {
       res = e.toString();
     }
     return res;
   }
-
 
   Future<String> checkAndAddUsername(String username) async {
     String res = 'Random error occurred.';
@@ -143,6 +158,17 @@ class AuthMethods {
   }
 
   Future<void> signOut() async {
-    await _auth.signOut();
+    try {
+      /// 2️⃣ Clear stored group
+      await GroupStorage.clear();
+
+      /// 3️⃣ Reset in-memory group
+      AppFirestore.setGroup(null); // see small change below
+
+      /// 1️⃣ Firebase sign out
+      await _auth.signOut();
+    } catch (e) {
+      print("Sign out error: $e");
+    }
   }
 }

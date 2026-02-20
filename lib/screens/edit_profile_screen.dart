@@ -106,7 +106,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() {
         _isLoading = false;
       });
-      showSnackBar(context, res);
+      showSnackBar(
+          context, 'Username already taken, please choose another one');
     } else {
       String res = await AuthMethods().updateUser(
         username: _usernameController.text,
@@ -119,7 +120,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         setState(() {
           _isLoading = false;
         });
-        showSnackBar(context, res);
+        showSnackBar(context, 'Failed to update profile, please try again');
       } else {
         await Provider.of<UserProvider>(context, listen: false).refreshUser();
         setState(() {

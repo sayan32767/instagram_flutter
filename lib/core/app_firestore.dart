@@ -3,9 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AppFirestore {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// TEMP: default groupId from migration
-  /// 🔴 Replace with real join logic later
-  static String currentGroupId = "f69cc9b5-0d72-11f1-b91b-3c5576023505";
+  static String? _currentGroupId;
+
+  /// Call this after user selects group
+  static void setGroup(String? groupId) {
+    _currentGroupId = groupId;
+  }
+
+  static String? get currentGroupId => _currentGroupId;
 
   static DocumentReference get _groupDoc =>
       _db.collection('groups').doc(currentGroupId);
@@ -17,6 +22,8 @@ class AppFirestore {
   static CollectionReference reels() => _groupDoc.collection('reels');
 
   static CollectionReference chats() => _groupDoc.collection('chats');
+
+  static CollectionReference stories() => _groupDoc.collection('stories');
 
   // -------- generic fallback --------
 

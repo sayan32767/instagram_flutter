@@ -23,6 +23,8 @@ class FeedScreen extends StatefulWidget {
 class FeedScreenState extends State<FeedScreen> {
   QuerySnapshot? usersSnapshot;
 
+  Map<String, dynamic>? groupData;
+
   final List<DocumentSnapshot> _posts = [];
   DocumentSnapshot? _lastDoc;
 
@@ -32,6 +34,21 @@ class FeedScreenState extends State<FeedScreen> {
 
   static const int _limit = 5;
 
+  final ScrollController _scrollController = ScrollController();
+
+  bool get isAtTop =>
+      !_scrollController.hasClients || _scrollController.offset <= 0;
+
+  Future<void> scrollToTop() async {
+    if (!_scrollController.hasClients) return;
+
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
   // ---------- FETCH USERS ----------
   Future<void> _fetchUserData() async {
     final snap = await FirebaseFirestore.instance.collection('user').get();
@@ -40,6 +57,20 @@ class FeedScreenState extends State<FeedScreen> {
 
     setState(() {
       usersSnapshot = snap;
+    });
+  }
+
+  // ---------- FETCH GROUPS ----------
+  Future<void> _fetchGroupData() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('groups')
+        .doc(AppFirestore.currentGroupId)
+        .get();
+
+    if (!mounted) return;
+
+    setState(() {
+      groupData = snap.data();
     });
   }
 
@@ -58,6 +89,8 @@ class FeedScreenState extends State<FeedScreen> {
     });
 
     await _loadInitialPosts();
+
+    await _fetchGroupData();
 
     await Future.delayed(const Duration(milliseconds: 300));
   }
@@ -109,6 +142,7 @@ class FeedScreenState extends State<FeedScreen> {
   void initState() {
     super.initState();
     _fetchUserData();
+    _fetchGroupData();
     _loadInitialPosts();
   }
 
@@ -118,124 +152,170 @@ class FeedScreenState extends State<FeedScreen> {
     return SafeArea(
       child: Scaffold(
         backgroundColor: mobileBackgroundColor,
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                color: Colors.white70,
-              ))
-            : _posts.isEmpty
-                ? const Center(child: Text("No posts available"))
-                : RefreshIndicator(
-                    color: Colors.white70,
-                    onRefresh: _refreshPosts,
-                    child: CustomScrollView(
-                      slivers: [
-                        // ---------- APP BAR ----------
-                        SliverAppBar(
-                          automaticallyImplyLeading: false,
-                          floating: true,
-                          backgroundColor: mobileBackgroundColor,
-                          toolbarHeight: 70,
-                          flexibleSpace: FlexibleSpaceBar(
-                            title: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 16),
-                                  child: SvgPicture.asset(
-                                    'assets/images/ic_instagram.svg',
-                                    color: primaryColor,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.add_circle_outline,
-                                      size: 28, color: primaryColor),
-                                  onPressed: () {
-                                    Navigator.of(context, rootNavigator: true)
-                                        .push(
-                                      PageRouteBuilder(
-                                        pageBuilder: (context, animation,
-                                                secondaryAnimation) =>
-                                            AddPostScreen(),
-                                        transitionsBuilder: (context, animation,
-                                            secondaryAnimation, child) {
-                                          const begin = Offset(0.0, 1.0);
-                                          const end = Offset.zero;
-                                          const curve = Curves.ease;
+        body: RefreshIndicator(
+          color: Colors.white70,
+          onRefresh: _refreshPosts,
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // ---------- APP BAR ----------
+              SliverAppBar(
+                automaticallyImplyLeading: false,
+                floating: true,
+                backgroundColor: mobileBackgroundColor,
+                toolbarHeight: 70,
+                flexibleSpace: FlexibleSpaceBar(
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: SvgPicture.asset(
+                          'assets/images/ic_instagram.svg',
+                          color: primaryColor,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline,
+                            size: 28, color: primaryColor),
+                        onPressed: () {
+                          Navigator.of(context, rootNavigator: true).push(
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      AddPostScreen(),
+                              transitionsBuilder: (context, animation,
+                                  secondaryAnimation, child) {
+                                const begin = Offset(0.0, 1.0);
+                                const end = Offset.zero;
+                                const curve = Curves.ease;
 
-                                          var tween = Tween(
-                                                  begin: begin, end: end)
-                                              .chain(CurveTween(curve: curve));
+                                var tween = Tween(begin: begin, end: end)
+                                    .chain(CurveTween(curve: curve));
 
-                                          return SlideTransition(
-                                            position: animation.drive(tween),
-                                            child: child,
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+                                return SlideTransition(
+                                  position: animation.drive(tween),
+                                  child: child,
+                                );
+                              },
                             ),
-                          ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ---------- ANNOUNCEMENTS ----------
+              // SliverToBoxAdapter(
+              //   child: TweenAnimationBuilder<double>(
+              //     tween: Tween(begin: 0, end: 1),
+              //     duration: const Duration(milliseconds: 600),
+              //     curve: Curves.easeOutCubic,
+              //     builder: (context, value, child) {
+              //       return Opacity(
+              //         opacity: value,
+              //         child: Transform.translate(
+              //           offset: Offset(0, 30 * (1 - value)),
+              //           child: child,
+              //         ),
+              //       );
+              //     },
+              //     child: _buildAnnouncements(),
+              //   ),
+              // ),
+
+              // ---------- STORIES ----------
+              SliverToBoxAdapter(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 25 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: const StoryListWidgets(),
+                ),
+              ),
+
+              // ---------- POSTS ----------
+              !_isLoading && _posts.isEmpty
+                  ? SliverToBoxAdapter(
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.5,
+                        alignment: Alignment.center,
+                        child: const Text(
+                          "No posts yet",
+                          style: TextStyle(color: Colors.white70, fontSize: 16),
                         ),
+                      ),
+                    )
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          // trigger pagination
+                          if (index >= _posts.length - 2) {
+                            _loadMorePosts();
+                          }
 
-                        // ---------- ANNOUNCEMENTS ----------
-                        SliverToBoxAdapter(
-                          child: _buildAnnouncements(),
-                        ),
-
-                        // ---------- STORIES ----------
-                        SliverToBoxAdapter(child: const StoryListWidgets()),
-
-                        // ---------- POSTS ----------
-                        SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              // trigger pagination
-                              if (index >= _posts.length - 2) {
-                                _loadMorePosts();
-                              }
-
-                              return PostCard(
-                                snap: _posts[index].data()
-                                    as Map<String, dynamic>,
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: 1),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 30 * (1 - value)),
+                                  child: child,
+                                ),
                               );
                             },
-                            childCount: _posts.length,
-                          ),
-                        ),
-
-                        // ---------- BOTTOM LOADER ----------
-                        SliverToBoxAdapter(
-                          child: _isFetchingMore
-                              ? const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Center(
-                                      child: CircularProgressIndicator(
-                                    color: Colors.white70,
-                                  )),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                      ],
+                            child: PostCard(
+                              snap:
+                                  _posts[index].data() as Map<String, dynamic>,
+                            ),
+                          );
+                        },
+                        childCount: _posts.length,
+                      ),
                     ),
-                  ),
+
+              // ---------- BOTTOM LOADER ----------
+              SliverToBoxAdapter(
+                child: _isFetchingMore
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                            child: CircularProgressIndicator(
+                          color: Colors.white70,
+                        )),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   // ---------- ANNOUNCEMENT WIDGET ----------
   Widget _buildAnnouncements() {
-    if (usersSnapshot == null) return const SizedBox.shrink();
+    if (groupData == null) return const SizedBox.shrink();
 
     final announcements = <String>[];
 
-    for (var doc in usersSnapshot!.docs) {
-      if ((doc.data() as Map).containsKey('announcement_text')) {
-        announcements.add(doc['announcement_text']);
-      }
+    if (groupData!['announcement_text'] != null &&
+        groupData!['announcement_text'].toString().trim().isNotEmpty) {
+      announcements.add(groupData!['announcement_text']);
     }
 
     if (announcements.isEmpty) return const SizedBox.shrink();

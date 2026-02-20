@@ -4,6 +4,7 @@ import 'package:instagram_flutter/resources/auth_methods.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
+import 'package:instagram_flutter/screens/group_gate_screen.dart';
 import 'package:instagram_flutter/screens/signup_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/utils.dart';
@@ -43,12 +44,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (res != 'success') {
-      showSnackBar(context, res);
+      showSnackBar(context, 'Failed to login, please check your credentials');
     } else {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (context) => const ResponsiveLayout(
-              webScreenLayout: WebScreenLayout(),
-              mobileScreenLayout: MobileScreenLayout())));
+      // Navigator.of(context).pushReplacement(MaterialPageRoute(
+      //     builder: (context) => const ResponsiveLayout(
+      //         webScreenLayout: WebScreenLayout(),
+      //         mobileScreenLayout: MobileScreenLayout())));
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const GroupGateScreen(),
+        ),
+      );
     }
   }
 

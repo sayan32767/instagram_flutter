@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/auth_methods.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/edit_profile_screen.dart';
+import 'package:instagram_flutter/screens/group_chooser_screen.dart';
 import 'package:instagram_flutter/screens/profile_photo_viewer.dart';
 import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
@@ -33,6 +35,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   dynamic userData;
+  int reelLen = 0;
   int postLen = 0;
   int followers = 0;
   int following = 0;
@@ -51,9 +54,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       QuerySnapshot postSnap =
           await AppFirestore.posts().where('uid', isEqualTo: widget.uid).get();
+      QuerySnapshot reelSnap =
+          await AppFirestore.reels().where('uid', isEqualTo: widget.uid).get();
       DocumentSnapshot snap =
           await _firestore.collection('user').doc(widget.uid).get();
       postLen = postSnap.docs.length;
+      reelLen = reelSnap.docs.length;
       userData = snap.data()!;
       followers = (snap.data()! as Map)['followers'].length;
       following = (snap.data()! as Map)['following'].length;
@@ -62,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       userType = (snap.data()! as Map)['userType'] ?? "";
       setState(() {});
     } catch (e) {
-      showSnackBar(context, e.toString());
+      showSnackBar(context, 'Failed to load user data, please try again');
     }
     setState(() {
       isLoading = false;
@@ -110,8 +116,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         buildStatColumn(postLen, 'posts'),
-                        buildStatColumn(followers, 'followers'),
-                        buildStatColumn(following, 'following'),
+                        buildStatColumn(reelLen, 'reels'),
+                        // buildDateJoined(FirebaseAuth
+                        //     .instance.currentUser!.metadata.creationTime!.year),
+                        // buildStatColumn(followers, 'followers'),
+                        // buildStatColumn(following, 'following'),
                       ],
                     ),
                     Padding(
@@ -127,51 +136,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   textColor: primaryColor,
                                   borderColor: Colors.grey,
                                   onPressed: () async {
-                                    AuthMethods().signOut();
-                                    Navigator.pushReplacement(
-                                      context,
+                                    await AuthMethods().signOut();
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pushAndRemoveUntil(
                                       MaterialPageRoute(
-                                          builder: (_) => const LoginScreen()),
+                                        builder: (_) => const LoginScreen(),
+                                      ),
+                                      (route) => false,
                                     );
                                   },
                                 )
-                              : isFollowing
-                                  ? FollowButton(
-                                      width: 230,
-                                      backgroundColor: Colors.white,
-                                      text: 'Unfollow',
-                                      textColor: Colors.black,
-                                      borderColor: Colors.white,
-                                      onPressed: () async {
-                                        await _firestoreMethods.followUser(
-                                          FirebaseAuth
-                                              .instance.currentUser!.uid,
-                                          userData['uid'],
-                                        );
-                                        setState(() {
-                                          isFollowing = false;
-                                          followers -= 1;
-                                        });
-                                      },
-                                    )
-                                  : FollowButton(
-                                      width: 230,
-                                      backgroundColor: Colors.blueAccent,
-                                      text: 'Follow',
-                                      textColor: primaryColor,
-                                      borderColor: Colors.blueAccent,
-                                      onPressed: () async {
-                                        await _firestoreMethods.followUser(
-                                          FirebaseAuth
-                                              .instance.currentUser!.uid,
-                                          userData['uid'],
-                                        );
-                                        setState(() {
-                                          isFollowing = true;
-                                          followers += 1;
-                                        });
-                                      },
-                                    ),
+                              // : isFollowing
+                              //     ? FollowButton(
+                              //         width: 230,
+                              //         backgroundColor: Colors.white,
+                              //         text: 'Unfollow',
+                              //         textColor: Colors.black,
+                              //         borderColor: Colors.white,
+                              //         onPressed: () async {
+                              //           await _firestoreMethods.followUser(
+                              //             FirebaseAuth
+                              //                 .instance.currentUser!.uid,
+                              //             userData['uid'],
+                              //           );
+                              //           setState(() {
+                              //             isFollowing = false;
+                              //             followers -= 1;
+                              //           });
+                              //         },
+                              //       )
+                              //     : FollowButton(
+                              //         width: 230,
+                              //         backgroundColor: Colors.blueAccent,
+                              //         text: 'Follow',
+                              //         textColor: primaryColor,
+                              //         borderColor: Colors.blueAccent,
+                              //         onPressed: () async {
+                              //           await _firestoreMethods.followUser(
+                              //             FirebaseAuth
+                              //                 .instance.currentUser!.uid,
+                              //             userData['uid'],
+                              //           );
+                              //           setState(() {
+                              //             isFollowing = true;
+                              //             followers += 1;
+                              //           });
+                              //         },
+                              //       ),
+                              : const SizedBox.shrink(),
                         ],
                       ),
                     ),
@@ -379,13 +391,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onPressed: _pickImage,
                     child: Text(
                       "Pick an Image",
-                      style: TextStyle(color: Colors.blue),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                   SizedBox(height: 20),
 
                   _isTaglinePosting
-                      ? CircularProgressIndicator(color: Colors.blue)
+                      ? CircularProgressIndicator(color: Colors.white70)
                       : ElevatedButton(
                           // onPressed: _selectedImage != null ?
                           onPressed: () async {
@@ -415,7 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           // : null, // Disable button if no image is selected
                           child: Text(
                             "Update",
-                            style: TextStyle(color: Colors.blue),
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
                   SizedBox(height: 10),
@@ -458,6 +470,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                   SizedBox(height: 20),
@@ -468,7 +481,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide(
-                          color: Colors.blue, // Set border color to blue
+                          color: Colors.white, // Set border color to white
                           width: 1.0, // Border width
                         ),
                       ),
@@ -476,7 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide(
                           color: Colors
-                              .blue, // Set border color to blue when focused
+                              .white, // Set border color to white when focused
                           width: 2.0, // Border width when focused
                         ),
                       ),
@@ -484,7 +497,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide(
                           color: Colors
-                              .blue, // Set border color to blue when enabled
+                              .white, // Set border color to white when enabled
                           width: 1.0, // Border width when enabled
                         ),
                       ),
@@ -492,7 +505,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   SizedBox(height: 20),
                   _isTaglinePosting
-                      ? CircularProgressIndicator(color: Colors.blue)
+                      ? CircularProgressIndicator(color: Colors.white70)
                       : ElevatedButton(
                           onPressed: () async {
                             String tagline = taglineController.text;
@@ -518,12 +531,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             //         listen: false)
                             //     .pageController!
                             //     .jumpToPage(0);
-                            showSnackBar(
-                                context, 'Tagline updated successfully');
+                            // showSnackBar(
+                            //     context, 'Tagline updated successfully');
                           },
                           child: Text(
                             "Save",
-                            style: TextStyle(color: Colors.blue),
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
                   SizedBox(height: 10),
@@ -551,28 +564,97 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return isLoading
         ? const Center(
             child: CircularProgressIndicator(
-              color: Color.fromARGB(255, 48, 47, 47),
+              color: Colors.white70,
             ),
           )
         : Scaffold(
             appBar: AppBar(
               backgroundColor: mobileBackgroundColor,
               title: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Flexible(
-                    child: Text(
-                      userData != null ? userData['username'] : "",
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+                  /// LEFT → username + badge
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            userData != null ? userData['username'] : "",
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        if (userType == 'ADMIN')
+                          SizedBox(
+                            height: 20,
+                            child: Image.asset(
+                                'assets/images/verification_badge.png'),
+                          ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 5),
-                  if (userType == 'ADMIN')
-                    SizedBox(
-                      height: 20,
-                      child:
-                          Image.asset('assets/images/verification_badge.png'),
+
+                  /// RIGHT → Switch group
+                  if (userData != null &&
+                      FirebaseAuth.instance.currentUser!.uid == widget.uid)
+                    GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          useRootNavigator: true,
+                          context: context,
+                          isScrollControlled: true,
+                          showDragHandle: false, // ❌ disable default
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => FractionallySizedBox(
+                            heightFactor: 0.8,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Color(0xFF1E1E1E),
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(24),
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(height: 8),
+
+                                  /// 🔥 CUSTOM SMALL HANDLE
+                                  Container(
+                                    width: 32,
+                                    height: 3, // 👈 smaller height
+                                    decoration: BoxDecoration(
+                                      color: Colors.white30,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 8),
+
+                                  const Expanded(
+                                    child: GroupChooserScreen(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        children: const [
+                          Text(
+                            'Switch Group',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.white70,
+                          ),
+                        ],
+                      ),
                     ),
                 ],
               ),
@@ -660,6 +742,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+// Column buildDateJoined(int yearJoined) {
+//   return Column(
+//     mainAxisSize: MainAxisSize.min,
+//     mainAxisAlignment: MainAxisAlignment.center,
+//     children: [
+//       Text(
+//         yearJoined.toString(),
+//         style: TextStyle(
+//           fontSize: 22,
+//           fontWeight: FontWeight.bold,
+//         ),
+//       ),
+//       Text(
+//         "joined",
+//         style: TextStyle(
+//             fontSize: 15, fontWeight: FontWeight.w400, color: Colors.grey),
+//       ),
+//     ],
+//   );
+// }
 
 class ProfilePostsGrid extends StatefulWidget {
   final String uid;
@@ -783,6 +886,9 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => ProfileScreenPosts(
+                            key: Provider.of<GlobalKeyProvier>(context,
+                                    listen: false)
+                                .globalKey,
                             postId: snap.id,
                             uid: widget.uid,
                           ),

@@ -91,26 +91,31 @@ class MessageBubble extends StatelessWidget {
         children: [
           Align(
             alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              padding: type == 'text'
-                  ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
-                  : EdgeInsets.zero,
-              decoration: BoxDecoration(
-                gradient: isMe
-                    ? const LinearGradient(
-                        colors: [
-                          Color(0xFF833AB4),
-                          Color(0xFFE1306C),
-                          Color(0xFFF77737),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: isMe ? null : Colors.grey.shade600,
-                borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
-              child: content,
+              child: Container(
+                padding: type == 'text'
+                    ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                    : EdgeInsets.zero,
+                decoration: BoxDecoration(
+                  gradient: isMe
+                      ? const LinearGradient(
+                          colors: [
+                            Color(0xFF833AB4),
+                            Color(0xFFE1306C),
+                            Color(0xFFF77737),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: isMe ? null : Colors.grey.shade600,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: content,
+              ),
             ),
           ),
 
@@ -133,160 +138,246 @@ class MessageBubble extends StatelessWidget {
   }
 }
 
-class _ReelPreview extends StatelessWidget {
+final Map<String, ImageProvider> reelImageMemoryCache = {};
+final Map<String, Map<String, dynamic>> reelDataMemoryCache = {};
+
+class _ReelPreview extends StatefulWidget {
   final String reelId;
 
-  const _ReelPreview({required this.reelId});
+  const _ReelPreview({required this.reelId, super.key});
+
+  @override
+  State<_ReelPreview> createState() => _ReelPreviewState();
+}
+
+class _ReelPreviewState extends State<_ReelPreview> {
+  Map<String, dynamic>? _reelData;
+  ImageProvider? _thumbnailProvider;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIfNeeded();
+  }
+
+  Future<void> _loadIfNeeded() async {
+    // 🔥 Already cached → use instantly
+    if (reelDataMemoryCache.containsKey(widget.reelId)) {
+      _reelData = reelDataMemoryCache[widget.reelId];
+      _thumbnailProvider = reelImageMemoryCache[widget.reelId];
+      _loading = false;
+      setState(() {});
+      return;
+    }
+
+    // 🔥 First time fetch
+    final snap = await AppFirestore.reels().doc(widget.reelId).get();
+
+    final data = snap.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    ImageProvider? provider;
+
+    if (data['thumbnailUrl'] != null &&
+        data['thumbnailUrl'].toString().isNotEmpty) {
+      provider = CachedNetworkImageProvider(
+        data['thumbnailUrl'],
+        cacheManager: InstaCacheManager(),
+      );
+
+      // ⭐ Preload image into memory
+      await precacheImage(provider, context);
+    }
+
+    // ⭐ Store in memory
+    reelDataMemoryCache[widget.reelId] = data;
+    if (provider != null) {
+      reelImageMemoryCache[widget.reelId] = provider;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _reelData = data;
+      _thumbnailProvider = provider;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: AppFirestore.reels().doc(reelId).get(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox(
-            width: 150,
-            height: 220,
-            child: Center(
-                child: CircularProgressIndicator(
-              color: Colors.white70,
-            )),
-          );
-        }
+    if (_loading || _reelData == null) {
+      return const SizedBox(
+        width: 150,
+        height: 220,
+      );
+    }
 
-        final data = snapshot.data!.data() as Map<String, dynamic>?;
+    final data = _reelData!;
 
-        if (data == null) return const Text("Reel not found");
-
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SingleReelScreen(snap: data),
-              ),
-            );
-          },
-          child: Container(
-            width: 150,
-            height: 220, // ⭐ keeps full card height stable
-            decoration: BoxDecoration(
-              color: Colors.black12,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                /// 👤 USER HEADER
-                _UserHeader(uid: data['uid']),
-
-                /// 🎬 THUMBNAIL
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(12),
-                    ),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      alignment: Alignment.center,
-                      children: [
-                        if (data['thumbnailUrl'] != null)
-                          CachedNetworkImage(
-                            imageUrl: data['thumbnailUrl'],
-                            fit: BoxFit.cover,
-                            cacheManager: InstaCacheManager(),
-                          )
-                        else
-                          Container(
-                            color: Colors.black12,
-                            child: const Icon(Icons.play_arrow, size: 40),
-                          ),
-                        const Icon(
-                          Icons.play_circle_fill,
-                          color: Colors.white,
-                          size: 40,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SingleReelScreen(snap: data),
           ),
         );
       },
+      child: Container(
+        width: 150,
+        height: 220,
+        decoration: BoxDecoration(
+          color: Colors.black12,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            _UserHeader(uid: data['uid']),
+
+            /// 🎬 THUMBNAIL
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(12),
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  alignment: Alignment.center,
+                  children: [
+                    if (_thumbnailProvider != null)
+                      Image(
+                        image: _thumbnailProvider!,
+                        fit: BoxFit.cover,
+                      )
+                    else
+                      Container(
+                        color: Colors.black12,
+                        child: const Icon(Icons.play_arrow, size: 40),
+                      ),
+                    const Icon(
+                      Icons.play_circle_fill,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _PostPreview extends StatelessWidget {
+final Map<String, ImageProvider> postImageMemoryCache = {};
+final Map<String, Map<String, dynamic>> postDataMemoryCache = {};
+
+class _PostPreview extends StatefulWidget {
   final String postId;
 
-  const _PostPreview({required this.postId});
+  const _PostPreview({required this.postId, super.key});
+
+  @override
+  State<_PostPreview> createState() => _PostPreviewState();
+}
+
+class _PostPreviewState extends State<_PostPreview> {
+  Map<String, dynamic>? _postData;
+  ImageProvider? _imageProvider;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIfNeeded();
+  }
+
+  Future<void> _loadIfNeeded() async {
+    // 🔥 If already cached → use instantly
+    if (postDataMemoryCache.containsKey(widget.postId)) {
+      _postData = postDataMemoryCache[widget.postId];
+      _imageProvider = postImageMemoryCache[widget.postId];
+      _loading = false;
+      setState(() {});
+      return;
+    }
+
+    // 🔥 First time fetch
+    final snap = await AppFirestore.posts().doc(widget.postId).get();
+
+    final data = snap.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    final provider = CachedNetworkImageProvider(
+      data['postUrl'],
+      cacheManager: InstaCacheManager(),
+    );
+
+    // ⭐ PRELOAD IMAGE INTO MEMORY
+    await precacheImage(provider, context);
+
+    // ⭐ STORE IN MEMORY
+    postDataMemoryCache[widget.postId] = data;
+    postImageMemoryCache[widget.postId] = provider;
+
+    if (!mounted) return;
+
+    setState(() {
+      _postData = data;
+      _imageProvider = provider;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: AppFirestore.posts().doc(postId).get(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox(
-            width: 150,
-            height: 180,
-            child: Center(
-                child: CircularProgressIndicator(
-              color: Colors.white70,
-            )),
-          );
-        }
+    if (_loading || _postData == null || _imageProvider == null) {
+      return const SizedBox(
+        width: 150,
+        height: 180,
+      );
+    }
 
-        final data = snapshot.data!.data() as Map<String, dynamic>?;
+    final data = _postData!;
 
-        if (data == null)
-          return Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-              child: const Text("Post not found"));
-
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProfileScreenPosts(
-                  postId: postId,
-                  uid: data['uid'],
-                ),
-              ),
-            );
-          },
-          child: Container(
-            width: 150,
-            decoration: BoxDecoration(
-              color: Colors.black12,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                /// 👤 LIVE USER HEADER
-                _UserHeader(uid: data['uid']),
-
-                /// 🖼 POST IMAGE
-                ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(bottom: Radius.circular(12)),
-                  child: CachedNetworkImage(
-                    imageUrl: data['postUrl'],
-                    width: 150,
-                    height: 150,
-                    fit: BoxFit.cover,
-                    cacheManager: InstaCacheManager(),
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProfileScreenPosts(
+              postId: widget.postId,
+              uid: data['uid'],
             ),
           ),
         );
       },
+      child: Container(
+        width: 150,
+        decoration: BoxDecoration(
+          color: Colors.black12,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _UserHeader(uid: data['uid']),
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(12)),
+              child: Image(
+                image: _imageProvider!, // 🔥 memory image
+                width: 150,
+                height: 150,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

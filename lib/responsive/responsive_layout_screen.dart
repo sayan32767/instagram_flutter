@@ -6,14 +6,16 @@ import 'package:provider/provider.dart';
 class ResponsiveLayout extends StatefulWidget {
   final Widget webScreenLayout;
   final Widget mobileScreenLayout;
-  const ResponsiveLayout({super.key, required this.webScreenLayout, required this.mobileScreenLayout});
+  const ResponsiveLayout(
+      {super.key,
+      required this.webScreenLayout,
+      required this.mobileScreenLayout});
 
   @override
   State<ResponsiveLayout> createState() => _ResponsiveLayoutState();
 }
 
 class _ResponsiveLayoutState extends State<ResponsiveLayout> {
-
   @override
   void initState() {
     // TODO: implement initState
@@ -36,10 +38,12 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
     //     return widget.mobileScreenLayout;
     //   }
     // );
-    return Provider.of<UserProvider>(context).getUser != null ? widget.mobileScreenLayout : Center(
-      child: CircularProgressIndicator(
-        color: const Color.fromARGB(255, 24, 24, 24),
-      ),
-    );
+    return Provider.of<UserProvider>(context).getUser != null
+        ? widget.mobileScreenLayout
+        : Center(
+            child: CircularProgressIndicator(
+              color: Colors.white70,
+            ),
+          );
   }
 }

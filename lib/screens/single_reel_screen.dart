@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:instagram_flutter/core/app_firestore.dart';
@@ -340,7 +341,20 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Text(usersSnapshot?['username'] ?? ''),
+                                    GestureDetector(
+                                        onTap: () {
+                                          // Navigate to user profile screen
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => ProfileScreen(
+                                                uid:
+                                                    usersSnapshot?['uid'] ?? '',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                            usersSnapshot?['username'] ?? '')),
                                     SizedBox(width: 5),
                                     (usersSnapshot?['userType'] == 'ADMIN')
                                         ? SizedBox(
@@ -423,7 +437,11 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
                                         color: Colors.white70, fontSize: 12)),
                                 const SizedBox(height: 8),
                                 IconButton(
-                                  onPressed: () => _openShareSheet(data),
+                                  onPressed: () {
+                                    HapticFeedback
+                                        .lightImpact(); // subtle tap feel
+                                    _openShareSheet(data);
+                                  },
                                   icon: const Icon(Icons.send_outlined,
                                       color: Colors.white),
                                 ),

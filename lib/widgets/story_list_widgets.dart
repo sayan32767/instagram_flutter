@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
@@ -33,14 +34,14 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
     remove();
   }
 
-  void _fetchAllData() async {
-    data = await FirebaseFirestore.instance.collection('user').get();
-  }
+  // void _fetchAllData() async {
+  //   data = await FirebaseFirestore.instance.collection('user').get();
+  // }
 
   @override
   void initState() {
     super.initState();
-    _fetchAllData();
+    // _fetchAllData();
   }
 
   void _pauseOrPlayMusic(PlayerStateProvider playerStateProvider) async {
@@ -93,7 +94,8 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
         Provider.of<UserProvider>(context, listen: false).getUser!;
 
     Stream<QuerySnapshot<Map<String, dynamic>>> storyStream =
-        FirebaseFirestore.instance.collection('user').snapshots();
+        AppFirestore.stories().snapshots()
+            as Stream<QuerySnapshot<Map<String, dynamic>>>;
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: storyStream,
@@ -101,9 +103,7 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
         List<Widget> _addToStoryWidget = [];
 
         if (snapshot.hasData) {
-          String refreshedUsername = snapshot.data!.docs
-              .firstWhere((doc) => doc['uid'] == user.uid)
-              .data()['username'];
+          String refreshedUsername = user.username;
 
           _addToStoryWidget = [
             SizedBox(width: 16),
@@ -126,24 +126,24 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
 
         List<Widget> _storyList = [];
 
-        for (QueryDocumentSnapshot<Map<String, dynamic>> userDoc
+        for (QueryDocumentSnapshot<Map<String, dynamic>> storyDoc
             in snapshot.data!.docs) {
-          if (!userDoc.data().containsKey('storyType')) continue;
+          if (!storyDoc.data().containsKey('storyType')) continue;
 
-          String uid = userDoc.data()['uid'];
+          String uid = storyDoc.data()['uid'];
 
           // Map oldData = data!.docs.where((doc) => doc.data()['uid'] == uid).toList().first.data();
 
-          String storyType = userDoc.data()['storyType'];
-          String username = userDoc.data()['username'];
+          String storyType = storyDoc.data()['storyType'];
+          String username = storyDoc.data()['username'];
 
           // String username = oldData['username'];
 
-          String? photoUrl = userDoc.data()['photoUrl'];
+          String? photoUrl = storyDoc.data()['photoUrl'];
           // String? photoUrl = oldData['photoUrl'];
 
-          String? userType = userDoc.data()['userType'];
-          Map<String, dynamic>? storyData = userDoc.data()['story'];
+          String? userType = storyDoc.data()['userType'];
+          Map<String, dynamic>? storyData = storyDoc.data()['story'];
 
           if (storyType == 'MUSIC' && storyData != null) {
             _storyList.add(

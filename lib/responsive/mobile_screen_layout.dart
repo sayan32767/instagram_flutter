@@ -40,6 +40,11 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
     pageController = PageController();
     _presence = PresenceService()..start();
     globalKey = GlobalKey();
+
+    /// ⭐ FIX: sync provider with initial page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<NavigationProvider>(context, listen: false).setPage(0);
+    });
   }
 
   @override
@@ -52,6 +57,22 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   void navigationTapped(int page) {
     _navigatorKey.currentState?.popUntil((route) => route.isFirst);
     pageController.jumpToPage(page);
+
+    // refresh feed when home icon is tapped
+    if (page == 0) {
+      if (globalKey.currentState is FeedScreenState) {
+        final state = globalKey.currentState as FeedScreenState;
+        if (!state.isAtTop) {
+          state.scrollToTop();
+        }
+
+        /// 2️⃣ Already at top → refresh
+        else {
+          state.scrollToTop();
+          state.refresh();
+        }
+      }
+    }
   }
 
   void onPageChanged(int page) {

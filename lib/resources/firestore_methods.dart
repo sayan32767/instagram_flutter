@@ -5,7 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/post.dart';
+import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/storage_methods.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
@@ -14,15 +16,20 @@ class FirestoreMethods {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<String> postToStory(var story) async {
+  Future<String> postToStory(
+      {var story, String? username, String? photoUrl, String? userType}) async {
     String res = 'Some error occurred!';
     try {
-      await _firestore.collection('user').doc(_auth.currentUser!.uid).update({
+      await AppFirestore.stories().doc(_auth.currentUser!.uid).set({
         'story': story,
         'storyType': 'MUSIC',
         "storyPostedAt": DateTime.now(),
         "expiryTime": DateTime.now().add(Duration(hours: 24)),
-        "storyViews": []
+        "storyViews": [],
+        "username": username,
+        "uid": _auth.currentUser!.uid,
+        "photoUrl": photoUrl,
+        "userType": userType,
       });
 
       res = 'success';
@@ -73,10 +80,15 @@ class FirestoreMethods {
     return res;
   }
 
-  Future<String> postToStoryText(String text, Color color) async {
+  Future<String> postToStoryText(
+      {String? text,
+      required Color color,
+      String? username,
+      String? photoUrl,
+      String? userType}) async {
     String res = 'Some error occurred!';
     try {
-      await _firestore.collection('user').doc(_auth.currentUser!.uid).update({
+      await AppFirestore.stories().doc(_auth.currentUser!.uid).set({
         'story': {
           'text': text,
           'color': '#${color.value.toRadixString(16).padLeft(8, '0')}'
@@ -84,7 +96,11 @@ class FirestoreMethods {
         'storyType': 'TEXT',
         "storyPostedAt": DateTime.now(),
         "expiryTime": DateTime.now().add(Duration(hours: 24)),
-        "storyViews": []
+        "storyViews": [],
+        "username": username,
+        "uid": _auth.currentUser!.uid,
+        "photoUrl": photoUrl,
+        "userType": userType,
       });
 
       res = 'success';
@@ -97,7 +113,7 @@ class FirestoreMethods {
   Future<String> removeStory(String uid) async {
     String res = 'Some error occurred!';
     try {
-      await _firestore.collection('user').doc(_auth.currentUser!.uid).update({
+      await AppFirestore.stories().doc(_auth.currentUser!.uid).update({
         'story': FieldValue.delete(),
         'storyType': FieldValue.delete(),
         'storyPostedAt': FieldValue.delete(),

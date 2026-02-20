@@ -171,14 +171,26 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   _postToStoryText(String text, Color color) async {
-    if (text.isEmpty) return;
+    if (text.trim().isEmpty) return;
 
     setState(() {
       _isStoryPosting = true;
     });
 
+    final String username =
+        Provider.of<UserProvider>(context, listen: false).getUser!.username;
+    final String? photoUrl =
+        Provider.of<UserProvider>(context, listen: false).getUser!.photoUrl;
+    final String userType =
+        Provider.of<UserProvider>(context, listen: false).getUser!.userType;
+
     // String res = 'success';
-    String res = await _firestoreMethods.postToStoryText(text, color);
+    String res = await _firestoreMethods.postToStoryText(
+        text: text,
+        color: color,
+        username: username,
+        photoUrl: photoUrl,
+        userType: userType);
     // await Future.delayed(Duration(seconds: 3));
 
     setState(() {
@@ -203,7 +215,18 @@ class _StoryScreenState extends State<StoryScreen> {
       _isStoryPosting = true;
     });
 
-    String res = await _firestoreMethods.postToStory(story);
+    final String username =
+        Provider.of<UserProvider>(context, listen: false).getUser!.username;
+    final String? photoUrl =
+        Provider.of<UserProvider>(context, listen: false).getUser!.photoUrl;
+    final String userType =
+        Provider.of<UserProvider>(context, listen: false).getUser!.userType;
+
+    String res = await _firestoreMethods.postToStory(
+        story: story,
+        username: username,
+        photoUrl: photoUrl,
+        userType: userType);
 
     setState(() {
       _isStoryPosting = false;

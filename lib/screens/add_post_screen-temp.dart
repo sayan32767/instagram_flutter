@@ -368,14 +368,14 @@ class _AddPostScreenState extends State<AddPostScreen> {
         setState(() {
           _isLoading = false;
         });
-        showSnackBar(context, res);
+        showSnackBar(context, 'Failed');
         clearImage();
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      showSnackBar(context, e.toString());
+      showSnackBar(context, 'Failed, please try again');
     }
   }
 
@@ -466,11 +466,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
             .jumpToPage(0);
         Navigator.pop(context);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Reel uploaded sucessfully")));
+        showSnackBar(context, 'Reel uploaded successfully');
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res)));
+      showSnackBar(context, 'Failed to upload reel');
     }
   }
 

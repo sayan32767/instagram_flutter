@@ -92,9 +92,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
               /// BUTTON — natural width (NO Expanded)
               TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.blue,
-                ),
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
                 onPressed: () {
                   if (_controller.text.trim().isNotEmpty) {
                     setState(() {
@@ -135,6 +133,35 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
   DocumentSnapshot? _lastDoc;
 
   static const int _limit = 15;
+
+  // Refresh
+  Future<void> _refresh() async {
+    _posts.clear();
+    _lastDoc = null;
+    _hasMore = true;
+    _isLoading = true;
+
+    setState(() {});
+
+    final snap = await AppFirestore.posts()
+        .orderBy('datePublished', descending: true)
+        .limit(_limit)
+        .get();
+
+    _posts.addAll(snap.docs);
+
+    if (snap.docs.isNotEmpty) {
+      _lastDoc = snap.docs.last;
+    } else {
+      _hasMore = false;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   // 🔹 Load first posts
   Future<void> _loadInitial() async {
@@ -207,45 +234,67 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
   @override
   Widget build(BuildContext context) {
     // 🔹 Initial loader
-    if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(
-        color: Colors.white70,
-      ));
-    }
+    // if (_isLoading) {
+    //   return const Center(
+    //       child: CircularProgressIndicator(
+    //     color: Colors.white70,
+    //   ));
+    // }
 
     return Stack(
       children: [
-        MasonryGridView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-          gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-          ),
-          mainAxisSpacing: 6,
-          crossAxisSpacing: 6,
-          itemCount: _posts.length,
-          itemBuilder: (context, index) {
-            final data = _posts[index].data() as Map<String, dynamic>;
-            final url = data['postUrl'];
-            final uid = data['uid'];
+        RefreshIndicator(
+          color: Colors.white,
+          backgroundColor: Colors.grey.shade900,
+          onRefresh: _refresh,
+          child: MasonryGridView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+            ),
+            mainAxisSpacing: 6,
+            crossAxisSpacing: 6,
+            itemCount: _posts.length,
+            itemBuilder: (context, index) {
+              final data = _posts[index].data() as Map<String, dynamic>;
+              final url = data['postUrl'];
+              final uid = data['uid'];
 
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ProfileScreenPosts(uid: uid, postId: _posts[index].id),
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: Duration(milliseconds: 350 + (index % 10) * 40),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Transform.scale(
+                        scale: 0.95 + (0.05 * value),
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProfileScreenPosts(
+                            uid: uid, postId: _posts[index].id),
+                      ),
+                    );
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: CustomImageLoader(imageUrl: url),
                   ),
-                );
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: CustomImageLoader(imageUrl: url),
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         ),
 
         // 🔹 Smooth floating loader
@@ -353,23 +402,25 @@ class _SearchUsersListState extends State<SearchUsersList> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 12, 0, 12),
-          child: Text("Recent Searches"),
-        ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('user')
+            stream: AppFirestore.collection('search_histories')
                 .doc(currentUid)
                 .collection('search_history')
                 .orderBy('timestamp', descending: true)
                 .limit(20)
                 .snapshots(),
             builder: (context, snapshot) {
-              if (!snapshot.hasData) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
-                    child: CircularProgressIndicator(color: Colors.white70));
+                  child: CircularProgressIndicator(
+                    color: Colors.white70,
+                  ),
+                );
+              }
+
+              if (!snapshot.hasData) {
+                return const Center(child: Text("No recent searches"));
               }
 
               final historyDocs = snapshot.data!.docs;
@@ -378,12 +429,23 @@ class _SearchUsersListState extends State<SearchUsersList> {
                 return const Center(child: Text("No recent searches"));
               }
 
-              return ListView.builder(
-                itemCount: historyDocs.length,
-                itemBuilder: (context, index) {
-                  final searchedUid = historyDocs[index]['uid'];
-                  return _buildHistoryUserTile(currentUid, searchedUid);
-                },
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16.0, 12, 0, 12),
+                    child: Text("Recent searches"),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: historyDocs.length,
+                      itemBuilder: (context, index) {
+                        final searchedUid = historyDocs[index]['uid'];
+                        return _buildHistoryUserTile(currentUid, searchedUid);
+                      },
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -450,8 +512,7 @@ class _SearchUsersListState extends State<SearchUsersList> {
   }
 
   Future<void> _removeFromHistory(String currentUid, String searchedUid) async {
-    await FirebaseFirestore.instance
-        .collection('user')
+    await AppFirestore.collection('search_histories')
         .doc(currentUid)
         .collection('search_history')
         .doc(searchedUid)
@@ -462,8 +523,7 @@ class _SearchUsersListState extends State<SearchUsersList> {
     final currentUid =
         Provider.of<UserProvider>(context, listen: false).getUser!.uid;
 
-    await FirebaseFirestore.instance
-        .collection('user')
+    await AppFirestore.collection('search_histories')
         .doc(currentUid)
         .collection('search_history')
         .doc(searchedUid)

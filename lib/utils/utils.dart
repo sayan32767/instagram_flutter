@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
 
 pickImage(ImageSource source) async {
   final ImagePicker _imagePicker = ImagePicker();
@@ -34,6 +35,83 @@ Future<XFile?> pickVideo(ImageSource source) async {
   return file; // return file path, NOT bytes
 }
 
-showSnackBar(BuildContext context, String content) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(content)));
+void showSnackBar(BuildContext context, String content) {
+  final overlay = Overlay.of(context);
+  if (overlay == null) return;
+
+  late OverlayEntry overlayEntry;
+
+  final animationController = AnimationController(
+    vsync: Navigator.of(context),
+    duration: const Duration(milliseconds: 400),
+  );
+
+  final animation = CurvedAnimation(
+    parent: animationController,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  overlayEntry = OverlayEntry(
+    builder: (context) {
+      return Positioned(
+        bottom: 8,
+        left: 16,
+        right: 16,
+        child: FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.3),
+              end: Offset.zero,
+            ).animate(animation),
+            child: ScaleTransition(
+              scale: Tween<double>(
+                begin: 0.95,
+                end: 1.0,
+              ).animate(animation),
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade900,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black38,
+                        blurRadius: 12,
+                        offset: Offset(0, 6),
+                      )
+                    ],
+                  ),
+                  child: Text(
+                    content,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
+  overlay.insert(overlayEntry);
+
+  // 🔥 Haptic feedback
+  HapticFeedback.lightImpact();
+
+  animationController.forward();
+
+  Future.delayed(const Duration(seconds: 2), () async {
+    await animationController.reverse();
+    overlayEntry.remove();
+    animationController.dispose();
+  });
 }

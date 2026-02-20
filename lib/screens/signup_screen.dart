@@ -86,7 +86,8 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() {
         _isLoading = false;
       });
-      showSnackBar(context, res);
+      showSnackBar(
+          context, 'Username updating failed, please choose another username');
     } else {
       String res = await AuthMethods().signUpUser(
           email: _emailController.text,
@@ -98,7 +99,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _isLoading = false;
       });
       if (res != 'success') {
-        showSnackBar(context, res);
+        showSnackBar(context, 'Failed to sign up, please try again');
       } else {
         Navigator.of(context).pushReplacement(MaterialPageRoute(
             builder: (context) => const ResponsiveLayout(

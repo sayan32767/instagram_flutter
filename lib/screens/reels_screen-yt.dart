@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
@@ -543,7 +544,11 @@ class _ReelsScreenState extends State<ReelsScreen> {
 
                                       /// 📤 SHARE
                                       IconButton(
-                                        onPressed: () => _openShareSheet(data),
+                                        onPressed: () {
+                                          HapticFeedback
+                                              .lightImpact(); // subtle tap feel
+                                          _openShareSheet(data);
+                                        },
                                         icon: const Icon(Icons.send_outlined,
                                             color: Colors.white, size: 28),
                                       ),

@@ -4,11 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/widgets/chat_bubble.dart';
+import 'package:instagram_flutter/widgets/typing_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -45,6 +47,29 @@ class _ChatScreenState extends State<ChatScreen> {
 
   StreamSubscription? _newMsgSub;
 
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+
+  bool _otherTyping = false;
+
+  StreamSubscription? _typingSub;
+
+  void _initTypingListener() {
+    _typingSub =
+        AppFirestore.chats().doc(widget.chatId).snapshots().listen((snap) {
+      final data = snap.data() as Map<String, dynamic>?;
+      if (data == null) return;
+
+      final typing = data['typing'] ?? {};
+      final typingNow = typing[widget.otherUid] == true;
+
+      if (_otherTyping != typingNow) {
+        setState(() {
+          _otherTyping = typingNow;
+        });
+      }
+    });
+  }
+
   // ================= INIT =================
   @override
   void initState() {
@@ -53,6 +78,8 @@ class _ChatScreenState extends State<ChatScreen> {
     _markAsRead();
     _loadLatestMessages().then((_) => _listenForNewMessages());
     // ⭐ ADD THIS
+
+    _initTypingListener();
 
     _scrollController.addListener(_handleScroll);
   }
@@ -75,7 +102,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (!alreadyLoaded) {
         setState(() {
-          _messages.insert(0, newDoc); // ⭐ add to top of reversed list
+          _messages.insert(0, newDoc);
+          _listKey.currentState?.insertItem(
+            0,
+            duration: const Duration(milliseconds: 300),
+          );
         });
 
         _scrollToBottom();
@@ -175,6 +206,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _sendText() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    HapticFeedback.lightImpact(); // subtle tap feel
 
     await FirestoreMethods().sendMessage(
       mediaOwnerId: null,
@@ -198,7 +230,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollController.dispose();
     _controller.dispose();
     _newMsgSub?.cancel(); // ⭐ IMPORTANT
-
+    _typingSub?.cancel();
     super.dispose();
   }
 
@@ -208,7 +240,10 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: _ChatHeader(otherUid: widget.otherUid, chatId: widget.chatId),
+        title: _ChatHeader(
+            otherUid: widget.otherUid,
+            chatId: widget.chatId,
+            isTyping: _otherTyping),
       ),
       body: _isLoading
           ? const Center(
@@ -219,12 +254,14 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 // ================= MESSAGES =================
                 Expanded(
-                  child: ListView.builder(
+                  child: AnimatedList(
+                    key: _listKey,
                     controller: _scrollController,
                     reverse: true, // ⭐ newest at bottom
                     padding: const EdgeInsets.all(12),
-                    itemCount: _messages.length + (_isFetchingMore ? 1 : 0),
-                    itemBuilder: (context, index) {
+                    initialItemCount:
+                        _messages.length + (_isFetchingMore ? 1 : 0),
+                    itemBuilder: (context, index, animation) {
                       if (index >= _messages.length) {
                         return const Center(
                             child: CircularProgressIndicator(
@@ -237,14 +274,24 @@ class _ChatScreenState extends State<ChatScreen> {
 
                       final isMe = msg['senderId'] == uid;
 
-                      return Align(
-                        alignment:
-                            isMe ? Alignment.centerRight : Alignment.centerLeft,
-                        child: MessageBubble(msg: msg, isMe: isMe),
+                      return SizeTransition(
+                        sizeFactor: animation,
+                        axisAlignment: -1,
+                        child: FadeTransition(
+                          opacity: animation,
+                          child: Align(
+                            alignment: isMe
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: MessageBubble(msg: msg, isMe: isMe),
+                          ),
+                        ),
                       );
                     },
                   ),
                 ),
+
+                if (_otherTyping) TypingBubble(isMe: false),
 
                 // ================= INPUT =================
                 _ChatInput(
@@ -261,10 +308,12 @@ class _ChatScreenState extends State<ChatScreen> {
 class _ChatHeader extends StatelessWidget {
   final String otherUid;
   final String chatId;
+  final bool isTyping;
 
   const _ChatHeader({
     required this.otherUid,
     required this.chatId,
+    required this.isTyping,
   });
 
   @override
@@ -293,79 +342,70 @@ class _ChatHeader extends StatelessWidget {
             online = diff.inMinutes < 2;
           }
 
-          return StreamBuilder<DocumentSnapshot>(
-            stream: AppFirestore.chats().doc(chatId).snapshots(),
-            builder: (context, chatSnap) {
-              if (!chatSnap.hasData) return const SizedBox();
+          final otherTyping = isTyping;
 
-              final chat = chatSnap.data!.data() as Map<String, dynamic>? ?? {};
-              final typing = chat['typing'] ?? {};
-              final otherTyping = typing[otherUid] == true;
+          String subtitle = "";
 
-              String subtitle = "";
+          if (otherTyping) {
+            subtitle = "typing...";
+          } else if (online) {
+            subtitle = "Active Now";
+          } else if (lastActive != null) {
+            final diff = DateTime.now().difference(lastActive.toDate());
 
-              if (otherTyping) {
-                subtitle = "typing...";
-              } else if (online) {
-                subtitle = "Active Now";
-              } else if (lastActive != null) {
-                final diff = DateTime.now().difference(lastActive.toDate());
+            if (diff.inMinutes < 60) {
+              subtitle = "Last seen ${diff.inMinutes}m ago";
+            } else if (diff.inHours < 24) {
+              subtitle = "Last seen ${diff.inHours}h ago";
+            } else {
+              subtitle = "Last seen ${diff.inDays}d ago";
+            }
+          }
 
-                if (diff.inMinutes < 60) {
-                  subtitle = "Last seen ${diff.inMinutes}m ago";
-                } else if (diff.inHours < 24) {
-                  subtitle = "Last seen ${diff.inHours}h ago";
-                } else {
-                  subtitle = "Last seen ${diff.inDays}d ago";
-                }
-              }
-
-              return Row(
+          return Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                    ? CachedNetworkImageProvider(
+                        photoUrl,
+                        cacheManager: InstaCacheManager(),
+                      )
+                    : const AssetImage('assets/images/placeholder.jpg')
+                        as ImageProvider,
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                        ? CachedNetworkImageProvider(
-                            photoUrl,
-                            cacheManager: InstaCacheManager(),
-                          )
-                        : const AssetImage('assets/images/placeholder.jpg')
-                            as ImageProvider,
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            username,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(width: 4),
-                          if (userType == 'ADMIN')
-                            SizedBox(
-                              height: 16,
-                              child: Image.asset(
-                                  'assets/images/verification_badge.png'),
-                            ),
-                        ],
+                      Text(
+                        username,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      if (subtitle.isNotEmpty)
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: subtitle != 'typing...'
-                                  ? Colors.white70
-                                  : Colors.white),
+                      const SizedBox(width: 4),
+                      if (userType == 'ADMIN')
+                        SizedBox(
+                          height: 16,
+                          child: Image.asset(
+                              'assets/images/verification_badge.png'),
                         ),
                     ],
                   ),
+                  if (subtitle.isNotEmpty)
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: subtitle != 'typing...'
+                              ? Colors.white70
+                              : Colors.white),
+                    ),
                 ],
-              );
-            },
+              ),
+            ],
           );
         },
       ),
@@ -415,7 +455,9 @@ class _ChatInput extends StatelessWidget {
 
           /// SEND BUTTON
           GestureDetector(
-            onTap: onSend,
+            onTap: () {
+              onSend();
+            },
             child: Container(
               height: 44,
               width: 44,

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
@@ -11,6 +12,7 @@ import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
 import 'package:instagram_flutter/screens/feed_screen.dart';
 import 'package:instagram_flutter/screens/full_screen_post_page.dart';
+import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
@@ -120,6 +122,7 @@ class _PostCardState extends State<PostCard> {
   }
 
   Future fetchUsername() async {
+    await Future.delayed(const Duration(milliseconds: 300));
     try {
       if (querySnapshot!.docs.isNotEmpty) {
         final DocumentSnapshot document = querySnapshot!.docs.first;
@@ -135,7 +138,7 @@ class _PostCardState extends State<PostCard> {
     try {
       commentLength = snap!.docs.length;
     } catch (e) {
-      showSnackBar(context, e.toString());
+      showSnackBar(context, 'Failed to load comments, please try again');
     }
     if (mounted) setState(() {});
   }
@@ -212,8 +215,11 @@ class _PostCardState extends State<PostCard> {
                               username == ""
                                   ? Container(
                                       padding: const EdgeInsets.only(left: 15),
-                                      color:
-                                          const Color.fromARGB(255, 24, 24, 24),
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromARGB(
+                                            255, 24, 24, 24),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
                                       width: 70,
                                       height: 12)
                                   : Text(
@@ -347,6 +353,7 @@ class _PostCardState extends State<PostCard> {
                 PageRouteBuilder(
                   transitionDuration: const Duration(milliseconds: 250),
                   pageBuilder: (_, __, ___) => FullscreenImageViewer(
+                    uid: widget.snap['uid'],
                     imageUrl: widget.snap['postUrl'],
                     username: username,
                     profilePic: photoUrl,
@@ -365,71 +372,83 @@ class _PostCardState extends State<PostCard> {
                     : widget.snap['likes'].add(user.uid);
               });
             },
-            child: username == ""
-                ? Container(
-                    color: const Color.fromARGB(255, 24, 24, 24),
-                    height: MediaQuery.of(context).size.width * 3 / 4,
-                  )
-                : Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                          height: MediaQuery.of(context).size.width * 3 / 4,
-                          child: CachedNetworkImage(
-                            imageUrl: widget.snap['postUrl'],
-                            fit: BoxFit.cover,
-                            cacheManager:
-                                InstaCacheManager(), // ⭐ long-term cache
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              child: username == ""
+                  ? Container(
+                      color: const Color.fromARGB(255, 24, 24, 24),
+                      height: MediaQuery.of(context).size.width * 3 / 4,
+                    )
+                  : Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                            height: MediaQuery.of(context).size.width * 3 / 4,
+                            child: CachedNetworkImage(
+                              imageUrl: widget.snap['postUrl'],
+                              fit: BoxFit.cover,
+                              cacheManager:
+                                  InstaCacheManager(), // ⭐ long-term cache
 
-                            placeholder: (context, url) => Container(
-                              color: const Color.fromARGB(255, 24, 24, 24),
-                            ),
+                              placeholder: (context, url) => Container(
+                                color: const Color.fromARGB(255, 24, 24, 24),
+                              ),
 
-                            errorWidget: (context, url, error) => const Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('Could not load image'),
-                                  Icon(Icons.error),
-                                ],
+                              errorWidget: (context, url, error) =>
+                                  const Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text('Could not load image'),
+                                    Icon(Icons.error),
+                                  ],
+                                ),
+                              ),
+                            )),
+                        AnimatedOpacity(
+                          duration: const Duration(
+                            milliseconds: 200,
+                          ),
+                          opacity: isLikeAnimating ? 1 : 0,
+                          child: LikeAnimation(
+                            isAnimating: isLikeAnimating,
+                            duration: const Duration(milliseconds: 400),
+                            onEnd: () {
+                              setState(() {
+                                isLikeAnimating = false;
+                              });
+                            },
+                            child: ShaderMask(
+                              shaderCallback: (Rect bounds) {
+                                return const LinearGradient(
+                                  colors: [
+                                    Color(0xFF833AB4),
+                                    Color(0xFFE1306C),
+                                    Color(0xFFF77737),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ).createShader(bounds);
+                              },
+                              child: const Icon(
+                                Icons.favorite,
+                                color: Colors.white, // important for ShaderMask
+                                size: 120,
                               ),
                             ),
-                          )),
-                      AnimatedOpacity(
-                        duration: const Duration(
-                          milliseconds: 200,
-                        ),
-                        opacity: isLikeAnimating ? 1 : 0,
-                        child: LikeAnimation(
-                          isAnimating: isLikeAnimating,
-                          duration: const Duration(milliseconds: 400),
-                          onEnd: () {
-                            setState(() {
-                              isLikeAnimating = false;
-                            });
-                          },
-                          child: ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              return const LinearGradient(
-                                colors: [
-                                  Color(0xFF833AB4),
-                                  Color(0xFFE1306C),
-                                  Color(0xFFF77737),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds);
-                            },
-                            child: const Icon(
-                              Icons.favorite,
-                              color: Colors.white, // important for ShaderMask
-                              size: 120,
-                            ),
                           ),
-                        ),
-                      )
-                    ],
-                  ),
+                        )
+                      ],
+                    ),
+            ),
           ),
 
           // LIKE, COMMENT SECTION
@@ -489,7 +508,10 @@ class _PostCardState extends State<PostCard> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => _openShareSheet(widget.snap),
+                      onPressed: () {
+                        HapticFeedback.lightImpact(); // subtle tap feel
+                        _openShareSheet(widget.snap);
+                      },
                       icon: const Icon(
                         Icons.send,
                       ),
@@ -523,7 +545,10 @@ class _PostCardState extends State<PostCard> {
                       ),
                   child: username == ""
                       ? Container(
-                          color: const Color.fromARGB(255, 24, 24, 24),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 24, 24, 24),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                           width: 70,
                           height: 12)
                       : Text(
@@ -543,9 +568,13 @@ class _PostCardState extends State<PostCard> {
                     children: [
                       username == ""
                           ? Container(
-                              color: const Color.fromARGB(255, 24, 24, 24),
                               width: 140,
-                              height: 12)
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 24, 24, 24),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            )
                           : widget.snap['description'] != ''
                               ? Expanded(
                                   child: Text(
@@ -560,11 +589,23 @@ class _PostCardState extends State<PostCard> {
                 ),
                 InkWell(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) {
-                          return CommentsScreen(
-                            snap: widget.snap,
+                    HapticFeedback.lightImpact(); // subtle tap feel
+                    Navigator.of(context, rootNavigator: true).push(
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            CommentsScreen(snap: widget.snap),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(0.0, 1.0);
+                          const end = Offset.zero;
+                          const curve = Curves.ease;
+
+                          var tween = Tween(begin: begin, end: end)
+                              .chain(CurveTween(curve: curve));
+
+                          return SlideTransition(
+                            position: animation.drive(tween),
+                            child: child,
                           );
                         },
                       ),
@@ -575,7 +616,10 @@ class _PostCardState extends State<PostCard> {
                     child: username == ""
                         ? Container(
                             padding: const EdgeInsets.only(left: 15),
-                            color: const Color.fromARGB(255, 24, 24, 24),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 24, 24, 24),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                             width: 70,
                             height: 12)
                         : Text(
@@ -592,7 +636,10 @@ class _PostCardState extends State<PostCard> {
                   child: username == ""
                       ? Container(
                           padding: const EdgeInsets.only(left: 15),
-                          color: const Color.fromARGB(255, 24, 24, 24),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 24, 24, 24),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                           width: 70,
                           height: 12)
                       : Text(

@@ -15,10 +15,10 @@ class ProfileScreenPosts extends StatefulWidget {
   });
 
   @override
-  State<ProfileScreenPosts> createState() => _ProfileScreenPostsState();
+  State<ProfileScreenPosts> createState() => ProfileScreenPostsState();
 }
 
-class _ProfileScreenPostsState extends State<ProfileScreenPosts> {
+class ProfileScreenPostsState extends State<ProfileScreenPosts> {
   final PageController _pageController = PageController();
 
   final List<DocumentSnapshot> _posts = [];
@@ -65,6 +65,22 @@ class _ProfileScreenPostsState extends State<ProfileScreenPosts> {
     if (mounted) setState(() {});
   }
 
+  // --------------- LOAD ONE POST ---------------
+  Future<void> _loadPostById(String postId) async {
+    final selectedDoc = await AppFirestore.posts().doc(widget.postId).get();
+
+    if (!selectedDoc.exists) {
+      _isLoading = false;
+      setState(() {});
+      return;
+    }
+
+    _posts.add(selectedDoc);
+
+    _isLoading = false;
+    if (mounted) setState(() {});
+  }
+
   // ---------------- PAGINATION ----------------
   Future<void> _fetchMorePosts() async {
     if (_isFetchingMore || !_hasMore || _lastDoc == null) return;
@@ -103,7 +119,8 @@ class _ProfileScreenPostsState extends State<ProfileScreenPosts> {
   @override
   void initState() {
     super.initState();
-    _loadInitialPosts();
+    // _loadInitialPosts();
+    _loadPostById(widget.postId);
   }
 
   // ---------------- DISPOSE ----------------
@@ -156,7 +173,9 @@ class _ProfileScreenPostsState extends State<ProfileScreenPosts> {
                     children: [
                       PageView.builder(
                         controller: _pageController,
-                        onPageChanged: _onPageChanged,
+                        physics:
+                            const NeverScrollableScrollPhysics(), // ⭐ disables swipe
+                        onPageChanged: null,
                         itemCount: _posts.length,
                         itemBuilder: (context, index) {
                           return PostCard(

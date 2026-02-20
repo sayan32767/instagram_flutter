@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
+import 'package:instagram_flutter/utils/utils.dart';
 
 class ShareSheet extends StatefulWidget {
   const ShareSheet({super.key, required this.post, required this.type});
@@ -17,6 +20,8 @@ class ShareSheet extends StatefulWidget {
 class _ShareSheetState extends State<ShareSheet> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  Timer? _debounce;
 
   String _query = "";
 
@@ -40,6 +45,7 @@ class _ShareSheetState extends State<ShareSheet> {
       setState(() {});
     }
 
+    await Future.delayed(const Duration(milliseconds: 300));
     Query query = FirebaseFirestore.instance
         .collection('user')
         .orderBy('username')
@@ -117,6 +123,7 @@ class _ShareSheetState extends State<ShareSheet> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -160,116 +167,236 @@ class _ShareSheetState extends State<ShareSheet> {
                 ),
               ),
               onChanged: (val) {
-                _query = val.toLowerCase();
-                _loadUsers(isNewSearch: true);
+                _debounce?.cancel();
+
+                _debounce = Timer(const Duration(milliseconds: 400), () {
+                  final trimmed = val.trim().toLowerCase();
+
+                  _query = trimmed;
+
+                  if (_query.isNotEmpty) {
+                    _loadUsers(isNewSearch: true);
+                  } else {
+                    _users.clear();
+                    _loadUsers().then((_) {
+                      if (mounted) setState(() {});
+                    });
+                  }
+                });
               },
             ),
           ),
 
           const SizedBox(height: 12),
 
-          /// 👥 PAGINATED USER LIST
           Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                    color: Colors.white70,
-                  ))
-                : _users.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "No users found",
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                      )
-                    : Stack(
-                        children: [
-                          ListView.builder(
-                            controller: _scrollController,
-                            itemCount: _users.length,
-                            itemBuilder: (context, index) {
-                              final data =
-                                  _users[index].data() as Map<String, dynamic>;
-
-                              final username = data['username'] ?? '';
-                              final photoUrl = data['photoUrl'] ?? '';
-                              final userType = data['userType'] ?? '';
-
-                              return ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Colors.grey.shade800,
-                                  backgroundImage: photoUrl
-                                          .toString()
-                                          .isNotEmpty
-                                      ? CachedNetworkImageProvider(
-                                          photoUrl,
-                                          cacheManager: InstaCacheManager(),
-                                        )
-                                      : const AssetImage(
-                                              'assets/images/placeholder.jpg')
-                                          as ImageProvider,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+              child: _isLoading
+                  ? Container(
+                      key: const ValueKey("skeleton"),
+                      // height: 200,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: List.generate(4, (index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              children: [
+                                const CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: Color(0xFF181818),
                                 ),
-                                title: Row(
-                                  children: [
-                                    Text(
-                                      username,
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Container(
+                                    height: 14,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF181818),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
-                                    const SizedBox(width: 5),
-                                    if (userType == 'ADMIN')
-                                      SizedBox(
-                                        height: 20,
-                                        child: Image.asset(
-                                            'assets/images/verification_badge.png'),
-                                      ),
-                                  ],
+                                  ),
                                 ),
-                                onTap: () async {
-                                  final receiverId = data['uid'];
-
-                                  await FirestoreMethods().sendMessage(
-                                    mediaOwnerId: widget.post['uid'],
-                                    mediaOwnerUsername: widget.post['username'],
-                                    receiverId: receiverId,
-                                    type: widget.type,
-                                    postId: widget.type == 'post'
-                                        ? widget.post['postId']
-                                        : null,
-                                    reelId: widget.type == 'reel'
-                                        ? widget.post['reelId']
-                                        : null,
-                                  );
-
-                                  if (!mounted) return;
-
-                                  Navigator.pop(context);
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          "${widget.type[0].toUpperCase() + widget.type.substring(1)} sent to $username"),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-
-                          /// 🔄 Bottom loader while fetching more
-                          if (_isFetchingMore)
-                            const Positioned(
-                              bottom: 20,
-                              left: 0,
-                              right: 0,
-                              child: Center(
-                                  child: CircularProgressIndicator(
-                                color: Colors.white70,
-                              )),
+                              ],
                             ),
-                        ],
+                          );
+                        }),
                       ),
-          ),
+                    )
+                  : Container(
+                      key: const ValueKey("content"),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        child: _users.isEmpty
+                            ? const Center(
+                                key: ValueKey("empty"),
+                                child: Text(
+                                  "No users found",
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              )
+                            : Stack(
+                                key: const ValueKey("list"),
+                                children: [
+                                  ListView.builder(
+                                    controller: _scrollController,
+                                    itemCount: _users.length,
+                                    itemBuilder: (context, index) {
+                                      final data = _users[index].data()
+                                          as Map<String, dynamic>;
+
+                                      final username = data['username'] ?? '';
+                                      final photoUrl = data['photoUrl'] ?? '';
+                                      final userType = data['userType'] ?? '';
+
+                                      return TweenAnimationBuilder<double>(
+                                        key: ValueKey(_users[index].id),
+                                        tween: Tween(begin: 0, end: 1),
+                                        duration: Duration(
+                                            milliseconds:
+                                                250 + (index % 8) * 25),
+                                        curve: Curves.easeOutCubic,
+                                        builder: (context, value, child) {
+                                          return Opacity(
+                                            opacity: value,
+                                            child: Transform.translate(
+                                              offset:
+                                                  Offset(0, 15 * (1 - value)),
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: InkWell(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          onTap: () async {
+                                            final receiverId = data['uid'];
+
+                                            await FirestoreMethods()
+                                                .sendMessage(
+                                              mediaOwnerId: widget.post['uid'],
+                                              mediaOwnerUsername:
+                                                  widget.post['username'],
+                                              receiverId: receiverId,
+                                              type: widget.type,
+                                              postId: widget.type == 'post'
+                                                  ? widget.post['postId']
+                                                  : null,
+                                              reelId: widget.type == 'reel'
+                                                  ? widget.post['reelId']
+                                                  : null,
+                                            );
+
+                                            if (!mounted) return;
+
+                                            Navigator.pop(context);
+
+                                            showSnackBar(context,
+                                                "${widget.type[0].toUpperCase() + widget.type.substring(1)} sent to $username");
+                                          },
+                                          child: ListTile(
+                                            leading: CircleAvatar(
+                                              radius: 18,
+                                              backgroundColor:
+                                                  Colors.grey.shade800,
+                                              backgroundImage: photoUrl
+                                                      .toString()
+                                                      .isNotEmpty
+                                                  ? CachedNetworkImageProvider(
+                                                      photoUrl,
+                                                      cacheManager:
+                                                          InstaCacheManager(),
+                                                    )
+                                                  : const AssetImage(
+                                                          'assets/images/placeholder.jpg')
+                                                      as ImageProvider,
+                                            ),
+                                            title: Row(
+                                              children: [
+                                                Text(
+                                                  username,
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                                const SizedBox(width: 5),
+                                                if (userType == 'ADMIN')
+                                                  SizedBox(
+                                                    height: 20,
+                                                    child: Image.asset(
+                                                        'assets/images/verification_badge.png'),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+
+                                  /// 🔄 Bottom loader while fetching more
+                                  if (_isFetchingMore)
+                                    const Positioned(
+                                      bottom: 20,
+                                      left: 0,
+                                      right: 0,
+                                      child: Center(
+                                          child: CircularProgressIndicator(
+                                        color: Colors.white70,
+                                      )),
+                                    ),
+                                ],
+                              ),
+                      ),
+                    ),
+            ),
+          )
+
+          // if (_isLoading)
+          //   Container(
+          //     key: const ValueKey("skeleton"),
+          //     height: 200,
+          //     padding: const EdgeInsets.symmetric(horizontal: 16),
+          //     child: Column(
+          //       mainAxisAlignment: MainAxisAlignment.center,
+          //       children: List.generate(4, (index) {
+          //         return Padding(
+          //           padding: const EdgeInsets.symmetric(vertical: 8),
+          //           child: Row(
+          //             children: [
+          //               const CircleAvatar(
+          //                 radius: 18,
+          //                 backgroundColor: Color(0xFF181818),
+          //               ),
+          //               const SizedBox(width: 12),
+          //               Expanded(
+          //                 child: Container(
+          //                   height: 14,
+          //                   decoration: BoxDecoration(
+          //                     color: const Color(0xFF181818),
+          //                     borderRadius: BorderRadius.circular(6),
+          //                   ),
+          //                 ),
+          //               ),
+          //             ],
+          //           ),
+          //         );
+          //       }),
+          //     ),
+          //   )
+          // else
+
+          /// 👥 PAGINATED USER LIST
         ],
       ),
     );

@@ -145,14 +145,14 @@ class _AddPostScreenState extends State<AddPostScreen> {
         setState(() {
           _isLoading = false;
         });
-        showSnackBar(context, res);
+        showSnackBar(context, 'Failed to post image please try again');
         clearImage();
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      showSnackBar(context, e.toString());
+      showSnackBar(context, 'Failed to post image, please try again');
     }
   }
 
@@ -243,11 +243,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
             .jumpToPage(0);
         Navigator.pop(context);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Reel uploaded sucessfully")));
+        showSnackBar(context, 'Reel uploaded successfully');
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res)));
+      showSnackBar(context, 'Failed to upload reel, please try again');
     }
   }
 
@@ -453,7 +452,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     ? Align(
                         alignment: Alignment.bottomCenter,
                         child: Padding(
-                            padding: const EdgeInsets.all(10.0),
+                            padding:
+                                const EdgeInsets.fromLTRB(10.0, 10, 10, 20),
                             child: !buttonIsLoading
                                 ? GenerateButton(
                                     hintText: 'Continue with this image...',
@@ -586,7 +586,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
                             },
                             child: const Text(
                               "Post",
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blueAccent,
+                                fontSize: 16,
+                              ),
                             ),
                           )
                   ],
