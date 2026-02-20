@@ -562,10 +562,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final model.User user = Provider.of<UserProvider>(context).getUser!;
 
     return isLoading
-        ? const Center(
-            child: CircularProgressIndicator(
+        ? Scaffold(
+            backgroundColor: mobileBackgroundColor,
+            body: const Center(
+                child: CircularProgressIndicator(
               color: Colors.white70,
-            ),
+            )),
           )
         : Scaffold(
             appBar: AppBar(

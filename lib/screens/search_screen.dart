@@ -27,6 +27,8 @@ class _SearchScreenState extends State<SearchScreen> {
   bool isShowUsers = false;
   Future? posts;
 
+  String _previousQuery = '';
+
   getPosts() {
     posts = AppFirestore.posts().get();
   }
@@ -74,16 +76,20 @@ class _SearchScreenState extends State<SearchScreen> {
                   controller: _controller,
                   hintText: 'Search for a user...',
                   onChanged: (s) {
+                    if (s == _previousQuery) return;
                     if (s.isEmpty) {
                       setState(() {
                         isShowUsers = false;
                         _query = '';
                       });
-                    } else {
+                    } else if (s.length == 1 &&
+                        s.trim().isNotEmpty &&
+                        _previousQuery.isEmpty) {
                       setState(() {
                         isShowUsers = true;
                       });
                     }
+                    _previousQuery = s;
                   },
                 ),
               ),

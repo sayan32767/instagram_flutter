@@ -178,53 +178,55 @@ class _CommentsScreenState extends State<CommentsScreen> {
       //         color: Colors.white70,
       //       ))
       //     : _comments.isEmpty
-      body: _comments.isEmpty
-          ? const Center(child: Text("No comments yet"))
-          : Stack(
-              children: [
-                RefreshIndicator(
-                  color: Colors.white,
-                  backgroundColor: Colors.grey.shade900,
-                  onRefresh: _loadInitialComments,
-                  child: ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    controller: _scrollController,
-                    itemCount: _comments.length,
-                    itemBuilder: (context, index) {
-                      return TweenAnimationBuilder<double>(
-                        key: ValueKey(_comments[index].id),
-                        tween: Tween(begin: 0, end: 1),
-                        duration:
-                            Duration(milliseconds: 300 + (index % 8) * 30),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 15 * (1 - value)),
-                              child: child,
+      body: _isLoading
+          ? const Center(child: null)
+          : _comments.isEmpty
+              ? const Center(child: Text("No comments yet"))
+              : Stack(
+                  children: [
+                    RefreshIndicator(
+                      color: Colors.white,
+                      backgroundColor: Colors.grey.shade900,
+                      onRefresh: _loadInitialComments,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        controller: _scrollController,
+                        itemCount: _comments.length,
+                        itemBuilder: (context, index) {
+                          return TweenAnimationBuilder<double>(
+                            key: ValueKey(_comments[index].id),
+                            tween: Tween(begin: 0, end: 1),
+                            duration:
+                                Duration(milliseconds: 300 + (index % 8) * 30),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 15 * (1 - value)),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: CommentCard(
+                              snap: _comments[index].data(),
                             ),
                           );
                         },
-                        child: CommentCard(
-                          snap: _comments[index].data(),
-                        ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+                    if (_isFetchingMore)
+                      const Positioned(
+                        bottom: 16,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                            child: CircularProgressIndicator(
+                          color: Colors.white70,
+                        )),
+                      ),
+                  ],
                 ),
-                if (_isFetchingMore)
-                  const Positioned(
-                    bottom: 16,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                        child: CircularProgressIndicator(
-                      color: Colors.white70,
-                    )),
-                  ),
-              ],
-            ),
 
       // 🔹 INPUT BAR
       bottomNavigationBar: SafeArea(

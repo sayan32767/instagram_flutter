@@ -101,12 +101,14 @@ class _ChatScreenState extends State<ChatScreen> {
       final alreadyLoaded = _messages.any((doc) => doc.id == newDoc.id);
 
       if (!alreadyLoaded) {
-        setState(() {
-          _messages.insert(0, newDoc);
-          _listKey.currentState?.insertItem(
-            0,
-            duration: const Duration(milliseconds: 300),
-          );
+        _markAsRead().then((_) {
+          setState(() {
+            _messages.insert(0, newDoc);
+            _listKey.currentState?.insertItem(
+              0,
+              duration: const Duration(milliseconds: 300),
+            );
+          });
         });
 
         _scrollToBottom();
