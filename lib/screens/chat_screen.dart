@@ -47,8 +47,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   StreamSubscription? _newMsgSub;
 
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-
   bool _otherTyping = false;
 
   StreamSubscription? _typingSub;
@@ -104,10 +102,6 @@ class _ChatScreenState extends State<ChatScreen> {
         _markAsRead().then((_) {
           setState(() {
             _messages.insert(0, newDoc);
-            _listKey.currentState?.insertItem(
-              0,
-              duration: const Duration(milliseconds: 300),
-            );
           });
         });
 
@@ -150,7 +144,9 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _fetchOlderMessages() async {
     if (_isFetchingMore || !_hasMore || _lastDoc == null) return;
 
-    _isFetchingMore = true;
+    setState(() => _isFetchingMore = true);
+
+    await Future.delayed(const Duration(seconds: 1)); // simulate loading time
 
     final snap = await AppFirestore.chats()
         .doc(widget.chatId)
@@ -167,14 +163,19 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.addAll(snap.docs);
     }
 
-    _isFetchingMore = false;
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() => _isFetchingMore = false);
+    }
   }
 
   // ================= SCROLL HANDLER =================
   void _handleScroll() {
-    if (_scrollController.position.pixels <= 100) {
-      _fetchOlderMessages();
+    if (_scrollController.position.atEdge) {
+      bool isTop = _scrollController.position.pixels != 0;
+
+      if (isTop) {
+        _fetchOlderMessages();
+      }
     }
   }
 
@@ -241,6 +242,9 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0, // 🔥 IMPORTANT
+        surfaceTintColor: Colors.transparent, // 🔥 VERY IMPORTANT
         backgroundColor: Colors.black,
         title: _ChatHeader(
             otherUid: widget.otherUid,
@@ -256,40 +260,57 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 // ================= MESSAGES =================
                 Expanded(
-                  child: AnimatedList(
-                    key: _listKey,
-                    controller: _scrollController,
-                    reverse: true, // ⭐ newest at bottom
-                    padding: const EdgeInsets.all(12),
-                    initialItemCount:
-                        _messages.length + (_isFetchingMore ? 1 : 0),
-                    itemBuilder: (context, index, animation) {
-                      if (index >= _messages.length) {
-                        return const Center(
-                            child: CircularProgressIndicator(
-                          color: Colors.white70,
-                        ));
-                      }
+                  child: Stack(
+                    children: [
+                      ListView.builder(
+                        controller: _scrollController,
+                        reverse: true,
+                        padding: const EdgeInsets.all(12),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final msg =
+                              _messages[index].data() as Map<String, dynamic>;
 
-                      final msg =
-                          _messages[index].data() as Map<String, dynamic>;
+                          final isMe = msg['senderId'] == uid;
 
-                      final isMe = msg['senderId'] == uid;
-
-                      return SizeTransition(
-                        sizeFactor: animation,
-                        axisAlignment: -1,
-                        child: FadeTransition(
-                          opacity: animation,
-                          child: Align(
+                          return Align(
                             alignment: isMe
                                 ? Alignment.centerRight
                                 : Alignment.centerLeft,
                             child: MessageBubble(msg: msg, isMe: isMe),
+                          );
+                        },
+                      ),
+
+                      /// 🔥 WHATSAPP STYLE TOP LOADER
+                      if (_isFetchingMore)
+                        Positioned(
+                          top: 12,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(221, 63, 63, 63)
+                                    .withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              child: const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      );
-                    },
+                    ],
                   ),
                 ),
 
