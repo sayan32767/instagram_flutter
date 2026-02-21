@@ -27,10 +27,10 @@ class ReelsScreen extends StatefulWidget {
   const ReelsScreen({super.key, this.initialReelId});
 
   @override
-  State<ReelsScreen> createState() => _ReelsScreenState();
+  State<ReelsScreen> createState() => ReelsScreenState();
 }
 
-class _ReelsScreenState extends State<ReelsScreen> {
+class ReelsScreenState extends State<ReelsScreen> {
   final PageController _pageController = PageController();
 
   final Map<int, VideoPlayerController> _controllers = {};
@@ -41,6 +41,8 @@ class _ReelsScreenState extends State<ReelsScreen> {
   final ValueNotifier<bool> _likeAnim = ValueNotifier(false);
 
   bool _isLoading = true;
+  bool _isInitiallyLoading = true;
+  bool _isTappedRefresh = false;
   bool _isFetchingMore = false;
   bool _hasMore = true;
 
@@ -90,18 +92,6 @@ class _ReelsScreenState extends State<ReelsScreen> {
     throw Exception("Failed after retries");
   }
 
-  Future<Map<String, dynamic>?> _fetchUser(String uid) async {
-    final snap =
-        await FirebaseFirestore.instance.collection('user').doc(uid).get();
-
-    return snap.data(); // contains username, photoUrl, userType, etc.
-  }
-
-  final Map<String, Future<Map<String, dynamic>?>> _userFutureCache = {};
-  Future<Map<String, dynamic>?> _getUserFuture(String uid) {
-    return _userFutureCache.putIfAbsent(uid, () => _fetchUser(uid));
-  }
-
   Future<void> _loadInitialReels() async {
     final snap = await AppFirestore.reels()
         .orderBy('datePublished', descending: true)
@@ -118,7 +108,11 @@ class _ReelsScreenState extends State<ReelsScreen> {
       _hasMore = false;
     }
 
-    if (mounted) setState(() => _isLoading = false);
+    if (mounted)
+      setState(() {
+        _isInitiallyLoading = false;
+        _isLoading = false;
+      });
   }
 
   Future<void> _fetchMoreReels() async {
@@ -154,6 +148,12 @@ class _ReelsScreenState extends State<ReelsScreen> {
     try {
       final url = await fetchTelegramVideoUrl(fileId);
       if (!mounted || index >= _reels.length) return;
+
+      for (final controller in _controllers.values) {
+        if (controller.value.isPlaying) {
+          controller.pause();
+        }
+      }
 
       final controller = VideoPlayerController.networkUrl(Uri.parse(url));
       await controller.initialize();
@@ -209,18 +209,51 @@ class _ReelsScreenState extends State<ReelsScreen> {
   }
 
   Future<void> _onPageChanged(int index) async {
-    _controllers[_currentIndex]?.pause();
+    // 🔥 Pause & mute previous
+    final previousController = _controllers[_currentIndex];
+    if (previousController != null) {
+      if (previousController.value.isInitialized) {
+        previousController.pause();
+        previousController.setVolume(0);
+      }
+    }
+
     _currentIndex = index;
 
     final fileId = (_reels[index].data() as Map)['fileId'];
 
-    await _createController(index, fileId); // ⭐ WAIT here
-    _controllers[index]?.play();
+    // 🔥 Ensure controller exists
+    await _createController(index, fileId);
+
+    final currentController = _controllers[index];
+
+    if (currentController != null && currentController.value.isInitialized) {
+      currentController.setVolume(_isMutedGlobal ? 0 : 1);
+      currentController.play();
+    }
 
     _preloadNext(index);
     _disposeFarControllers(index);
 
-    if (index >= _reels.length - 2) _fetchMoreReels();
+    if (index >= _reels.length - 2) {
+      _fetchMoreReels();
+    }
+  }
+
+  void pauseCurrentVideo() {
+    final controller = _controllers[_currentIndex];
+    if (controller != null && controller.value.isInitialized) {
+      controller.pause();
+      controller.setVolume(0);
+    }
+  }
+
+  void resumeCurrentVideo() {
+    final controller = _controllers[_currentIndex];
+    if (controller != null && controller.value.isInitialized) {
+      controller.setVolume(_isMutedGlobal ? 0 : 1);
+      controller.play();
+    }
   }
 
   void _openShareSheet(Map<String, dynamic> reelData) {
@@ -256,6 +289,57 @@ class _ReelsScreenState extends State<ReelsScreen> {
     return "${(diff.inDays / 7).floor()}w ago";
   }
 
+  Future<void> refreshReels(String source) async {
+    setState(() {
+      if (source == "tab") {
+        _isTappedRefresh = true;
+      } else {
+        _isLoading = true;
+      }
+    });
+
+    try {
+      final snap = await AppFirestore.reels()
+          .orderBy('datePublished', descending: true)
+          .limit(_limit)
+          .get();
+
+      if (!mounted) return;
+
+      // Dispose old controllers
+      for (final c in _controllers.values) {
+        c.dispose();
+      }
+
+      _controllers.clear();
+      _videoUrlCache.clear();
+
+      _reels
+        ..clear()
+        ..addAll(snap.docs);
+
+      _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
+      _hasMore = snap.docs.isNotEmpty;
+      _currentIndex = 0;
+
+      if (_reels.isNotEmpty) {
+        await _createController(0, (_reels[0].data() as Map)['fileId']);
+        _preloadNext(0);
+      }
+
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _isTappedRefresh = false;
+      });
+    }
+  }
+
   @override
   void dispose() {
     for (final c in _controllers.values) {
@@ -263,6 +347,12 @@ class _ReelsScreenState extends State<ReelsScreen> {
     }
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void deactivate() {
+    _controllers[_currentIndex]?.pause();
+    super.deactivate();
   }
 
   @override
@@ -296,302 +386,358 @@ class _ReelsScreenState extends State<ReelsScreen> {
         ),
       ),
       backgroundColor: mobileBackgroundColor,
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.white70))
-          : PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              onPageChanged: _onPageChanged,
-              itemCount: _reels.length,
-              itemBuilder: (context, index) {
-                final data = _reels[index].data() as Map<String, dynamic>;
-                final controller = _controllers[index];
 
-                return StreamBuilder<DocumentSnapshot>(
-                  stream: AppFirestore.reels().doc(data['reelId']).snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const SizedBox();
+      body: RefreshIndicator(
+        color: Colors.white,
+        backgroundColor: Colors.black,
+        onRefresh: () => refreshReels("pull"),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // Only allow refresh when at first reel
+            if (_currentIndex == 0) {
+              return false;
+            }
+            return true;
+          },
+          child: Stack(
+            children: [
+              PageView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                onPageChanged: _onPageChanged,
+                itemCount: _reels.length,
+                itemBuilder: (context, index) {
+                  final data = _reels[index].data() as Map<String, dynamic>;
+                  final controller = _controllers[index];
 
-                    final reel = snapshot.data!.data() as Map<String, dynamic>;
-                    final uid =
-                        Provider.of<UserProvider>(context, listen: false)
-                            .getUser!
-                            .uid;
-                    final isLiked = (reel['likes'] as List).contains(uid);
-                    final likeCount =
-                        reel['likeCount'] ?? (reel['likes'] as List).length;
-                    final commentCount = reel['commentCount'] ?? 0;
+                  return StreamBuilder<DocumentSnapshot>(
+                    stream:
+                        AppFirestore.reels().doc(data['reelId']).snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox();
 
-                    return GestureDetector(
-                      onTap: _toggleMute,
-                      onDoubleTap: () async {
-                        _likeAnim.value = true;
-                        await FirestoreMethods().likePost(
-                            'reels', uid, data['reelId'], reel['likes']);
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          /// Thumbnail
-                          if (data['thumbnailUrl'] != null)
-                            CachedNetworkImage(
-                              imageUrl: data['thumbnailUrl'],
-                              fit: BoxFit.cover,
-                              cacheManager: InstaCacheManager(),
-                            )
-                          else
-                            Container(color: Colors.black),
+                      final reel =
+                          snapshot.data!.data() as Map<String, dynamic>;
+                      final uid =
+                          Provider.of<UserProvider>(context, listen: false)
+                              .getUser!
+                              .uid;
+                      final isLiked = (reel['likes'] as List).contains(uid);
+                      final likeCount =
+                          reel['likeCount'] ?? (reel['likes'] as List).length;
+                      final commentCount = reel['commentCount'] ?? 0;
 
-                          /// Video fade + scale
-                          if (controller != null)
-                            AnimatedOpacity(
-                              opacity: controller.value.isInitialized ? 1 : 0,
-                              duration: const Duration(milliseconds: 300),
-                              child: AnimatedScale(
-                                scale:
-                                    controller.value.isInitialized ? 1 : 1.04,
+                      return GestureDetector(
+                        onTap: _toggleMute,
+                        onDoubleTap: () async {
+                          _likeAnim.value = true;
+                          await FirestoreMethods().likePost(
+                              'reels', uid, data['reelId'], reel['likes']);
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            /// Thumbnail
+                            if (data['thumbnailUrl'] != null)
+                              CachedNetworkImage(
+                                imageUrl: data['thumbnailUrl'],
+                                fit: BoxFit.cover,
+                                cacheManager: InstaCacheManager(),
+                              )
+                            else
+                              Container(color: Colors.black),
+
+                            /// Video fade + scale
+                            if (controller != null)
+                              AnimatedOpacity(
+                                opacity: controller.value.isInitialized ? 1 : 0,
                                 duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                                child: FittedBox(
-                                  fit: BoxFit.cover,
-                                  child: SizedBox(
-                                    width: controller.value.size.width,
-                                    height: controller.value.size.height,
-                                    child: VideoPlayer(controller),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                          /// Loader
-                          if ((controller == null ||
-                                  !controller.value.isInitialized) &&
-                              index == _currentIndex)
-                            const Center(
-                                child: CircularProgressIndicator(
-                                    color: Colors.white70)),
-
-                          /// Bottom gradient
-                          IgnorePointer(
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.transparent, Colors.black87],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          /// Bottom text + avatar
-                          FutureBuilder(
-                              future: _getUserFuture(data['uid']),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData) return const SizedBox();
-
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return Center(
-                                    child: const CircularProgressIndicator(
-                                        color: Colors.white70),
-                                  );
-                                }
-
-                                final user = snapshot.data!;
-
-                                return Positioned(
-                                  left: 16,
-                                  right: 16,
-                                  bottom: 24,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          GestureDetector(
-                                            onTap: () =>
-                                                _openProfile(user['uid']),
-                                            child: CircleAvatar(
-                                              radius: 16,
-                                              backgroundImage: user[
-                                                          'photoUrl'] !=
-                                                      null
-                                                  ? CachedNetworkImageProvider(
-                                                      user['photoUrl'])
-                                                  : const AssetImage(
-                                                          'assets/images/placeholder.jpg')
-                                                      as ImageProvider,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          GestureDetector(
-                                              onTap: () {
-                                                // Navigate to user profile screen
-                                                Navigator.of(context).push(
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        ProfileScreen(
-                                                      uid: user['uid'],
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                              child:
-                                                  Text(user['username'] ?? '')),
-                                          SizedBox(width: 5),
-                                          (user['userType'] != null &&
-                                                  user['userType'] == 'ADMIN')
-                                              ? SizedBox(
-                                                  height: 20,
-                                                  child: Image.asset(
-                                                      'assets/images/verification_badge.png'),
-                                                )
-                                              : Container(),
-                                          const Spacer(),
-                                          Text(_timeAgo(data['datePublished']),
-                                              style: const TextStyle(
-                                                  color: Colors.white70,
-                                                  fontSize: 12)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(data['description'] ?? '',
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis),
-                                    ],
-                                  ),
-                                );
-                              }),
-
-                          /// Right actions
-                          Positioned(
-                            right: 12,
-                            bottom: 120,
-                            child: Column(
-                              children: [
-                                IconButton(
-                                  onPressed: () async {
-                                    await FirestoreMethods().likePost('reels',
-                                        uid, data['reelId'], reel['likes']);
-                                  },
-                                  icon: Icon(
-                                      isLiked
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color:
-                                          isLiked ? Colors.red : Colors.white),
-                                ),
-                                Text(likeCount.toString(),
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                                const SizedBox(height: 8),
-                                IconButton(
-                                  onPressed: () {
-                                    Navigator.of(context, rootNavigator: true)
-                                        .push(
-                                      PageRouteBuilder(
-                                        pageBuilder: (context, animation,
-                                                secondaryAnimation) =>
-                                            CommentsScreen(
-                                          snap: data,
-                                          collectionName: 'reels',
-                                        ),
-                                        transitionsBuilder: (context, animation,
-                                            secondaryAnimation, child) {
-                                          const begin = Offset(0.0, 1.0);
-                                          const end = Offset.zero;
-                                          const curve = Curves.ease;
-
-                                          var tween = Tween(
-                                                  begin: begin, end: end)
-                                              .chain(CurveTween(curve: curve));
-
-                                          return SlideTransition(
-                                            position: animation.drive(tween),
-                                            child: child,
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.comment_outlined,
-                                      color: Colors.white),
-                                ),
-                                Text(commentCount.toString(),
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                                const SizedBox(height: 8),
-                                IconButton(
-                                  onPressed: () {
-                                    HapticFeedback
-                                        .lightImpact(); // subtle tap feel
-                                    _openShareSheet(data);
-                                  },
-                                  icon: const Icon(Icons.send_outlined,
-                                      color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          /// Mute icon
-                          AnimatedOpacity(
-                            opacity: _isMutedGlobal ? 1 : 0,
-                            duration: const Duration(milliseconds: 250),
-                            child: Center(
-                              child: Icon(
-                                  _isMutedGlobal
-                                      ? Icons.volume_off
-                                      : Icons.volume_up,
-                                  size: 28),
-                            ),
-                          ),
-
-                          /// Double tap heart
-                          ValueListenableBuilder<bool>(
-                            valueListenable: _likeAnim,
-                            builder: (_, value, __) {
-                              return AnimatedOpacity(
-                                opacity: value ? 1 : 0,
-                                duration: const Duration(milliseconds: 200),
-                                child: LikeAnimation(
-                                  isAnimating: value,
-                                  duration: const Duration(milliseconds: 400),
-                                  onEnd: () => _likeAnim.value = false,
-                                  child: ShaderMask(
-                                    shaderCallback: (Rect bounds) {
-                                      return const LinearGradient(
-                                        colors: [
-                                          Color(0xFF833AB4),
-                                          Color(0xFFE1306C),
-                                          Color(0xFFF77737),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ).createShader(bounds);
-                                    },
-                                    child: const Icon(
-                                      Icons.favorite,
-                                      color: Colors
-                                          .white, // important for ShaderMask
-                                      size: 120,
+                                child: AnimatedScale(
+                                  scale:
+                                      controller.value.isInitialized ? 1 : 1.04,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutCubic,
+                                  child: FittedBox(
+                                    fit: BoxFit.cover,
+                                    child: SizedBox(
+                                      width: controller.value.size.width,
+                                      height: controller.value.size.height,
+                                      child: VideoPlayer(controller),
                                     ),
                                   ),
                                 ),
-                              );
-                            },
+                              ),
+
+                            /// Loader
+                            if ((controller == null ||
+                                    !controller.value.isInitialized) &&
+                                index == _currentIndex)
+                              const Center(
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white70)),
+
+                            /// Bottom gradient
+                            IgnorePointer(
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black87
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            /// Bottom text + avatar
+
+                            Positioned(
+                              left: 16,
+                              right: 16,
+                              bottom: 24,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () => _openProfile(data['uid']),
+                                        child: CircleAvatar(
+                                          radius: 16,
+                                          backgroundImage: data['profImage'] !=
+                                                      null ||
+                                                  data['profImage'] != ''
+                                              ? CachedNetworkImageProvider(
+                                                  data['profImage'])
+                                              : const AssetImage(
+                                                      'assets/images/placeholder.jpg')
+                                                  as ImageProvider,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      GestureDetector(
+                                        onTap: () {
+                                          // Navigate to user profile screen
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => ProfileScreen(
+                                                uid: data['uid'],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Text(data['username'] ?? ''),
+                                      ),
+                                      const Spacer(),
+                                      Text(_timeAgo(data['datePublished']),
+                                          style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(data['description'] ?? '',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis),
+                                ],
+                              ),
+                            ),
+
+                            /// Right actions
+                            Positioned(
+                              right: 12,
+                              bottom: 120,
+                              child: Column(
+                                children: [
+                                  IconButton(
+                                    onPressed: () async {
+                                      await FirestoreMethods().likePost('reels',
+                                          uid, data['reelId'], reel['likes']);
+                                    },
+                                    icon: Icon(
+                                        isLiked
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: isLiked
+                                            ? Colors.red
+                                            : Colors.white),
+                                  ),
+                                  Text(likeCount.toString(),
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 12)),
+                                  const SizedBox(height: 8),
+                                  IconButton(
+                                    onPressed: () {
+                                      Navigator.of(context, rootNavigator: true)
+                                          .push(
+                                        PageRouteBuilder(
+                                          pageBuilder: (context, animation,
+                                                  secondaryAnimation) =>
+                                              CommentsScreen(
+                                            snap: data,
+                                            collectionName: 'reels',
+                                          ),
+                                          transitionsBuilder: (context,
+                                              animation,
+                                              secondaryAnimation,
+                                              child) {
+                                            const begin = Offset(0.0, 1.0);
+                                            const end = Offset.zero;
+                                            const curve = Curves.ease;
+
+                                            var tween = Tween(
+                                                    begin: begin, end: end)
+                                                .chain(
+                                                    CurveTween(curve: curve));
+
+                                            return SlideTransition(
+                                              position: animation.drive(tween),
+                                              child: child,
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.comment_outlined,
+                                        color: Colors.white),
+                                  ),
+                                  Text(commentCount.toString(),
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 12)),
+                                  const SizedBox(height: 8),
+                                  IconButton(
+                                    onPressed: () {
+                                      HapticFeedback
+                                          .lightImpact(); // subtle tap feel
+                                      _openShareSheet(data);
+                                    },
+                                    icon: const Icon(Icons.send_outlined,
+                                        color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            /// Mute icon
+                            AnimatedOpacity(
+                              opacity: _isMutedGlobal ? 1 : 0,
+                              duration: const Duration(milliseconds: 250),
+                              child: Center(
+                                child: Icon(
+                                    _isMutedGlobal
+                                        ? Icons.volume_off
+                                        : Icons.volume_up,
+                                    size: 28),
+                              ),
+                            ),
+
+                            /// Double tap heart
+                            ValueListenableBuilder<bool>(
+                              valueListenable: _likeAnim,
+                              builder: (_, value, __) {
+                                return AnimatedOpacity(
+                                  opacity: value ? 1 : 0,
+                                  duration: const Duration(milliseconds: 200),
+                                  child: LikeAnimation(
+                                    isAnimating: value,
+                                    duration: const Duration(milliseconds: 400),
+                                    onEnd: () => _likeAnim.value = false,
+                                    child: ShaderMask(
+                                      shaderCallback: (Rect bounds) {
+                                        return const LinearGradient(
+                                          colors: [
+                                            Color(0xFF833AB4),
+                                            Color(0xFFE1306C),
+                                            Color(0xFFF77737),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ).createShader(bounds);
+                                      },
+                                      child: const Icon(
+                                        Icons.favorite,
+                                        color: Colors
+                                            .white, // important for ShaderMask
+                                        size: 120,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+
+              //  else if (_isTappedRefresh)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: AnimatedSlide(
+                  offset: _isTappedRefresh ? Offset.zero : const Offset(0, -1),
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: AnimatedOpacity(
+                    opacity: _isTappedRefresh ? 1 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 60),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
                           ),
-                        ],
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(221, 19, 19, 19)
+                                .withOpacity(1),
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          child: const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                    ),
+                  ),
+                ),
+              ),
+
+              if (_isInitiallyLoading)
+                const Center(
+                    child: CircularProgressIndicator(color: Colors.white70))
+              else if (_isLoading)
+                SizedBox()
+              else if (_reels.isEmpty)
+                const Center(
+                    child: Text("No reels found",
+                        style: TextStyle(color: Colors.white)))
+
+              // const Center(
+              //     child: CircularProgressIndicator(color: Colors.white70))
+              // : _reels.isEmpty
+              //     ? const Center(
+              //         child: Text("No reels found",
+              //             style: TextStyle(color: Colors.white)))
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

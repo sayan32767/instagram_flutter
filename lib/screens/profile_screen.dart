@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/auth_methods.dart';
@@ -30,52 +31,67 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.uid});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  dynamic userData;
-  int reelLen = 0;
-  int postLen = 0;
-  int followers = 0;
-  int following = 0;
-  String userType = "";
-  bool isFollowing = false;
+class ProfileScreenState extends State<ProfileScreen> {
+  Map<String, dynamic> userData = {};
+
+  final GlobalKey<_ProfilePostsGridState> _postsKey = GlobalKey();
+  final GlobalKey<_ProfileReelsGridState> _reelsKey = GlobalKey();
+
+  int totalPosts = 0;
+  int totalReels = 0;
+
   bool isLoading = false;
+
   late FirebaseFirestore _firestore;
   late FirestoreMethods _firestoreMethods;
 
   bool _isTaglinePosting = false;
 
-  getData() async {
+  void refresh() async {
+    await loadProfileData();
+
+    _postsKey.currentState?.refreshPosts();
+    _reelsKey.currentState?.refreshReels();
+  }
+
+  Future<void> loadProfileData() async {
     setState(() {
       isLoading = true;
     });
+
     try {
-      QuerySnapshot postSnap =
-          await AppFirestore.posts().where('uid', isEqualTo: widget.uid).get();
-      QuerySnapshot reelSnap =
-          await AppFirestore.reels().where('uid', isEqualTo: widget.uid).get();
-      DocumentSnapshot snap =
-          await _firestore.collection('user').doc(widget.uid).get();
-      postLen = postSnap.docs.length;
-      reelLen = reelSnap.docs.length;
-      userData = snap.data()!;
-      followers = (snap.data()! as Map)['followers'].length;
-      following = (snap.data()! as Map)['following'].length;
-      isFollowing = (snap.data()! as Map)['followers']
-          .contains(FirebaseAuth.instance.currentUser!.uid);
-      userType = (snap.data()! as Map)['userType'] ?? "";
-      setState(() {});
+      final results = await Future.wait<dynamic>([
+        _firestore.collection('user').doc(widget.uid).get(),
+        AppFirestore.posts().where('uid', isEqualTo: widget.uid).count().get(),
+        AppFirestore.reels().where('uid', isEqualTo: widget.uid).count().get(),
+      ]);
+
+      final DocumentSnapshot userSnap = results[0] as DocumentSnapshot;
+
+      final AggregateQuerySnapshot postsCountSnap =
+          results[1] as AggregateQuerySnapshot;
+
+      final AggregateQuerySnapshot reelsCountSnap =
+          results[2] as AggregateQuerySnapshot;
+
+      setState(() {
+        userData = userSnap.data() as Map<String, dynamic>;
+        totalPosts = postsCountSnap.count ?? 0;
+        totalReels = reelsCountSnap.count ?? 0;
+      });
     } catch (e) {
-      showSnackBar(context, 'Failed to load user data, please try again');
+      showSnackBar(context, 'Failed to load profile data');
     }
+
     setState(() {
       isLoading = false;
     });
   }
 
-  Widget _buildProfileHeader(model.User user) {
+  Widget _buildProfileHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -95,8 +111,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   );
                 },
-                child: (userData['photoUrl'] == null ||
-                        userData['photoUrl'].toString().isEmpty)
+                child: userData['photoUrl'] == null ||
+                        userData['photoUrl'].toString().isEmpty
                     ? const CircleAvatar(
                         radius: 40,
                         backgroundImage:
@@ -108,19 +124,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
               ),
 
-              /// 📊 Stats + follow/signout
+              /// 📊 Stats + Signout
               Expanded(
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        buildStatColumn(postLen, 'posts'),
-                        buildStatColumn(reelLen, 'reels'),
-                        // buildDateJoined(FirebaseAuth
-                        //     .instance.currentUser!.metadata.creationTime!.year),
-                        // buildStatColumn(followers, 'followers'),
-                        // buildStatColumn(following, 'following'),
+                        buildStatColumn(totalPosts, 'posts'),
+                        buildStatColumn(totalReels, 'reels'),
                       ],
                     ),
                     Padding(
@@ -136,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   textColor: primaryColor,
                                   borderColor: Colors.grey,
                                   onPressed: () async {
-                                    await AuthMethods().signOut();
+                                    await AuthMethods().signOut(context);
                                     Navigator.of(context, rootNavigator: true)
                                         .pushAndRemoveUntil(
                                       MaterialPageRoute(
@@ -146,43 +158,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     );
                                   },
                                 )
-                              // : isFollowing
-                              //     ? FollowButton(
-                              //         width: 230,
-                              //         backgroundColor: Colors.white,
-                              //         text: 'Unfollow',
-                              //         textColor: Colors.black,
-                              //         borderColor: Colors.white,
-                              //         onPressed: () async {
-                              //           await _firestoreMethods.followUser(
-                              //             FirebaseAuth
-                              //                 .instance.currentUser!.uid,
-                              //             userData['uid'],
-                              //           );
-                              //           setState(() {
-                              //             isFollowing = false;
-                              //             followers -= 1;
-                              //           });
-                              //         },
-                              //       )
-                              //     : FollowButton(
-                              //         width: 230,
-                              //         backgroundColor: Colors.blueAccent,
-                              //         text: 'Follow',
-                              //         textColor: primaryColor,
-                              //         borderColor: Colors.blueAccent,
-                              //         onPressed: () async {
-                              //           await _firestoreMethods.followUser(
-                              //             FirebaseAuth
-                              //                 .instance.currentUser!.uid,
-                              //             userData['uid'],
-                              //           );
-                              //           setState(() {
-                              //             isFollowing = true;
-                              //             followers += 1;
-                              //           });
-                              //         },
-                              //       ),
                               : const SizedBox.shrink(),
                         ],
                       ),
@@ -198,7 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.only(top: 15),
             child: Text(
-              userData?['username'] ?? "",
+              userData['username'] ?? "",
               style: const TextStyle(fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
@@ -208,10 +183,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.only(top: 1),
-            child: (userData != null &&
-                    (userData['bio'] ?? "").toString().isNotEmpty)
-                ? Text(userData['bio'], overflow: TextOverflow.ellipsis)
-                : const SizedBox.shrink(),
+            child:
+                userData['bio'] != null && userData['bio'].toString().isNotEmpty
+                    ? Text(userData['bio'], overflow: TextOverflow.ellipsis)
+                    : const SizedBox.shrink(),
           ),
 
           /// ✏️ Owner actions
@@ -242,7 +217,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           },
                         ),
                         const SizedBox(width: 8),
-
                         FollowButton(
                           width: 120,
                           backgroundColor:
@@ -254,7 +228,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onPressed: () => _showEmojiModal(context),
                         ),
                         const SizedBox(width: 8),
-
                         FollowButton(
                           width: 120,
                           backgroundColor:
@@ -265,35 +238,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           borderColor: Theme.of(context).dividerColor,
                           onPressed: () => _showTaglineModal(context),
                         ),
-
-                        /// 🛠 Admin tools (subtle danger style)
-                        // if (user.userType == 'ADMIN') ...[
-                        //   const SizedBox(width: 8),
-                        //   TextButton(
-                        //     style: TextButton.styleFrom(
-                        //       foregroundColor: Colors.red,
-                        //       padding:
-                        //           const EdgeInsets.symmetric(horizontal: 12),
-                        //     ),
-                        //     onPressed: _firestoreMethods.cleanUpDuplicatePosts,
-                        //     child: const Text(
-                        //       'Clean Up!',
-                        //       style: TextStyle(fontWeight: FontWeight.w600),
-                        //     ),
-                        //   ),
-                        //   TextButton(
-                        //     style: TextButton.styleFrom(
-                        //       foregroundColor: Colors.red,
-                        //       padding:
-                        //           const EdgeInsets.symmetric(horizontal: 12),
-                        //     ),
-                        //     onPressed: _firestoreMethods.deleteDuplicatePhotos,
-                        //     child: const Text(
-                        //       'Clean Up V2!',
-                        //       style: TextStyle(fontWeight: FontWeight.w600),
-                        //     ),
-                        //   ),
-                        // ],
                       ],
                     ),
                   ),
@@ -554,13 +498,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _firestore = FirebaseFirestore.instance;
     _firestoreMethods = FirestoreMethods();
-    getData();
+    loadProfileData();
   }
 
   @override
   Widget build(BuildContext context) {
-    final model.User user = Provider.of<UserProvider>(context).getUser!;
-
     return isLoading
         ? Scaffold(
             backgroundColor: mobileBackgroundColor,
@@ -580,25 +522,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            userData != null ? userData['username'] : "",
+                            userData['username'] ?? "",
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        if (userType == 'ADMIN')
-                          SizedBox(
-                            height: 20,
-                            child: Image.asset(
-                                'assets/images/verification_badge.png'),
-                          ),
                       ],
                     ),
                   ),
 
                   /// RIGHT → Switch group
-                  if (userData != null &&
-                      FirebaseAuth.instance.currentUser!.uid == widget.uid)
+                  if (FirebaseAuth.instance.currentUser!.uid == widget.uid)
                     GestureDetector(
                       onTap: () {
                         showModalBottomSheet(
@@ -668,7 +602,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   return [
                     /// 👤 PROFILE HEADER
                     SliverToBoxAdapter(
-                      child: _buildProfileHeader(user),
+                      child: _buildProfileHeader(),
                     ),
 
                     /// 📑 TAB BAR
@@ -714,8 +648,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 body: TabBarView(
                   children: [
                     // _buildPostsGrid(),
-                    ProfilePostsGrid(uid: widget.uid),
-                    ProfileReelsGrid(uid: widget.uid),
+                    ProfilePostsGrid(
+                      uid: widget.uid,
+                      key: _postsKey,
+                    ),
+                    ProfileReelsGrid(uid: widget.uid, key: _reelsKey),
                   ],
                 ),
               ),
@@ -745,27 +682,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// Column buildDateJoined(int yearJoined) {
-//   return Column(
-//     mainAxisSize: MainAxisSize.min,
-//     mainAxisAlignment: MainAxisAlignment.center,
-//     children: [
-//       Text(
-//         yearJoined.toString(),
-//         style: TextStyle(
-//           fontSize: 22,
-//           fontWeight: FontWeight.bold,
-//         ),
-//       ),
-//       Text(
-//         "joined",
-//         style: TextStyle(
-//             fontSize: 15, fontWeight: FontWeight.w400, color: Colors.grey),
-//       ),
-//     ],
-//   );
-// }
-
 class ProfilePostsGrid extends StatefulWidget {
   final String uid;
 
@@ -787,6 +703,17 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
   DocumentSnapshot? _lastDoc;
 
   static const int _limit = 15;
+
+  Future<void> refreshPosts() async {
+    _posts.clear();
+    _lastDoc = null;
+    _hasMore = true;
+    _isLoading = true;
+
+    if (mounted) setState(() {});
+
+    await _loadInitialPosts();
+  }
 
   // 🔹 Load first batch
   Future<void> _loadInitialPosts() async {
@@ -811,7 +738,9 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
   Future<void> _fetchMorePosts() async {
     if (_isFetchingMore || !_hasMore || _lastDoc == null) return;
 
-    _isFetchingMore = true;
+    setState(() {
+      _isFetchingMore = true;
+    });
 
     final snap = await AppFirestore.posts()
         .where('uid', isEqualTo: widget.uid)
@@ -911,14 +840,30 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
 
         // 🔹 Bottom floating loader (no scroll jump)
         if (_isFetchingMore)
-          const Positioned(
+          Positioned(
             bottom: 20,
             left: 0,
             right: 0,
             child: Center(
-                child: CircularProgressIndicator(
-              color: Colors.white70,
-            )),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(221, 63, 63, 63).withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+            ),
           ),
       ],
     );
@@ -947,6 +892,17 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
 
   static const int _limit = 15;
 
+  Future<void> refreshReels() async {
+    _reels.clear();
+    _lastDoc = null;
+    _hasMore = true;
+    _isLoading = true;
+
+    if (mounted) setState(() {});
+
+    await _loadInitialReels();
+  }
+
   // 🔹 Initial load
   Future<void> _loadInitialReels() async {
     final snap = await AppFirestore.reels()
@@ -970,7 +926,9 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
   Future<void> _fetchMoreReels() async {
     if (_isFetchingMore || !_hasMore || _lastDoc == null) return;
 
-    _isFetchingMore = true;
+    setState(() {
+      _isFetchingMore = true;
+    });
 
     final snap = await AppFirestore.reels()
         .where('uid', isEqualTo: widget.uid)
@@ -1081,14 +1039,30 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
 
         // 🔹 Bottom floating loader
         if (_isFetchingMore)
-          const Positioned(
+          Positioned(
             bottom: 20,
             left: 0,
             right: 0,
             child: Center(
-                child: CircularProgressIndicator(
-              color: Colors.white70,
-            )),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(221, 63, 63, 63).withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+            ),
           ),
       ],
     );

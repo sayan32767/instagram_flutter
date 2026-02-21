@@ -1,11 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
 import 'package:instagram_flutter/screens/group_chooser_screen.dart';
+import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/group_storage.dart';
+import 'package:provider/provider.dart';
 
 class GroupGateScreen extends StatefulWidget {
   const GroupGateScreen({super.key});
@@ -18,14 +21,24 @@ class _GroupGateScreenState extends State<GroupGateScreen> {
   @override
   void initState() {
     super.initState();
-    _checkGroup();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialize();
+    });
   }
 
-  Future<void> _checkGroup() async {
+  Future<void> _initialize() async {
+    await Future.delayed(Duration.zero);
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    await userProvider.refreshUser();
+
     final groupId = await GroupStorage.load();
-    debugPrint("Loaded groupId from storage: $groupId");
+
+    if (!mounted) return;
+
     if (groupId != null) {
-      AppFirestore.setGroup(groupId); // ⭐ IMPORTANT
+      AppFirestore.setGroup(groupId);
       _goToApp();
     } else {
       _goToChooser();
@@ -33,8 +46,7 @@ class _GroupGateScreenState extends State<GroupGateScreen> {
   }
 
   void _goToApp() {
-    Navigator.pushReplacement(
-      context,
+    Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => const ResponsiveLayout(
           webScreenLayout: WebScreenLayout(),
@@ -45,8 +57,7 @@ class _GroupGateScreenState extends State<GroupGateScreen> {
   }
 
   void _goToChooser() {
-    Navigator.pushReplacement(
-      context,
+    Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => const GroupChooserScreen(),
       ),
@@ -56,7 +67,10 @@ class _GroupGateScreenState extends State<GroupGateScreen> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+      backgroundColor: mobileBackgroundColor,
+      body: Center(
+        child: CircularProgressIndicator(color: Colors.white70),
+      ),
     );
   }
 }

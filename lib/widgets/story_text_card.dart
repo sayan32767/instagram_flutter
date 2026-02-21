@@ -14,19 +14,16 @@ class StoryTextCard extends StatelessWidget {
   final String? userProfilePicUrl;
   final String userName;
   final String uid;
-  final String? userType;
   final String text;
   final String color;
 
-  StoryTextCard({
-    this.userProfilePicUrl,
-    required this.userName,
-    required this.uid,
-    required this.userType,
-    required this.text,
-    required this.color,
-    super.key
-  });
+  StoryTextCard(
+      {this.userProfilePicUrl,
+      required this.userName,
+      required this.uid,
+      required this.text,
+      required this.color,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,72 +45,72 @@ class StoryTextCard extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: Container(
-                 
                   child: Column(
                     children: [
-                      user.uid == uid ? Container(
-                  padding: EdgeInsets.all(4.0),
-                  color: Colors.black.withOpacity(0.6),
-                  child: Column(
-                    children: [
-                      Center(
-                        child: Text(
-                          'Your Story',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ) : SizedBox.shrink(),
-
+                      user.uid == uid
+                          ? Container(
+                              padding: EdgeInsets.all(4.0),
+                              color: Colors.black.withOpacity(0.6),
+                              child: Column(
+                                children: [
+                                  Center(
+                                    child: Text(
+                                      'Your Story',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : SizedBox.shrink(),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           children: [
-                            user.uid != uid ? userProfilePicUrl == null
-                                ? CircleAvatar(
-                                    radius: 16,
-                                    backgroundImage: AssetImage('assets/images/placeholder.jpg'),
-                                    backgroundColor: const Color.fromARGB(255, 24, 24, 24),
-                                  )
-                                : ProgressImageDots(url: userProfilePicUrl!) : SizedBox.shrink(),
+                            user.uid != uid
+                                ? userProfilePicUrl == null
+                                    ? CircleAvatar(
+                                        radius: 16,
+                                        backgroundImage: AssetImage(
+                                            'assets/images/placeholder.jpg'),
+                                        backgroundColor: const Color.fromARGB(
+                                            255, 24, 24, 24),
+                                      )
+                                    : ProgressImageDots(url: userProfilePicUrl!)
+                                : SizedBox.shrink(),
                             SizedBox(width: 8.0),
-                            user.uid != uid ? Flexible(
-                          fit: FlexFit.loose,
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  userName,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    shadows: [
-                                      Shadow(
-                                        blurRadius: 4.0,
-                                        color: Colors.black.withOpacity(0.4),
-                                        offset: Offset(2.0, 2.0),
-                                      ),
-                                    ],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              SizedBox(width: 5),
-                              
-                             userType == 'ADMIN' ? SizedBox(
-                                height: 20,
-                                child: Image.asset('assets/images/verification_badge.png'),
-                              )
-                            : Container(),
-                            ],
-                          ),
-                        ) : SizedBox.shrink()
+                            user.uid != uid
+                                ? Flexible(
+                                    fit: FlexFit.loose,
+                                    child: Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            userName,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              shadows: [
+                                                Shadow(
+                                                  blurRadius: 4.0,
+                                                  color: Colors.black
+                                                      .withOpacity(0.4),
+                                                  offset: Offset(2.0, 2.0),
+                                                ),
+                                              ],
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : SizedBox.shrink()
                           ],
                         ),
                       ),
@@ -122,7 +119,8 @@ class StoryTextCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(15, user.uid != uid ? 50 : 30, 15, 15),
+                padding:
+                    EdgeInsets.fromLTRB(15, user.uid != uid ? 50 : 30, 15, 15),
                 child: Center(
                   child: Text(
                     text,
@@ -146,7 +144,7 @@ class StoryTextCard extends StatelessWidget {
               //     child: Column(
               //       crossAxisAlignment: CrossAxisAlignment.start,
               //       children: [
-                      
+
               //       ],
               //     ),
               //   ),

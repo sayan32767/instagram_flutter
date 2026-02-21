@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
+import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:provider/provider.dart';
 
@@ -20,13 +21,13 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    addData();
+    // addData();
   }
 
-  addData() async {
-    UserProvider _userProvider = Provider.of(context, listen: false);
-    await _userProvider.refreshUser();
-  }
+  // addData() async {
+  //   UserProvider _userProvider = Provider.of(context, listen: false);
+  //   await _userProvider.refreshUser();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +41,6 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
     // );
     return Provider.of<UserProvider>(context).getUser != null
         ? widget.mobileScreenLayout
-        : Center(
-            child: CircularProgressIndicator(
-              color: Colors.white70,
-            ),
-          );
+        : LoginScreen();
   }
 }

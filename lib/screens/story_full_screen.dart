@@ -11,14 +11,12 @@ class StoryFullScreen extends StatefulWidget {
   final String storyColor;
   final String? userProfilePicUrl;
   final String userName;
-  final String userType;
 
   StoryFullScreen({
     required this.storyText,
     required this.storyColor,
     required this.userProfilePicUrl,
     required this.userName,
-    required this.userType,
   });
 }
 
@@ -44,13 +42,12 @@ class _StoryFullScreenState extends State<StoryFullScreen> {
                           radius: 24,
                           backgroundImage:
                               AssetImage('assets/images/placeholder.jpg'),
-                          backgroundColor: const Color.fromARGB(255, 24, 24, 24),
+                          backgroundColor:
+                              const Color.fromARGB(255, 24, 24, 24),
                         )
                       : ProgressImageDots(
                           url: widget.userProfilePicUrl!, radius: 24),
-                  
                   const SizedBox(width: 10),
-        
                   Flexible(
                     child: Text(
                       widget.userName,
@@ -70,39 +67,30 @@ class _StoryFullScreenState extends State<StoryFullScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(width: 10),
-                  
-                  widget.userType == 'ADMIN'
-                      ? SizedBox(
-                          height: 20,
-                          child:
-                              Image.asset('assets/images/verification_badge.png'),
-                        )
-                      : Container(),
                 ],
               ),
             ),
             Expanded(
               child: StoryView(
-                storyItems: [
-                  StoryItem.text(
-                    title: widget.storyText,
-                    backgroundColor: Color(
-                        int.parse(widget.storyColor.substring(1), radix: 16)),
-                    textStyle: TextStyle(fontSize: 30),
-                    textOuterPadding: EdgeInsets.fromLTRB(35, 25, 35, 50)
-                  ),
-                ],
-                onStoryShow: null,
-                onComplete: () {
-                  print("Stories completed!");
-                  Navigator.pop(context);
-                },
-                progressPosition: ProgressPosition.bottom,
-                repeat: false,
-                controller: _storyController,
-                indicatorOuterPadding: EdgeInsets.symmetric(vertical: 20, horizontal: 20)
-              ),
+                  storyItems: [
+                    StoryItem.text(
+                        title: widget.storyText,
+                        backgroundColor: Color(int.parse(
+                            widget.storyColor.substring(1),
+                            radix: 16)),
+                        textStyle: TextStyle(fontSize: 30),
+                        textOuterPadding: EdgeInsets.fromLTRB(35, 25, 35, 50)),
+                  ],
+                  onStoryShow: null,
+                  onComplete: () {
+                    print("Stories completed!");
+                    Navigator.pop(context);
+                  },
+                  progressPosition: ProgressPosition.bottom,
+                  repeat: false,
+                  controller: _storyController,
+                  indicatorOuterPadding:
+                      EdgeInsets.symmetric(vertical: 20, horizontal: 20)),
             ),
           ],
         ),

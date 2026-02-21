@@ -31,17 +31,32 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   late PageController pageController;
 
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  late GlobalKey<ReelsScreenState> reelsKey;
+  late GlobalKey<ProfileScreenState> profileKey;
 
   late PresenceService _presence;
+
+  late final List<Widget> homeScreenItems;
 
   @override
   void initState() {
     super.initState();
+
+    reelsKey = GlobalKey<ReelsScreenState>();
+    profileKey = GlobalKey<ProfileScreenState>();
     pageController = PageController();
     _presence = PresenceService()..start();
     globalKey = GlobalKey();
 
-    /// ⭐ FIX: sync provider with initial page
+    homeScreenItems = [
+      FeedScreen(key: globalKey),
+      ReelsScreen(key: reelsKey),
+      const InboxScreen(),
+      const SearchScreen(),
+      ProfileScreen(
+          uid: FirebaseAuth.instance.currentUser!.uid, key: profileKey),
+    ];
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<NavigationProvider>(context, listen: false).setPage(0);
     });
@@ -54,39 +69,110 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
     super.dispose();
   }
 
+  // void navigationTapped(int page) {
+  //   _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+  //   pageController.jumpToPage(page);
+
+  //   // refresh feed when home icon is tapped
+  //   if (page == 0) {
+  //     if (globalKey.currentState is FeedScreenState) {
+  //       final state = globalKey.currentState as FeedScreenState;
+  //       if (!state.isAtTop) {
+  //         state.scrollToTop();
+  //       }
+
+  //       /// 2️⃣ Already at top → refresh
+  //       else {
+  //         state.scrollToTop();
+  //         state.refresh();
+  //       }
+  //     }
+  //   }
+  // }
   void navigationTapped(int page) {
-    _navigatorKey.currentState?.popUntil((route) => route.isFirst);
-    pageController.jumpToPage(page);
+    /// 🔥 If leaving Reels tab
+    if (_page == 1 && page != 1) {
+      reelsKey.currentState?.pauseCurrentVideo();
+    }
 
-    // refresh feed when home icon is tapped
-    if (page == 0) {
-      if (globalKey.currentState is FeedScreenState) {
-        final state = globalKey.currentState as FeedScreenState;
-        if (!state.isAtTop) {
-          state.scrollToTop();
-        }
+    // 🔥 If coming back to Reels tab → resume
+    if (_page != 1 && page == 1) {
+      reelsKey.currentState?.resumeCurrentVideo();
+    }
 
-        /// 2️⃣ Already at top → refresh
-        else {
-          state.scrollToTop();
-          state.refresh();
+    // 🔥 If user tapped Profile tab → refresh
+    // if (page == 4 && _page != 4) {
+    //   if (profileKey.currentState is ProfileScreenState) {
+    //     final state = profileKey.currentState as ProfileScreenState;
+    //     state.refresh();
+    //   }
+    // }
+
+    // 🔥 If user tapped the current tab
+    if (page == _page) {
+      if (page == 0) {
+        if (globalKey.currentState is FeedScreenState) {
+          final state = globalKey.currentState as FeedScreenState;
+
+          if (!state.isAtTop) {
+            state.scrollToTop();
+          } else {
+            state.refresh();
+          }
         }
       }
+
+      if (page == 1) {
+        if (reelsKey.currentState is ReelsScreenState) {
+          final state = reelsKey.currentState as ReelsScreenState;
+
+          state.refreshReels("tab");
+        }
+      }
+
+      return; // stop here, don't jump again
     }
+
+    // 🔥 User tapped a different tab → just switch
+    pageController.jumpToPage(page);
+
+    setState(() {
+      _page = page;
+    });
   }
+
+  // void onPageChanged(int page) {
+  //   Provider.of<NavigationProvider>(context, listen: false).setPage(page);
+  // }
 
   void onPageChanged(int page) {
-    Provider.of<NavigationProvider>(context, listen: false).setPage(page);
+    setState(() {
+      _page = page;
+    });
   }
 
-  Future<bool> _onWillPop() async {
-    if (_navigatorKey.currentState?.canPop() ?? false) {
-      _navigatorKey.currentState?.pop();
-      return false;
-    }
+  // Future<bool> _onWillPop() async {
+  //   if (_navigatorKey.currentState?.canPop() ?? false) {
+  //     _navigatorKey.currentState?.pop();
+  //     return false;
+  //   }
 
+  //   if (_page != 0) {
+  //     pageController.jumpToPage(0);
+  //     return false;
+  //   }
+
+  //   return true;
+  // }
+
+  Future<bool> _onWillPop() async {
     if (_page != 0) {
       pageController.jumpToPage(0);
+
+      setState(() {
+        _page = 0;
+      });
+
       return false;
     }
 
@@ -97,36 +183,43 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   Widget build(BuildContext context) {
     Provider.of<GlobalKeyProvier>(context, listen: false)
         .setGlobalKey(globalKey);
-    Provider.of<NavigationProvider>(context).setController(pageController);
+    // Provider.of<NavigationProvider>(context).setController(pageController);
 
-    _page = Provider.of<NavigationProvider>(context).page ?? 0;
+    // _page = Provider.of<NavigationProvider>(context).page ?? 0;
 
-    final homeScreenItems = [
-      FeedScreen(key: globalKey),
-      const ReelsScreen(),
-      const InboxScreen(),
-      const SearchScreen(),
-      ProfileScreen(uid: FirebaseAuth.instance.currentUser!.uid)
-    ];
+    // final homeScreenItems = [
+    //   FeedScreen(key: globalKey),
+    //   const ReelsScreen(),
+    //   const InboxScreen(),
+    //   const SearchScreen(),
+    //   ProfileScreen(uid: FirebaseAuth.instance.currentUser!.uid)
+    // ];
 
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: mobileBackgroundColor,
-        body: Navigator(
-          key: _navigatorKey,
-          onGenerateRoute: (settings) {
-            return MaterialPageRoute(
-              builder: (context) => Stack(fit: StackFit.expand, children: [
-                PageView(
-                  controller: pageController,
-                  onPageChanged: onPageChanged,
-                  children: homeScreenItems,
-                  physics: const BouncingScrollPhysics(),
-                ),
-              ]),
-            );
-          },
+        // body: Navigator(
+        //   key: _navigatorKey,
+        //   onGenerateRoute: (settings) {
+        //     return MaterialPageRoute(
+        //       builder: (context) => Stack(fit: StackFit.expand, children: [
+        //         PageView(
+        //           controller: pageController,
+        //           onPageChanged: onPageChanged,
+        //           children: homeScreenItems,
+        //           physics: const BouncingScrollPhysics(),
+        //         ),
+        //       ]),
+        //     );
+        //   },
+        // ),
+        body: PageView(
+          onPageChanged: onPageChanged,
+          controller: pageController,
+          children: homeScreenItems,
+          physics: const ClampingScrollPhysics(), // Android-like
+          allowImplicitScrolling: true,
         ),
         bottomNavigationBar: CupertinoTabBar(
           height: 75,

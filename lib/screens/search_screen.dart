@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
@@ -133,7 +136,9 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
   final List<DocumentSnapshot> _posts = [];
 
   bool _isLoading = true;
+  bool _showPaginationLoader = false;
   bool _isFetchingMore = false;
+  Timer? _paginationTimer;
   bool _hasMore = true;
 
   DocumentSnapshot? _lastDoc;
@@ -148,6 +153,9 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
     _isLoading = true;
 
     setState(() {});
+
+    await Future.delayed(
+        const Duration(milliseconds: 300)); // simulate network delay
 
     final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
@@ -171,6 +179,8 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
 
   // 🔹 Load first posts
   Future<void> _loadInitial() async {
+    await Future.delayed(
+        const Duration(milliseconds: 300)); // simulate network delay
     final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
         .limit(_limit)
@@ -193,6 +203,16 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
 
     _isFetchingMore = true;
 
+    // 🔥 Start delayed loader timer
+    _paginationTimer?.cancel();
+    _paginationTimer = Timer(const Duration(milliseconds: 250), () {
+      if (_isFetchingMore && mounted) {
+        setState(() {
+          _showPaginationLoader = true;
+        });
+      }
+    });
+
     final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
         .startAfterDocument(_lastDoc!)
@@ -207,13 +227,13 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
     }
 
     _isFetchingMore = false;
-    if (snap.docs.isNotEmpty) {
-      _lastDoc = snap.docs.last;
-      _posts.addAll(snap.docs);
 
-      if (mounted) setState(() {});
-    } else {
-      _hasMore = false;
+    _paginationTimer?.cancel();
+
+    if (mounted) {
+      setState(() {
+        _showPaginationLoader = false;
+      });
     }
   }
 
@@ -240,12 +260,9 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
   @override
   Widget build(BuildContext context) {
     // 🔹 Initial loader
-    // if (_isLoading) {
-    //   return const Center(
-    //       child: CircularProgressIndicator(
-    //     color: Colors.white70,
-    //   ));
-    // }
+    if (_isLoading) {
+      return const _MasonryGridSkeleton();
+    }
 
     return Stack(
       children: [
@@ -255,6 +272,9 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
           onRefresh: _refresh,
           child: MasonryGridView.builder(
             controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
@@ -289,7 +309,9 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => ProfileScreenPosts(
-                            uid: uid, postId: _posts[index].id),
+                          postId: _posts[index].id,
+                          uid: uid,
+                        ),
                       ),
                     );
                   },
@@ -303,16 +325,41 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
           ),
         ),
 
+        if (_posts.isEmpty)
+          Center(
+            child: Text(
+              "No posts found",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+
         // 🔹 Smooth floating loader
-        if (_isFetchingMore)
-          const Positioned(
+        /// 🔥 WHATSAPP STYLE TOP LOADER
+        if (_showPaginationLoader)
+          Positioned(
             bottom: 20,
             left: 0,
             right: 0,
             child: Center(
-                child: CircularProgressIndicator(
-              color: Colors.white70,
-            )),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(221, 63, 63, 63).withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+            ),
           ),
       ],
     );
@@ -354,8 +401,11 @@ class _SearchUsersListState extends State<SearchUsersList> {
       return;
     }
 
-    Query query = FirebaseFirestore.instance
-        .collection('user')
+    // Query query = FirebaseFirestore.instance
+    //     .collection('user')
+    //     .orderBy('username')
+    //     .startAt([widget.query]).endAt([widget.query + '\uf8ff']).limit(_limit);
+    Query query = AppFirestore.collection('members')
         .orderBy('username')
         .startAt([widget.query]).endAt([widget.query + '\uf8ff']).limit(_limit);
 
@@ -377,10 +427,11 @@ class _SearchUsersListState extends State<SearchUsersList> {
   Future<void> _fetchMore() async {
     if (_isFetchingMore || !_hasMore || _lastDoc == null) return;
 
-    _isFetchingMore = true;
+    setState(() {
+      _isFetchingMore = true;
+    });
 
-    Query query = FirebaseFirestore.instance
-        .collection('user')
+    Query query = AppFirestore.collection('members')
         .orderBy('username')
         .startAt([widget.query])
         .endAt([widget.query + '\uf8ff'])
@@ -463,8 +514,7 @@ class _SearchUsersListState extends State<SearchUsersList> {
   /// 🔹 HISTORY TILE
   Widget _buildHistoryUserTile(String currentUid, String searchedUid) {
     return FutureBuilder<DocumentSnapshot>(
-      future:
-          FirebaseFirestore.instance.collection('user').doc(searchedUid).get(),
+      future: AppFirestore.collection('members').doc(searchedUid).get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || !snapshot.data!.exists) {
           return const SizedBox.shrink();
@@ -489,12 +539,6 @@ class _SearchUsersListState extends State<SearchUsersList> {
               Flexible(
                   child: Text(userData['username'],
                       overflow: TextOverflow.ellipsis)),
-              const SizedBox(width: 5),
-              if (userData['userType'] == 'ADMIN')
-                SizedBox(
-                  height: 20,
-                  child: Image.asset('assets/images/verification_badge.png'),
-                ),
             ],
           ),
           trailing: IconButton(
@@ -603,6 +647,7 @@ class _SearchUsersListState extends State<SearchUsersList> {
                 controller: _scrollController,
                 itemCount: _users.length,
                 itemBuilder: (context, index) {
+                  final id = _users[index].id;
                   final data = _users[index].data() as Map<String, dynamic>;
 
                   return ListTile(
@@ -617,23 +662,16 @@ class _SearchUsersListState extends State<SearchUsersList> {
                     title: Row(
                       children: [
                         Text(data['username']),
-                        const SizedBox(width: 5),
-                        if (data['userType'] == 'ADMIN')
-                          SizedBox(
-                            height: 20,
-                            child: Image.asset(
-                                'assets/images/verification_badge.png'),
-                          ),
                       ],
                     ),
                     onTap: () async {
-                      await _addToSearchHistory(data['uid']);
+                      await _addToSearchHistory(id);
                       if (!mounted) return;
 
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ProfileScreen(uid: data['uid']),
+                          builder: (_) => ProfileScreen(uid: id),
                         ),
                       );
                     },
@@ -641,18 +679,75 @@ class _SearchUsersListState extends State<SearchUsersList> {
                 },
               ),
               if (_isFetchingMore)
-                const Positioned(
+                Positioned(
                   bottom: 20,
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: CircularProgressIndicator(color: Colors.white70),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(221, 63, 63, 63)
+                            .withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MasonryGridSkeleton extends StatelessWidget {
+  const _MasonryGridSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final randomHeights = [
+      160.0,
+      220.0,
+      180.0,
+      250.0,
+      200.0,
+      170.0,
+      230.0,
+      190.0,
+      210.0,
+    ];
+
+    return MasonryGridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+      ),
+      mainAxisSpacing: 6,
+      crossAxisSpacing: 6,
+      itemCount: 9, // 👈 exactly 9 fake posts
+      itemBuilder: (context, index) {
+        return Container(
+          height: randomHeights[index % randomHeights.length],
+          decoration: BoxDecoration(
+            color: const Color(0xFF181818),
+            borderRadius: BorderRadius.circular(6),
+          ),
+        );
+      },
     );
   }
 }

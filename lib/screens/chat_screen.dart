@@ -6,11 +6,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/widgets/chat_bubble.dart';
 import 'package:instagram_flutter/widgets/typing_bubble.dart';
+import 'package:provider/provider.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -240,6 +242,8 @@ class _ChatScreenState extends State<ChatScreen> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
+    final currentUid =
+        Provider.of<UserProvider>(context, listen: false).getUser!.uid;
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -314,7 +318,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
 
-                if (_otherTyping) TypingBubble(isMe: false),
+                if (_otherTyping && widget.otherUid != currentUid)
+                  TypingBubble(isMe: false),
 
                 // ================= INPUT =================
                 _ChatInput(
@@ -341,6 +346,8 @@ class _ChatHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUid =
+        Provider.of<UserProvider>(context, listen: false).getUser!.uid;
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => ProfileScreen(uid: otherUid))),
@@ -356,7 +363,6 @@ class _ChatHeader extends StatelessWidget {
 
           final photoUrl = user['photoUrl'];
           final username = user['username'] ?? "User";
-          final userType = user['userType'] ?? "";
           final Timestamp? lastActive = user['lastActive'];
 
           bool online = false;
@@ -369,7 +375,7 @@ class _ChatHeader extends StatelessWidget {
 
           String subtitle = "";
 
-          if (otherTyping) {
+          if (otherTyping && otherUid != currentUid) {
             subtitle = "typing...";
           } else if (online) {
             subtitle = "Active Now";
@@ -408,13 +414,6 @@ class _ChatHeader extends StatelessWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      const SizedBox(width: 4),
-                      if (userType == 'ADMIN')
-                        SizedBox(
-                          height: 16,
-                          child: Image.asset(
-                              'assets/images/verification_badge.png'),
-                        ),
                     ],
                   ),
                   if (subtitle.isNotEmpty)

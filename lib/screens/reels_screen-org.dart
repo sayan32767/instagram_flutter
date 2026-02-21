@@ -537,13 +537,6 @@ class _ReelsScreenState extends State<ReelsScreen> {
                                                     SizedBox(
                                                       width: 5,
                                                     ),
-                                                    user['userType'] == 'ADMIN'
-                                                        ? SizedBox(
-                                                            height: 20,
-                                                            child: Image.asset(
-                                                                'assets/images/verification_badge.png'),
-                                                          )
-                                                        : Container()
                                                   ],
                                                 ),
                                               ),

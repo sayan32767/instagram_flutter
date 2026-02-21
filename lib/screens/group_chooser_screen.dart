@@ -2,16 +2,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
 import 'package:instagram_flutter/screens/edit_profile_screen.dart';
+import 'package:instagram_flutter/services/group_services.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/group_storage.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/text_field_input.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:uuid/v1.dart';
 
@@ -49,82 +52,35 @@ class _GroupChooserScreenState extends State<GroupChooserScreen> {
   }
 
   Future<void> _createGroup() async {
-    final name = _groupController.text.toLowerCase().trim();
-    final password = _passController.text.trim();
-    final confirmPassword = _confirmPassController.text.trim();
+    final name = _groupController.text;
+    final password = _passController.text;
+    final confirmPassword = _confirmPassController.text;
 
     if (name.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      showSnackBar(context, "Enter all the fields");
-      setState(() => _error = "Enter all the fields");
+      showSnackBar(context, "Enter all fields");
       return;
     }
 
     if (password.length < 8) {
-      showSnackBar(context, "Password should be at least 8 characters");
-      setState(() => _error = "Password should be at least 8 characters");
+      showSnackBar(context, "Password must be at least 8 characters");
       return;
     }
 
     if (password != confirmPassword) {
       showSnackBar(context, "Passwords do not match");
-      setState(() => _error = "Passwords do not match");
       return;
     }
 
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() => _loading = true);
 
     try {
-      final currentUid = FirebaseAuth.instance.currentUser!.uid;
+      final groupId = await GroupService.createGroup(
+        name: name,
+        password: password,
+      );
 
-      await FirebaseFirestore.instance.runTransaction((tx) async {
-        final query = await FirebaseFirestore.instance
-            .collection('groups')
-            .where('name', isEqualTo: name)
-            .limit(1)
-            .get();
-
-        if (query.docs.isNotEmpty) {
-          throw Exception("Group name already taken");
-        }
-
-        final groupId = const Uuid().v1(); // from uuid package
-        final groupDoc =
-            FirebaseFirestore.instance.collection('groups').doc(groupId);
-
-        tx.set(groupDoc, {
-          'name': name,
-          'password': _hashPassword(password),
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        tx.set(
-          groupDoc.collection('members').doc(currentUid),
-          {
-            'role': 'member',
-            'joinedAt': FieldValue.serverTimestamp(),
-          },
-        );
-
-        tx.set(
-          FirebaseFirestore.instance
-              .collection('user')
-              .doc(currentUid)
-              .collection('groups')
-              .doc(groupId),
-          {
-            'name': name,
-            'role': 'member',
-            'joinedAt': FieldValue.serverTimestamp(),
-          },
-        );
-
-        // Save locally inside transaction success
-        await GroupStorage.save(groupDoc.id);
-        AppFirestore.setGroup(groupDoc.id);
-      });
+      await GroupStorage.save(groupId);
+      AppFirestore.setGroup(groupId);
 
       if (!mounted) return;
 
@@ -138,89 +94,31 @@ class _GroupChooserScreenState extends State<GroupChooserScreen> {
         (route) => false,
       );
     } catch (e) {
-      showSnackBar(
-          context,
-          e.toString().contains("taken")
-              ? "Group name already taken"
-              : "Something went wrong");
-
-      setState(() => _error = "Group name already taken");
+      showSnackBar(context, e.toString().replaceAll("Exception: ", ""));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _joinGroup() async {
-    final name = _groupController.text.toLowerCase().trim();
-    final password = _passController.text.trim();
+    final name = _groupController.text;
+    final password = _passController.text;
 
     if (name.isEmpty || password.isEmpty) {
       showSnackBar(context, "Enter group name and password");
-      setState(() => _error = "Enter group name and password");
       return;
     }
 
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() => _loading = true);
 
     try {
-      final currentUid = FirebaseAuth.instance.currentUser!.uid;
+      final groupId = await GroupService.joinGroup(
+        name: name,
+        password: password,
+      );
 
-      final snapshot = await FirebaseFirestore.instance
-          .collection('groups')
-          .where('name', isEqualTo: name)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isEmpty) {
-        showSnackBar(context, "Group not found");
-        setState(() => _error = "Group not found");
-        return;
-      }
-
-      final groupDoc = snapshot.docs.first;
-      final data = groupDoc.data();
-
-      if (data['password'] != _hashPassword(password)) {
-        showSnackBar(context, "Incorrect password");
-        setState(() => _error = "Incorrect password");
-        return;
-      }
-
-      await FirebaseFirestore.instance.runTransaction((tx) async {
-        final memberRef =
-            groupDoc.reference.collection('members').doc(currentUid);
-
-        final memberSnap = await tx.get(memberRef);
-
-        final userGroupRef = FirebaseFirestore.instance
-            .collection('user')
-            .doc(currentUid)
-            .collection('groups')
-            .doc(groupDoc.id);
-
-        final userGroupSnap = await tx.get(userGroupRef);
-
-        if (!memberSnap.exists) {
-          tx.set(memberRef, {
-            'role': 'member',
-            'joinedAt': FieldValue.serverTimestamp(),
-          });
-        }
-
-        if (!userGroupSnap.exists) {
-          tx.set(userGroupRef, {
-            'name': data['name'],
-            'role': 'member',
-            'joinedAt': FieldValue.serverTimestamp(),
-          });
-        }
-      });
-
-      await GroupStorage.save(groupDoc.id);
-      AppFirestore.setGroup(groupDoc.id);
+      await GroupStorage.save(groupId);
+      AppFirestore.setGroup(groupId);
 
       if (!mounted) return;
 
@@ -234,8 +132,7 @@ class _GroupChooserScreenState extends State<GroupChooserScreen> {
         (route) => false,
       );
     } catch (e) {
-      showSnackBar(context, "Something went wrong");
-      setState(() => _error = "Something went wrong");
+      showSnackBar(context, e.toString().replaceAll("Exception: ", ""));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

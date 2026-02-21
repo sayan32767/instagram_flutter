@@ -55,7 +55,7 @@ void showSnackBar(BuildContext context, String content) {
   overlayEntry = OverlayEntry(
     builder: (context) {
       return Positioned(
-        bottom: 8,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         left: 16,
         right: 16,
         child: FadeTransition(

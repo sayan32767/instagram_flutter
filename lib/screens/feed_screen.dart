@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/inbox_screen.dart';
 import 'package:instagram_flutter/screens/story_screen.dart';
@@ -20,8 +21,12 @@ class FeedScreen extends StatefulWidget {
   State<FeedScreen> createState() => FeedScreenState();
 }
 
-class FeedScreenState extends State<FeedScreen> {
-  QuerySnapshot? usersSnapshot;
+class FeedScreenState extends State<FeedScreen>
+    with AutomaticKeepAliveClientMixin {
+  // QuerySnapshot? usersSnapshot;
+
+  @override
+  bool get wantKeepAlive => true;
 
   Map<String, dynamic>? groupData;
 
@@ -50,15 +55,15 @@ class FeedScreenState extends State<FeedScreen> {
   }
 
   // ---------- FETCH USERS ----------
-  Future<void> _fetchUserData() async {
-    final snap = await FirebaseFirestore.instance.collection('user').get();
+  // Future<void> _fetchUserData() async {
+  //   final snap = await FirebaseFirestore.instance.collection('user').get();
 
-    if (!mounted) return;
+  //   if (!mounted) return;
 
-    setState(() {
-      usersSnapshot = snap;
-    });
-  }
+  //   setState(() {
+  //     usersSnapshot = snap;
+  //   });
+  // }
 
   // ---------- FETCH GROUPS ----------
   Future<void> _fetchGroupData() async {
@@ -92,7 +97,7 @@ class FeedScreenState extends State<FeedScreen> {
 
     await _fetchGroupData();
 
-    await Future.delayed(const Duration(milliseconds: 300));
+    // await Future.delayed(const Duration(milliseconds: 300));
   }
 
   // ---------- INITIAL POSTS ----------
@@ -141,7 +146,7 @@ class FeedScreenState extends State<FeedScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    // _fetchUserData();
     _fetchGroupData();
     _loadInitialPosts();
   }
@@ -149,6 +154,7 @@ class FeedScreenState extends State<FeedScreen> {
   // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return SafeArea(
       child: Scaffold(
         backgroundColor: mobileBackgroundColor,
@@ -279,9 +285,9 @@ class FeedScreenState extends State<FeedScreen> {
                               );
                             },
                             child: PostCard(
-                              snap:
-                                  _posts[index].data() as Map<String, dynamic>,
-                            ),
+                                // snap:
+                                //     _posts[index].data() as Map<String, dynamic>,
+                                post: Post.fromSnap(_posts[index])),
                           );
                         },
                         childCount: _posts.length,
@@ -308,27 +314,27 @@ class FeedScreenState extends State<FeedScreen> {
   }
 
   // ---------- ANNOUNCEMENT WIDGET ----------
-  Widget _buildAnnouncements() {
-    if (groupData == null) return const SizedBox.shrink();
+  // Widget _buildAnnouncements() {
+  //   if (groupData == null) return const SizedBox.shrink();
 
-    final announcements = <String>[];
+  //   final announcements = <String>[];
 
-    if (groupData!['announcement_text'] != null &&
-        groupData!['announcement_text'].toString().trim().isNotEmpty) {
-      announcements.add(groupData!['announcement_text']);
-    }
+  //   if (groupData!['announcement_text'] != null &&
+  //       groupData!['announcement_text'].toString().trim().isNotEmpty) {
+  //     announcements.add(groupData!['announcement_text']);
+  //   }
 
-    if (announcements.isEmpty) return const SizedBox.shrink();
+  //   if (announcements.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 10, 12),
-      color: Colors.grey[900],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: announcements
-            .map((e) => Text(e, style: const TextStyle(fontSize: 14)))
-            .toList(),
-      ),
-    );
-  }
+  //   return Container(
+  //     padding: const EdgeInsets.fromLTRB(16, 10, 10, 12),
+  //     color: Colors.grey[900],
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: announcements
+  //           .map((e) => Text(e, style: const TextStyle(fontSize: 14)))
+  //           .toList(),
+  //     ),
+  //   );
+  // }
 }

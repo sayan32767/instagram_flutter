@@ -175,7 +175,13 @@ class _ReelPreviewState extends State<_ReelPreview> {
     final snap = await AppFirestore.reels().doc(widget.reelId).get();
 
     final data = snap.data() as Map<String, dynamic>?;
-    if (data == null) return;
+
+    if (data == null) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      return;
+    }
+    ;
 
     ImageProvider? provider;
 
@@ -207,10 +213,18 @@ class _ReelPreviewState extends State<_ReelPreview> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading || _reelData == null) {
+    if (_loading) {
       return const SizedBox(
         width: 150,
         height: 220,
+      );
+    }
+
+    if (_reelData == null) {
+      return const SizedBox(
+        width: 150,
+        height: 220,
+        child: Center(child: Text("Reel not found")),
       );
     }
 
@@ -309,7 +323,11 @@ class _PostPreviewState extends State<_PostPreview> {
     final snap = await AppFirestore.posts().doc(widget.postId).get();
 
     final data = snap.data() as Map<String, dynamic>?;
-    if (data == null) return;
+    if (data == null) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      return;
+    }
 
     final provider = CachedNetworkImageProvider(
       data['postUrl'],
@@ -334,10 +352,18 @@ class _PostPreviewState extends State<_PostPreview> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading || _postData == null || _imageProvider == null) {
+    if (_loading) {
       return const SizedBox(
         width: 150,
         height: 180,
+      );
+    }
+
+    if (_postData == null || _imageProvider == null) {
+      return const SizedBox(
+        width: 150,
+        height: 180,
+        child: Center(child: Text("Post not found")),
       );
     }
 
@@ -389,9 +415,8 @@ class _UserHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream:
-          FirebaseFirestore.instance.collection('user').doc(uid).snapshots(),
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('user').doc(uid).get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SizedBox(height: 24);
@@ -428,14 +453,6 @@ class _UserHeader extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    if ((user['userType'] ?? '') == 'ADMIN')
-                      SizedBox(
-                        height: 14,
-                        child: Image.asset(
-                          'assets/images/verification_badge.png',
-                        ),
-                      ),
                   ],
                 ),
               ),

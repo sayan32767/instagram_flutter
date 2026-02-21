@@ -1,17 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/widgets/post_card.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 
 class ProfileScreenPosts extends StatefulWidget {
-  final String uid;
   final String postId;
-
+  final String uid;
   const ProfileScreenPosts({
     super.key,
-    required this.uid,
     required this.postId,
+    required this.uid,
   });
 
   @override
@@ -19,115 +19,12 @@ class ProfileScreenPosts extends StatefulWidget {
 }
 
 class ProfileScreenPostsState extends State<ProfileScreenPosts> {
-  final PageController _pageController = PageController();
+  Post? post;
+  bool isLoading = true;
 
-  final List<DocumentSnapshot> _posts = [];
-
-  bool _isLoading = true;
-  bool _isFetchingMore = false;
-  bool _hasMore = true;
-
-  DocumentSnapshot? _lastDoc;
-  int _currentIndex = 0;
-
-  static const int _limit = 10;
-
-  // ---------------- INITIAL LOAD ----------------
-  Future<void> _loadInitialPosts() async {
-    /// 1️⃣ get the selected post
-    final selectedDoc = await AppFirestore.posts().doc(widget.postId).get();
-
-    if (!selectedDoc.exists) {
-      _isLoading = false;
-      setState(() {});
-      return;
-    }
-
-    _posts.add(selectedDoc);
-
-    /// 2️⃣ load next posts of same user
-    final snap = await AppFirestore.posts()
-        .where('uid', isEqualTo: widget.uid)
-        .orderBy('datePublished', descending: true)
-        .startAfter([selectedDoc['datePublished']])
-        .limit(_limit)
-        .get();
-
-    _posts.addAll(snap.docs);
-
-    if (snap.docs.isNotEmpty) {
-      _lastDoc = snap.docs.last;
-    } else {
-      _hasMore = false;
-    }
-
-    _isLoading = false;
-    if (mounted) setState(() {});
-  }
-
-  // --------------- LOAD ONE POST ---------------
-  Future<void> _loadPostById(String postId) async {
-    final selectedDoc = await AppFirestore.posts().doc(widget.postId).get();
-
-    if (!selectedDoc.exists) {
-      _isLoading = false;
-      setState(() {});
-      return;
-    }
-
-    _posts.add(selectedDoc);
-
-    _isLoading = false;
-    if (mounted) setState(() {});
-  }
-
-  // ---------------- PAGINATION ----------------
-  Future<void> _fetchMorePosts() async {
-    if (_isFetchingMore || !_hasMore || _lastDoc == null) return;
-
-    _isFetchingMore = true;
-
-    final snap = await AppFirestore.posts()
-        .where('uid', isEqualTo: widget.uid)
-        .orderBy('datePublished', descending: true)
-        .startAfterDocument(_lastDoc!)
-        .limit(_limit)
-        .get();
-
-    if (snap.docs.isEmpty) {
-      _hasMore = false;
-    } else {
-      _lastDoc = snap.docs.last;
-      _posts.addAll(snap.docs);
-    }
-
-    _isFetchingMore = false;
-    if (mounted) setState(() {});
-  }
-
-  // ---------------- PAGE CHANGE ----------------
-  void _onPageChanged(int index) {
-    _currentIndex = index;
-
-    /// when near end → fetch more
-    if (index >= _posts.length - 2) {
-      _fetchMorePosts();
-    }
-  }
-
-  // ---------------- INIT ----------------
   @override
   void initState() {
     super.initState();
-    // _loadInitialPosts();
-    _loadPostById(widget.postId);
-  }
-
-  // ---------------- DISPOSE ----------------
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 
   // ---------------- UI ----------------
@@ -162,42 +59,148 @@ class ProfileScreenPostsState extends State<ProfileScreenPosts> {
           ),
         ),
         backgroundColor: mobileBackgroundColor,
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                color: Colors.white70,
-              ))
-            : _posts.isEmpty
-                ? const Center(child: Text("Post not found"))
-                : Stack(
-                    children: [
-                      PageView.builder(
-                        controller: _pageController,
-                        physics:
-                            const NeverScrollableScrollPhysics(), // ⭐ disables swipe
-                        onPageChanged: null,
-                        itemCount: _posts.length,
-                        itemBuilder: (context, index) {
-                          return PostCard(
-                            snap: _posts[index].data() as Map<String, dynamic>,
-                          );
-                        },
-                      ),
+        body: FutureBuilder<DocumentSnapshot>(
+          future: AppFirestore.posts().doc(widget.postId).get(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const _SinglePostSkeleton();
+            }
 
-                      /// bottom loader while fetching more
-                      if (_isFetchingMore)
-                        const Positioned(
-                          bottom: 20,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ),
-                    ],
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return const Center(
+                child: Text(
+                  "Post not found",
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            }
+
+            final post = Post.fromSnap(snapshot.data!);
+
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: PostCard(
+                key: ValueKey(post.postId),
+                post: post,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SinglePostSkeleton extends StatelessWidget {
+  const _SinglePostSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🔹 Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Color(0xFF181818),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF181818),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 80,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF181818),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+
+          // 🔹 Image Placeholder
+          Container(
+            height: 350,
+            width: double.infinity,
+            color: const Color(0xFF181818),
+          ),
+
+          const SizedBox(height: 12),
+
+          // 🔹 Actions Row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF181818),
+                    borderRadius: BorderRadius.circular(4),
                   ),
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF181818),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // 🔹 Caption Lines
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                Container(
+                  height: 12,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF181818),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 12,
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF181818),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

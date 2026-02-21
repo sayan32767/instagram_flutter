@@ -11,28 +11,36 @@ class Post {
   final String postUrl;
   final String profImage;
   final likes;
+  final String userEmoji;
+  final String tagline;
+  final int? commentCount;
 
-  const Post({
-    required this.description,
-    required this.uid,
-    required this.postId,
-    required this.username,
-    required this.datePublished,
-    required this.postUrl,
-    required this.profImage,
-    required this.likes
-  });
+  const Post(
+      {required this.description,
+      required this.uid,
+      required this.postId,
+      required this.username,
+      required this.datePublished,
+      required this.postUrl,
+      required this.profImage,
+      required this.likes,
+      required this.userEmoji,
+      required this.tagline,
+      required this.commentCount});
 
   Map<String, dynamic> toJson() => {
-    "username": username,
-    "uid": uid,
-    "description": description,
-    "postId": postId,
-    "datePublished": datePublished,
-    "postUrl": postUrl,
-    "profImage": profImage,
-    "likes": likes
-  };
+        "username": username,
+        "uid": uid,
+        "description": description,
+        "postId": postId,
+        "datePublished": datePublished,
+        "postUrl": postUrl,
+        "profImage": profImage,
+        "likes": likes,
+        "userEmoji": userEmoji,
+        "tagline": tagline,
+        "commentCount": commentCount,
+      };
 
   static Post fromSnap(DocumentSnapshot snap) {
     var snapshot = snap.data() as Map<String, dynamic>;
@@ -45,7 +53,10 @@ class Post {
       datePublished: snapshot['datePublished'],
       postUrl: snapshot['postUrl'],
       profImage: snapshot['profImage'],
-      likes: snapshot['likes']
+      likes: snapshot['likes'],
+      userEmoji: snapshot['userEmoji'] ?? '',
+      tagline: snapshot['tagline'] ?? '',
+      commentCount: snapshot['commentCount'] as int?,
     );
-  } 
+  }
 }

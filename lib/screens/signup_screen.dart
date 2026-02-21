@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
+import 'package:instagram_flutter/screens/group_gate_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/utils.dart';
@@ -101,10 +102,15 @@ class _SignupScreenState extends State<SignupScreen> {
       if (res != 'success') {
         showSnackBar(context, 'Failed to sign up, please try again');
       } else {
-        Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (context) => const ResponsiveLayout(
-                webScreenLayout: WebScreenLayout(),
-                mobileScreenLayout: MobileScreenLayout())));
+        // Navigator.of(context).pushReplacement(MaterialPageRoute(
+        //     builder: (context) => const ResponsiveLayout(
+        //         webScreenLayout: WebScreenLayout(),
+        //         mobileScreenLayout: MobileScreenLayout())));
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const GroupGateScreen(),
+          ),
+        );
       }
     }
   }

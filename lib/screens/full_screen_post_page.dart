@@ -10,7 +10,6 @@ class FullscreenImageViewer extends StatefulWidget {
   final String imageUrl;
   final String username;
   final String? profilePic;
-  final String? userType;
 
   const FullscreenImageViewer({
     super.key,
@@ -18,7 +17,6 @@ class FullscreenImageViewer extends StatefulWidget {
     required this.imageUrl,
     required this.username,
     this.profilePic,
-    this.userType,
   });
 
   @override
@@ -106,14 +104,6 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                         ),
                       ),
                     ),
-                    if (widget.userType == 'ADMIN')
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Image.asset(
-                          'assets/images/verification_badge.png',
-                          height: 18,
-                        ),
-                      ),
                   ],
                 ),
               ],

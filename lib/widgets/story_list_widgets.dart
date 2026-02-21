@@ -142,7 +142,6 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
           String? photoUrl = storyDoc.data()['photoUrl'];
           // String? photoUrl = oldData['photoUrl'];
 
-          String? userType = storyDoc.data()['userType'];
           Map<String, dynamic>? storyData = storyDoc.data()['story'];
 
           if (storyType == 'MUSIC' && storyData != null) {
@@ -155,7 +154,6 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
                 userProfilePicUrl: photoUrl,
                 userName: username,
                 uid: uid,
-                userType: userType,
               ),
             );
           } else if (storyType == 'TEXT' && storyData != null) {
@@ -166,7 +164,6 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
                 userProfilePicUrl: photoUrl,
                 userName: username,
                 uid: uid,
-                userType: userType,
               ),
             );
           } else if (storyType == 'IMAGE') {
@@ -238,7 +235,6 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
                                             userProfilePicUrl:
                                                 story.userProfilePicUrl,
                                             userName: story.userName,
-                                            userType: story.userType ?? '',
                                           ),
                                           transitionsBuilder: (context,
                                               animation,

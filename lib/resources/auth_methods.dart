@@ -1,10 +1,13 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/widgets.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/storage_methods.dart';
 import 'package:instagram_flutter/models/user.dart' as model;
 import 'package:instagram_flutter/utils/group_storage.dart';
+import 'package:provider/provider.dart';
 
 class AuthMethods {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -37,6 +40,7 @@ class AuthMethods {
             .uploadImageToStorage('profilePics', file, false);
 
         model.User user = model.User(
+          userEmoji: "",
           username: username,
           uid: cred.user!.uid,
           email: email,
@@ -44,7 +48,6 @@ class AuthMethods {
           followers: [],
           following: [],
           photoUrl: photoUrl,
-          userType: 'NOTADMIN',
           tagline: '',
         );
 
@@ -157,13 +160,16 @@ class AuthMethods {
     return res;
   }
 
-  Future<void> signOut() async {
+  Future<void> signOut(BuildContext context) async {
     try {
       /// 2️⃣ Clear stored group
       await GroupStorage.clear();
 
       /// 3️⃣ Reset in-memory group
       AppFirestore.setGroup(null); // see small change below
+
+      /// CLEAR PROVIDER STATES IF ANY (e.g., UserProvider) --- OPTIONAL, depends on your app's architecture
+      Provider.of<UserProvider>(context, listen: false).clearUser();
 
       /// 1️⃣ Firebase sign out
       await _auth.signOut();

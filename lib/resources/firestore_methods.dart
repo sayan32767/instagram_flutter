@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/post.dart';
@@ -17,7 +18,7 @@ class FirestoreMethods {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<String> postToStory(
-      {var story, String? username, String? photoUrl, String? userType}) async {
+      {var story, String? username, String? photoUrl}) async {
     String res = 'Some error occurred!';
     try {
       await AppFirestore.stories().doc(_auth.currentUser!.uid).set({
@@ -29,7 +30,6 @@ class FirestoreMethods {
         "username": username,
         "uid": _auth.currentUser!.uid,
         "photoUrl": photoUrl,
-        "userType": userType,
       });
 
       res = 'success';
@@ -80,12 +80,12 @@ class FirestoreMethods {
     return res;
   }
 
-  Future<String> postToStoryText(
-      {String? text,
-      required Color color,
-      String? username,
-      String? photoUrl,
-      String? userType}) async {
+  Future<String> postToStoryText({
+    String? text,
+    required Color color,
+    String? username,
+    String? photoUrl,
+  }) async {
     String res = 'Some error occurred!';
     try {
       await AppFirestore.stories().doc(_auth.currentUser!.uid).set({
@@ -100,7 +100,6 @@ class FirestoreMethods {
         "username": username,
         "uid": _auth.currentUser!.uid,
         "photoUrl": photoUrl,
-        "userType": userType,
       });
 
       res = 'success';
@@ -219,8 +218,14 @@ class FirestoreMethods {
   }
 
   // Upload Post
-  Future<String> uploadPost(String description, Uint8List file, String uid,
-      String username, String profImage) async {
+  Future<String> uploadPost(
+      String description,
+      Uint8List file,
+      String uid,
+      String username,
+      String profImage,
+      String userEmoji,
+      String tagline) async {
     String res = 'Some Error Occurred';
     try {
       DocumentSnapshot lastPostSnapshot =
@@ -253,7 +258,10 @@ class FirestoreMethods {
               datePublished: DateTime.now(),
               postUrl: photoUrl,
               profImage: profImage,
-              likes: []);
+              userEmoji: userEmoji,
+              tagline: tagline,
+              likes: [],
+              commentCount: 0);
 
           AppFirestore.posts().doc(postId).set(post.toJson());
 
@@ -275,7 +283,10 @@ class FirestoreMethods {
             datePublished: DateTime.now(),
             postUrl: photoUrl,
             profImage: profImage,
-            likes: []);
+            userEmoji: userEmoji,
+            tagline: tagline,
+            likes: [],
+            commentCount: 0);
 
         AppFirestore.posts().doc(postId).set(post.toJson());
 
@@ -330,10 +341,10 @@ class FirestoreMethods {
           'commentCount': FieldValue.increment(1),
         });
       } else {
-        print('Text is empty');
+        debugPrint('Text is empty');
       }
     } catch (e) {
-      print(e.toString());
+      debugPrint(e.toString());
     }
   }
 
@@ -341,7 +352,7 @@ class FirestoreMethods {
     try {
       await AppFirestore.posts().doc(postId).delete();
     } catch (e) {
-      print(e.toString());
+      debugPrint(e.toString());
     }
   }
 
@@ -416,13 +427,13 @@ class FirestoreMethods {
         return res; // Return success even if thumbnail upload fails
       }
     } catch (e) {
-      res = 'Some error occurred';
+      res = e.toString();
     }
     return res;
   }
 
   String getChatId(String uid1, String uid2) {
-    return uid1.hashCode <= uid2.hashCode ? '${uid1}_$uid2' : '${uid2}_$uid1';
+    return uid1.compareTo(uid2) <= 0 ? '${uid1}_$uid2' : '${uid2}_$uid1';
   }
 
   Future<void> sendMessage({

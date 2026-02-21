@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/utils/utils.dart';
@@ -45,15 +46,18 @@ class _ShareSheetState extends State<ShareSheet> {
       setState(() {});
     }
 
-    await Future.delayed(const Duration(milliseconds: 300));
-    Query query = FirebaseFirestore.instance
-        .collection('user')
+    // await Future.delayed(const Duration(milliseconds: 300));
+    // Query query = FirebaseFirestore.instance
+    //     .collection('user')
+    //     .orderBy('username')
+    //     .limit(_limit);
+
+    Query query = AppFirestore.collection('members')
         .orderBy('username')
-        .limit(_limit);
+        .startAt([_query]).endAt([_query + '\uf8ff']).limit(_limit);
 
     if (_query.isNotEmpty) {
-      query = FirebaseFirestore.instance
-          .collection('user')
+      query = AppFirestore.collection('members')
           .orderBy('username')
           .startAt([_query]).endAt([_query + '\uf8ff']).limit(_limit);
     }
@@ -76,17 +80,17 @@ class _ShareSheetState extends State<ShareSheet> {
   Future<void> _fetchMoreUsers() async {
     if (_isFetchingMore || !_hasMore || _lastDoc == null) return;
 
-    _isFetchingMore = true;
+    setState(() {
+      _isFetchingMore = true;
+    });
 
-    Query query = FirebaseFirestore.instance
-        .collection('user')
+    Query query = AppFirestore.collection('members')
         .orderBy('username')
         .startAfterDocument(_lastDoc!)
         .limit(_limit);
 
     if (_query.isNotEmpty) {
-      query = FirebaseFirestore.instance
-          .collection('user')
+      query = AppFirestore.collection('members')
           .orderBy('username')
           .startAt([_query])
           .endAt([_query + '\uf8ff'])
@@ -256,9 +260,9 @@ class _ShareSheetState extends State<ShareSheet> {
                                       final data = _users[index].data()
                                           as Map<String, dynamic>;
 
+                                      final id = _users[index].id;
                                       final username = data['username'] ?? '';
                                       final photoUrl = data['photoUrl'] ?? '';
-                                      final userType = data['userType'] ?? '';
 
                                       return TweenAnimationBuilder<double>(
                                         key: ValueKey(_users[index].id),
@@ -281,7 +285,7 @@ class _ShareSheetState extends State<ShareSheet> {
                                           borderRadius:
                                               BorderRadius.circular(12),
                                           onTap: () async {
-                                            final receiverId = data['uid'];
+                                            final receiverId = id;
 
                                             await FirestoreMethods()
                                                 .sendMessage(
@@ -329,13 +333,6 @@ class _ShareSheetState extends State<ShareSheet> {
                                                   style: const TextStyle(
                                                       color: Colors.white),
                                                 ),
-                                                const SizedBox(width: 5),
-                                                if (userType == 'ADMIN')
-                                                  SizedBox(
-                                                    height: 20,
-                                                    child: Image.asset(
-                                                        'assets/images/verification_badge.png'),
-                                                  ),
                                               ],
                                             ),
                                           ),
@@ -346,14 +343,33 @@ class _ShareSheetState extends State<ShareSheet> {
 
                                   /// 🔄 Bottom loader while fetching more
                                   if (_isFetchingMore)
-                                    const Positioned(
+                                    Positioned(
                                       bottom: 20,
                                       left: 0,
                                       right: 0,
                                       child: Center(
-                                          child: CircularProgressIndicator(
-                                        color: Colors.white70,
-                                      )),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 16,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color.fromARGB(
+                                                    221, 63, 63, 63)
+                                                .withOpacity(0.6),
+                                            borderRadius:
+                                                BorderRadius.circular(25),
+                                          ),
+                                          child: const SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                 ],
                               ),

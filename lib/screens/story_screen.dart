@@ -181,16 +181,10 @@ class _StoryScreenState extends State<StoryScreen> {
         Provider.of<UserProvider>(context, listen: false).getUser!.username;
     final String? photoUrl =
         Provider.of<UserProvider>(context, listen: false).getUser!.photoUrl;
-    final String userType =
-        Provider.of<UserProvider>(context, listen: false).getUser!.userType;
 
     // String res = 'success';
     String res = await _firestoreMethods.postToStoryText(
-        text: text,
-        color: color,
-        username: username,
-        photoUrl: photoUrl,
-        userType: userType);
+        text: text, color: color, username: username, photoUrl: photoUrl);
     // await Future.delayed(Duration(seconds: 3));
 
     setState(() {
@@ -219,14 +213,12 @@ class _StoryScreenState extends State<StoryScreen> {
         Provider.of<UserProvider>(context, listen: false).getUser!.username;
     final String? photoUrl =
         Provider.of<UserProvider>(context, listen: false).getUser!.photoUrl;
-    final String userType =
-        Provider.of<UserProvider>(context, listen: false).getUser!.userType;
 
     String res = await _firestoreMethods.postToStory(
-        story: story,
-        username: username,
-        photoUrl: photoUrl,
-        userType: userType);
+      story: story,
+      username: username,
+      photoUrl: photoUrl,
+    );
 
     setState(() {
       _isStoryPosting = false;
@@ -363,13 +355,6 @@ class _StoryScreenState extends State<StoryScreen> {
                             SizedBox(
                               width: 5,
                             ),
-                            user.userType == 'ADMIN'
-                                ? SizedBox(
-                                    height: 20,
-                                    child: Image.asset(
-                                        'assets/images/verification_badge.png'),
-                                  )
-                                : Container()
                           ],
                         ),
                       ),

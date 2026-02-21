@@ -19,7 +19,6 @@ class StoryCard extends StatelessWidget {
   final String userName;
   final String? songUrl;
   final String uid;
-  final String? userType;
 
   StoryCard(
       {required this.albumArtUrl,
@@ -29,7 +28,6 @@ class StoryCard extends StatelessWidget {
       required this.userName,
       required this.songUrl,
       required this.uid,
-      required this.userType,
       super.key});
 
   @override
@@ -125,14 +123,6 @@ class StoryCard extends StatelessWidget {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        SizedBox(width: 5),
-                                        userType == 'ADMIN'
-                                            ? SizedBox(
-                                                height: 20,
-                                                child: Image.asset(
-                                                    'assets/images/verification_badge.png'),
-                                              )
-                                            : Container(),
                                       ],
                                     ),
                                   )

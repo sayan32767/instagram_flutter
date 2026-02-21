@@ -47,23 +47,7 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
   void initState() {
     super.initState();
     _warmUpServer(); // background
-    _fetchUserData(); // UI data
     _loadReel(); // heavy work
-  }
-
-  Map<String, dynamic>? usersSnapshot;
-
-  Future<void> _fetchUserData() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('user') // ✅ fixed name
-        .doc(widget.snap['uid']) // ✅ direct lookup
-        .get();
-
-    if (!mounted) return;
-
-    setState(() {
-      usersSnapshot = snap.data(); // null-safe automatically
-    });
   }
 
   Future<void> _warmUpServer() async {
@@ -194,9 +178,6 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (usersSnapshot == null) {
-      return const SizedBox();
-    }
     return Scaffold(
       extendBodyBehindAppBar: true, // ⭐ important
       appBar: AppBar(
@@ -329,11 +310,11 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
                                       onTap: () => _openProfile(data['uid']),
                                       child: CircleAvatar(
                                         radius: 16,
-                                        backgroundImage: usersSnapshot?[
-                                                    'photoUrl'] !=
-                                                null
+                                        backgroundImage: data['profImage'] !=
+                                                    null ||
+                                                data['profImage'] != ''
                                             ? CachedNetworkImageProvider(
-                                                usersSnapshot?['photoUrl'],
+                                                data['profImage'],
                                               )
                                             : const AssetImage(
                                                     'assets/images/placeholder.jpg')
@@ -347,22 +328,12 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
                                           Navigator.of(context).push(
                                             MaterialPageRoute(
                                               builder: (_) => ProfileScreen(
-                                                uid:
-                                                    usersSnapshot?['uid'] ?? '',
+                                                uid: data['uid'] ?? '',
                                               ),
                                             ),
                                           );
                                         },
-                                        child: Text(
-                                            usersSnapshot?['username'] ?? '')),
-                                    SizedBox(width: 5),
-                                    (usersSnapshot?['userType'] == 'ADMIN')
-                                        ? SizedBox(
-                                            height: 20,
-                                            child: Image.asset(
-                                                'assets/images/verification_badge.png'),
-                                          )
-                                        : Container(),
+                                        child: Text(data['username'] ?? '')),
                                     const Spacer(),
                                     Text(_timeAgo(data['datePublished']),
                                         style: const TextStyle(

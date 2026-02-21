@@ -13,18 +13,15 @@ class AddToStoryCard extends StatelessWidget {
   final String? userProfilePicUrl;
   final String userName;
 
-  AddToStoryCard({
-    this.userProfilePicUrl,
-    required this.userName,
-    super.key
-  });
+  AddToStoryCard({this.userProfilePicUrl, required this.userName, super.key});
 
   @override
   Widget build(BuildContext context) {
     final User user = Provider.of<UserProvider>(context).getUser!;
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => StoryScreen()));
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => StoryScreen()));
       },
       child: Stack(
         children: [
@@ -49,8 +46,10 @@ class AddToStoryCard extends StatelessWidget {
                         userProfilePicUrl == null
                             ? CircleAvatar(
                                 radius: 16,
-                                backgroundImage: AssetImage('assets/images/placeholder.jpg'),
-                                backgroundColor: const Color.fromARGB(255, 24, 24, 24),
+                                backgroundImage:
+                                    AssetImage('assets/images/placeholder.jpg'),
+                                backgroundColor:
+                                    const Color.fromARGB(255, 24, 24, 24),
                               )
                             : ProgressImageDots(url: userProfilePicUrl!),
                         SizedBox(width: 8.0),
@@ -76,13 +75,6 @@ class AddToStoryCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              SizedBox(width: 5),
-                              
-                              user.userType == 'ADMIN' ? SizedBox(
-                                height: 20,
-                                child: Image.asset('assets/images/verification_badge.png'),
-                              )
-                            : Container(),
                             ],
                           ),
                         ),
@@ -107,7 +99,6 @@ class AddToStoryCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        
                       ],
                     ),
                   ),

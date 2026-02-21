@@ -6,6 +6,9 @@ import 'package:instagram_flutter/firebase_options.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
+import 'package:instagram_flutter/resources/auth_methods.dart';
+import 'package:instagram_flutter/resources/firestore_methods.dart';
+import 'package:instagram_flutter/resources/storage_methods.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
@@ -66,6 +69,8 @@ class MyApp extends StatelessWidget {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.active) {
                   if (snapshot.hasData) {
+                    // AuthMethods().signOut(
+                    //     context); // 🔥 force sign out to clear any stale state
                     return const GroupGateScreen();
                   } else if (snapshot.hasError) {
                     return Center(
