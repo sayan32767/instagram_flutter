@@ -148,7 +148,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     setState(() => _isFetchingMore = true);
 
-    await Future.delayed(const Duration(seconds: 1)); // simulate loading time
+    await Future.delayed(
+        const Duration(milliseconds: 10)); // simulate loading time
 
     final snap = await AppFirestore.chats()
         .doc(widget.chatId)

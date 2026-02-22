@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
@@ -27,12 +28,9 @@ class MobileScreenLayout extends StatefulWidget {
 class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   int _page = 0;
 
-  late GlobalKey globalKey;
   late PageController pageController;
 
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  late GlobalKey<ReelsScreenState> reelsKey;
-  late GlobalKey<ProfileScreenState> profileKey;
 
   late PresenceService _presence;
 
@@ -42,11 +40,8 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   void initState() {
     super.initState();
 
-    reelsKey = GlobalKey<ReelsScreenState>();
-    profileKey = GlobalKey<ProfileScreenState>();
     pageController = PageController();
     _presence = PresenceService()..start();
-    globalKey = GlobalKey();
 
     homeScreenItems = [
       FeedScreen(key: globalKey),
@@ -90,14 +85,12 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   //   }
   // }
   void navigationTapped(int page) {
-    /// 🔥 If leaving Reels tab
     if (_page == 1 && page != 1) {
-      reelsKey.currentState?.pauseCurrentVideo();
+      reelsKey.currentState?.setActive(false);
     }
 
-    // 🔥 If coming back to Reels tab → resume
     if (_page != 1 && page == 1) {
-      reelsKey.currentState?.resumeCurrentVideo();
+      reelsKey.currentState?.setActive(true);
     }
 
     // 🔥 If user tapped Profile tab → refresh
@@ -146,6 +139,13 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   // }
 
   void onPageChanged(int page) {
+    if (_page == 1 && page != 1) {
+      reelsKey.currentState?.setActive(false);
+    }
+
+    if (_page != 1 && page == 1) {
+      reelsKey.currentState?.setActive(true);
+    }
     setState(() {
       _page = page;
     });

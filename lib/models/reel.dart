@@ -36,14 +36,14 @@ class Reel {
     var snapshot = snap.data() as Map<String, dynamic>;
 
     return Reel(
-      username: snapshot['username'],
+      username: snapshot['username'] ?? '',
       uid: snapshot['uid'],
-      description: snapshot['description'],
+      description: snapshot['description'] ?? '',
       reelId: snapshot['reelId'],
       datePublished: snapshot['datePublished'],
       reelUrl: snapshot['reelUrl'],
-      profImage: snapshot['profImage'],
-      likes: snapshot['likes'],
+      profImage: snapshot['profImage'] ?? '',
+      likes: snapshot['likes'] ?? [],
     );
   }
 }

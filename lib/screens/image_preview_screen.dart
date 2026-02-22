@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
@@ -119,10 +120,31 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundImage: user.photoUrl != null
-                      ? NetworkImage(user.photoUrl!)
-                      : const AssetImage('assets/images/placeholder.jpg')
-                          as ImageProvider,
+                  backgroundColor: const Color(0xFF1E1E1E),
+                  child: ClipOval(
+                    child: user.photoUrl != null && user.photoUrl!.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: user.photoUrl!,
+                            fit: BoxFit.cover,
+                            width: 40,
+                            height: 40,
+                            placeholder: (context, url) => Container(
+                              color: const Color(0xFF2A2A2A),
+                            ),
+                            errorWidget: (context, url, error) => Image.asset(
+                              'assets/images/placeholder.jpg',
+                              fit: BoxFit.cover,
+                              width: 40,
+                              height: 40,
+                            ),
+                          )
+                        : Image.asset(
+                            'assets/images/placeholder.jpg',
+                            fit: BoxFit.cover,
+                            width: 40,
+                            height: 40,
+                          ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

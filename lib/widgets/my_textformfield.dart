@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 
 class MyTextformfield extends StatefulWidget {
@@ -8,15 +9,18 @@ class MyTextformfield extends StatefulWidget {
   final Color? color;
   final FocusNode? focusNode; // ⭐ NEW
   final void Function(String)? onFieldSubmitted; // ⭐ NEW
+  final List<TextInputFormatter>? inputFormatters; // ⭐ NEW
 
-  const MyTextformfield(
-      {super.key,
-      required this.controller,
-      required this.onChanged,
-      this.focusNode, // ⭐ NEW
-      this.onFieldSubmitted, // ⭐ NEW
-      this.hintText,
-      this.color});
+  const MyTextformfield({
+    super.key,
+    required this.controller,
+    required this.onChanged,
+    this.focusNode, // ⭐ NEW
+    this.onFieldSubmitted, // ⭐ NEW
+    this.hintText,
+    this.color,
+    this.inputFormatters, // ⭐ NEW
+  });
 
   @override
   State<MyTextformfield> createState() => _MyTextformfieldState();
@@ -49,6 +53,8 @@ class _MyTextformfieldState extends State<MyTextformfield> {
           Divider.createBorderSide(context, color: widget.color ?? null),
     );
     return TextFormField(
+        inputFormatters:
+            widget.inputFormatters != null ? widget.inputFormatters! : null,
         onFieldSubmitted: widget.onFieldSubmitted, // ⭐ NEW
         textInputAction: TextInputAction.search,
         controller: widget.controller,

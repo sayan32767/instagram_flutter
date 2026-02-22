@@ -1,13 +1,8 @@
-import 'package:audioplayers/audioplayers.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:instagram_flutter/models/user.dart';
-import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
-import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/progress_image_dots.dart';
-import 'package:instagram_flutter/widgets/story_list_widgets.dart';
 import 'package:provider/provider.dart';
 
 class StoryTextCard extends StatelessWidget {

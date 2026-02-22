@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/inbox_screen.dart';

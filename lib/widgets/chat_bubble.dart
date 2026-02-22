@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/reels_screen.dart';
 import 'package:instagram_flutter/screens/single_reel_screen.dart';

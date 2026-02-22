@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
+import 'package:instagram_flutter/screens/reels_screen.dart';
 import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -40,12 +42,14 @@ class _CommentCardState extends State<CommentCard> {
           horizontal: 16,
         ),
         child: GestureDetector(
-          onTap: () {
-            Navigator.of(context).push(
+          onTap: () async {
+            // reelsKey.currentState?.setActive(false);
+            await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => ProfileScreen(uid: widget.snap['uid']),
               ),
             );
+            // reelsKey.currentState?.setActive(true);
           },
           child: Row(
             children: [

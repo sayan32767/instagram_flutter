@@ -96,7 +96,6 @@ class _InboxScreenState extends State<InboxScreen> {
     });
 
     // Listener will automatically reload
-    await Future.delayed(const Duration(milliseconds: 500));
 
     setState(() {
       _isInitialLoading = false;

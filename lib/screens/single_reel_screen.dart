@@ -1,16 +1,15 @@
-// Final FULL ReelsScreen with overlays, smooth fade/scale, caching, warmup, no jump
-
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:instagram_flutter/core/app_firestore.dart';
-import 'package:instagram_flutter/providers/user_provider.dart';
+import 'package:instagram_flutter/core/route_observer.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
@@ -18,7 +17,6 @@ import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/widgets/like_animation.dart';
 import 'package:instagram_flutter/widgets/share_screen_sheet.dart';
-import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 class SingleReelScreen extends StatefulWidget {
@@ -27,41 +25,25 @@ class SingleReelScreen extends StatefulWidget {
   const SingleReelScreen({super.key, required this.snap});
 
   @override
-  State<SingleReelScreen> createState() => _SingleReelScreenState();
+  State<SingleReelScreen> createState() => SingleReelScreenState();
 }
 
-class _SingleReelScreenState extends State<SingleReelScreen> {
-  final PageController _pageController = PageController();
-
-  final Map<int, VideoPlayerController> _controllers = {};
-  final Map<int, bool> _isMuted = {};
-  final List<DocumentSnapshot> _reels = [];
-
-  final Map<String, String> _videoUrlCache = {};
+class SingleReelScreenState extends State<SingleReelScreen>
+    with RouteAware, WidgetsBindingObserver {
   final ValueNotifier<bool> _likeAnim = ValueNotifier(false);
-
-  bool _isLoading = true;
-  int _currentIndex = 0;
+  VideoPlayerController? _controller;
+  bool _isMuted = false;
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  bool _isLiking = false;
 
   @override
   void initState() {
     super.initState();
-    _warmUpServer(); // background
-    _loadReel(); // heavy work
-  }
-
-  Future<void> _warmUpServer() async {
-    try {
-      final baseUrl = dotenv.get('BASE_URL', fallback: '');
-      await http
-          .get(Uri.parse("$baseUrl/health"))
-          .timeout(const Duration(seconds: 25));
-    } catch (_) {}
+    WidgetsBinding.instance.addObserver(this);
+    _createController(widget.snap['fileId']);
   }
 
   Future<String> fetchTelegramVideoUrl(String fileId) async {
-    if (_videoUrlCache.containsKey(fileId)) return _videoUrlCache[fileId]!;
-
     final baseUrl = dotenv.get('BASE_URL', fallback: '');
 
     for (int i = 0; i < 3; i++) {
@@ -72,7 +54,6 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
 
         if (res.statusCode == 200) {
           final url = json.decode(res.body)["url"];
-          _videoUrlCache[fileId] = url;
           return url;
         }
       } on TimeoutException {
@@ -84,54 +65,55 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
     throw Exception("Failed after retries");
   }
 
-  Future<void> _loadReel() async {
-    final snap = await AppFirestore.reels()
-        .where('reelId', isEqualTo: widget.snap['reelId'])
-        .get();
+  Future<void> _createController(String fileId) async {
+    _controller?.dispose();
+    _controller = null;
 
-    _reels.addAll(snap.docs);
+    final url = await fetchTelegramVideoUrl(fileId);
+    if (!mounted) return;
 
-    if (snap.docs.isNotEmpty) {
-      await _createController(0, (_reels[0].data() as Map)['fileId']);
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    await controller.initialize();
+
+    if (!mounted) {
+      controller.dispose();
+      return;
     }
 
-    if (mounted) setState(() => _isLoading = false);
+    controller.setLooping(true);
+    controller.play();
+
+    setState(() {
+      _controller = controller;
+    });
   }
 
-  Future<void> _createController(int index, String fileId) async {
-    if (_controllers.containsKey(index)) return;
-
-    try {
-      final url = await fetchTelegramVideoUrl(fileId);
-      if (!mounted || index >= _reels.length) return;
-
-      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-      await controller.initialize();
-
-      if (!mounted || index >= _reels.length) {
-        controller.dispose();
-        return;
-      }
-
-      controller.setLooping(true);
-      _controllers[index] = controller;
-      _isMuted[index] = false;
-
-      if (index == _currentIndex && mounted) {
-        setState(() {});
-        controller.play();
-      }
-    } catch (_) {}
+  void _resume() {
+    if (!mounted) return;
+    if (_controller != null && _controller!.value.isInitialized) {
+      _controller!.setVolume(_isMuted ? 0 : 1);
+      _controller!.play();
+    }
   }
 
-  void _toggleMute(int index) {
-    final controller = _controllers[index];
-    if (controller == null) return;
+  void _toggleMute() {
+    if (_controller == null) return;
 
-    final muted = _isMuted[index] ?? false;
-    controller.setVolume(muted ? 1 : 0);
+    _isMuted = !_isMuted;
+    _controller!.setVolume(_isMuted ? 0 : 1);
 
-    setState(() => _isMuted[index] = !muted);
+    setState(() {});
+  }
+
+  Future<void> _openProfile(String uid) async {
+    _controller?.pause();
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProfileScreen(uid: uid)),
+    );
+
+    _resume();
   }
 
   void _openShareSheet(Map<String, dynamic> reelData) {
@@ -146,17 +128,6 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
     );
   }
 
-  Future<void> _openProfile(String uid) async {
-    _controllers[_currentIndex]?.pause();
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ProfileScreen(uid: uid)),
-    );
-
-    _controllers[_currentIndex]?.play();
-  }
-
   String _timeAgo(Timestamp timestamp) {
     final diff = DateTime.now().difference(timestamp.toDate());
 
@@ -168,11 +139,49 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
   }
 
   @override
-  void dispose() {
-    for (final c in _controllers.values) {
-      c.dispose();
+  void didUpdateWidget(covariant SingleReelScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.snap['fileId'] != widget.snap['fileId']) {
+      _createController(widget.snap['fileId']);
     }
-    _pageController.dispose();
+  }
+
+  @override
+  void didPushNext() {
+    // Another screen pushed on top
+    _controller?.pause();
+  }
+
+  @override
+  void didPopNext() {
+    // Returned from profile or another reel
+    _resume();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _controller?.pause();
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      _resume();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -207,273 +216,257 @@ class _SingleReelScreenState extends State<SingleReelScreen> {
         ),
       ),
       backgroundColor: mobileBackgroundColor,
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.white70))
-          : PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              itemCount: _reels.length,
-              itemBuilder: (context, index) {
-                final data = _reels[index].data() as Map<String, dynamic>;
-                final controller = _controllers[index];
+      body: StreamBuilder(
+        stream: AppFirestore.reels()
+            .doc(widget.snap['reelId'])
+            .snapshots(includeMetadataChanges: false),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(
+              child: Text(
+                "Reel not found",
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+          final reelData = snapshot.data!.data() as Map<String, dynamic>;
 
-                return StreamBuilder<DocumentSnapshot>(
-                  stream: AppFirestore.reels().doc(data['reelId']).snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const SizedBox();
+          return Hero(
+            tag: widget.snap['reelId'],
+            child: GestureDetector(
+              onTap: _toggleMute,
+              onDoubleTap: () async {
+                _likeAnim.value = true;
 
-                    final reel = snapshot.data!.data() as Map<String, dynamic>;
-                    final uid =
-                        Provider.of<UserProvider>(context, listen: false)
-                            .getUser!
-                            .uid;
-                    final isLiked = (reel['likes'] as List).contains(uid);
-                    final likeCount =
-                        reel['likeCount'] ?? (reel['likes'] as List).length;
-                    final commentCount = reel['commentCount'] ?? 0;
+                if (_isLiking) return;
+                _isLiking = true;
 
-                    return GestureDetector(
-                      onTap: () => _toggleMute(index),
-                      onDoubleTap: () async {
-                        _likeAnim.value = true;
-                        await FirestoreMethods().likePost(
-                            'reels', uid, data['reelId'], reel['likes']);
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          /// Thumbnail
-                          if (data['thumbnailUrl'] != null)
-                            CachedNetworkImage(
-                              imageUrl: data['thumbnailUrl'],
-                              fit: BoxFit.cover,
-                              cacheManager: InstaCacheManager(),
-                            )
-                          else
-                            Container(color: Colors.black),
-
-                          /// Video fade + scale
-                          if (controller != null)
-                            AnimatedOpacity(
-                              opacity: controller.value.isInitialized ? 1 : 0,
-                              duration: const Duration(milliseconds: 300),
-                              child: AnimatedScale(
-                                scale:
-                                    controller.value.isInitialized ? 1 : 1.04,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                                child: FittedBox(
-                                  fit: BoxFit.cover,
-                                  child: SizedBox(
-                                    width: controller.value.size.width,
-                                    height: controller.value.size.height,
-                                    child: VideoPlayer(controller),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                          /// Loader
-                          if ((controller == null ||
-                                  !controller.value.isInitialized) &&
-                              index == _currentIndex)
-                            const Center(
-                                child: CircularProgressIndicator(
-                                    color: Colors.white70)),
-
-                          /// Bottom gradient
-                          IgnorePointer(
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.transparent, Colors.black87],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          /// Bottom text + avatar
-                          Positioned(
-                            left: 16,
-                            right: 16,
-                            bottom: 24,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => _openProfile(data['uid']),
-                                      child: CircleAvatar(
-                                        radius: 16,
-                                        backgroundImage: data['profImage'] !=
-                                                    null ||
-                                                data['profImage'] != ''
-                                            ? CachedNetworkImageProvider(
-                                                data['profImage'],
-                                              )
-                                            : const AssetImage(
-                                                    'assets/images/placeholder.jpg')
-                                                as ImageProvider,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    GestureDetector(
-                                        onTap: () {
-                                          // Navigate to user profile screen
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (_) => ProfileScreen(
-                                                uid: data['uid'] ?? '',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: Text(data['username'] ?? '')),
-                                    const Spacer(),
-                                    Text(_timeAgo(data['datePublished']),
-                                        style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12)),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(data['description'] ?? '',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis),
-                              ],
-                            ),
-                          ),
-
-                          /// Right actions
-                          Positioned(
-                            right: 12,
-                            bottom: 120,
-                            child: Column(
-                              children: [
-                                IconButton(
-                                  onPressed: () async {
-                                    await FirestoreMethods().likePost('reels',
-                                        uid, data['reelId'], reel['likes']);
-                                  },
-                                  icon: Icon(
-                                      isLiked
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color:
-                                          isLiked ? Colors.red : Colors.white),
-                                ),
-                                Text(likeCount.toString(),
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                                const SizedBox(height: 8),
-                                IconButton(
-                                  onPressed: () {
-                                    Navigator.of(context, rootNavigator: true)
-                                        .push(
-                                      PageRouteBuilder(
-                                        pageBuilder: (context, animation,
-                                                secondaryAnimation) =>
-                                            CommentsScreen(
-                                          snap: data,
-                                          collectionName: 'reels',
-                                        ),
-                                        transitionsBuilder: (context, animation,
-                                            secondaryAnimation, child) {
-                                          const begin = Offset(0.0, 1.0);
-                                          const end = Offset.zero;
-                                          const curve = Curves.ease;
-
-                                          var tween = Tween(
-                                                  begin: begin, end: end)
-                                              .chain(CurveTween(curve: curve));
-
-                                          return SlideTransition(
-                                            position: animation.drive(tween),
-                                            child: child,
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.comment_outlined,
-                                      color: Colors.white),
-                                ),
-                                Text(commentCount.toString(),
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 12)),
-                                const SizedBox(height: 8),
-                                IconButton(
-                                  onPressed: () {
-                                    HapticFeedback
-                                        .lightImpact(); // subtle tap feel
-                                    _openShareSheet(data);
-                                  },
-                                  icon: const Icon(Icons.send_outlined,
-                                      color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          /// Mute icon
-                          AnimatedOpacity(
-                            opacity: (_isMuted[index] ?? false) ? 1 : 0,
-                            duration: const Duration(milliseconds: 250),
-                            child: Center(
-                              child: Icon(
-                                  (_isMuted[index] ?? true)
-                                      ? Icons.volume_off
-                                      : Icons.volume_up,
-                                  size: 28),
-                            ),
-                          ),
-
-                          /// Double tap heart
-                          ValueListenableBuilder<bool>(
-                            valueListenable: _likeAnim,
-                            builder: (_, value, __) {
-                              return AnimatedOpacity(
-                                opacity: value ? 1 : 0,
-                                duration: const Duration(milliseconds: 200),
-                                child: LikeAnimation(
-                                  isAnimating: value,
-                                  duration: const Duration(milliseconds: 400),
-                                  onEnd: () => _likeAnim.value = false,
-                                  child: ShaderMask(
-                                    shaderCallback: (Rect bounds) {
-                                      return const LinearGradient(
-                                        colors: [
-                                          Color(0xFF833AB4),
-                                          Color(0xFFE1306C),
-                                          Color(0xFFF77737),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ).createShader(bounds);
-                                    },
-                                    child: const Icon(
-                                      Icons.favorite,
-                                      color: Colors
-                                          .white, // important for ShaderMask
-                                      size: 120,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                await FirestoreMethods().likePost(
+                  'reels',
+                  uid,
+                  reelData['reelId'],
+                  reelData['likes'] ?? [],
                 );
+
+                _isLiking = false;
               },
+              behavior: HitTestBehavior.opaque,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  /// Thumbnail
+                  if (reelData['thumbnailUrl'] != null)
+                    CachedNetworkImage(
+                      imageUrl: reelData['thumbnailUrl'],
+                      fit: BoxFit.cover,
+                      cacheManager: InstaCacheManager(),
+                    )
+                  else
+                    Container(color: Colors.black),
+
+                  /// Video fade + scale
+                  if (_controller != null)
+                    AnimatedOpacity(
+                      opacity: _controller!.value.isInitialized ? 1 : 0,
+                      duration: const Duration(milliseconds: 300),
+                      child: AnimatedScale(
+                        scale: _controller!.value.isInitialized ? 1 : 1.04,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: _controller!.value.size.width,
+                            height: _controller!.value.size.height,
+                            child: VideoPlayer(_controller!),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  /// Loader
+
+                  /// Bottom gradient
+                  IgnorePointer(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.transparent, Colors.black87],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  /// Bottom text + avatar
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 24,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => _openProfile(reelData['uid']),
+                              child: CircleAvatar(
+                                radius: 16,
+                                backgroundImage:
+                                    reelData['profImage'] != null &&
+                                            reelData['profImage'] != ''
+                                        ? CachedNetworkImageProvider(
+                                            reelData['profImage'],
+                                          )
+                                        : const AssetImage(
+                                                'assets/images/placeholder.jpg')
+                                            as ImageProvider,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                                onTap: () => _openProfile(reelData['uid']),
+                                child: Text(reelData['username'] ?? '')),
+                            const Spacer(),
+                            Text(_timeAgo(reelData['datePublished']),
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(reelData['description'] ?? '',
+                            maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+
+                  /// Right actions
+                  Positioned(
+                    right: 12,
+                    bottom: 120,
+                    child: Column(
+                      children: [
+                        IconButton(
+                          onPressed: () async {
+                            if (_isLiking) return;
+                            _isLiking = true;
+                            await FirestoreMethods().likePost(
+                              'reels',
+                              uid,
+                              reelData['reelId'],
+                              reelData['likes'] ?? [],
+                            );
+                            _isLiking = false;
+                          },
+                          icon: Icon(
+                            (reelData['likes'] ?? []).contains(uid)
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: (reelData['likes'] ?? []).contains(uid)
+                                ? Colors.red
+                                : Colors.white,
+                          ),
+                        ),
+                        Text(reelData['likes'].length.toString(),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                        const SizedBox(height: 8),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.of(context, rootNavigator: true).push(
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        CommentsScreen(
+                                  snap: reelData,
+                                  collectionName: 'reels',
+                                ),
+                                transitionsBuilder: (context, animation,
+                                    secondaryAnimation, child) {
+                                  const begin = Offset(0.0, 1.0);
+                                  const end = Offset.zero;
+                                  const curve = Curves.ease;
+
+                                  var tween = Tween(begin: begin, end: end)
+                                      .chain(CurveTween(curve: curve));
+
+                                  return SlideTransition(
+                                    position: animation.drive(tween),
+                                    child: child,
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.comment_outlined,
+                              color: Colors.white),
+                        ),
+                        Text((reelData['commentCount'] ?? 0).toString(),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                        const SizedBox(height: 8),
+                        IconButton(
+                          onPressed: () {
+                            HapticFeedback.lightImpact(); // subtle tap feel
+                            _openShareSheet(reelData as Map<String, dynamic>);
+                          },
+                          icon: const Icon(Icons.send_outlined,
+                              color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  /// Mute icon
+                  AnimatedOpacity(
+                    opacity: _isMuted ? 1 : 0,
+                    duration: const Duration(milliseconds: 250),
+                    child: Center(
+                      child: Icon(_isMuted ? Icons.volume_off : Icons.volume_up,
+                          size: 28),
+                    ),
+                  ),
+
+                  /// Double tap heart
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _likeAnim,
+                    builder: (_, value, __) {
+                      return AnimatedOpacity(
+                        opacity: value ? 1 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: LikeAnimation(
+                          isAnimating: value,
+                          duration: const Duration(milliseconds: 400),
+                          onEnd: () => _likeAnim.value = false,
+                          child: ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              return const LinearGradient(
+                                colors: [
+                                  Color(0xFF833AB4),
+                                  Color(0xFFE1306C),
+                                  Color(0xFFF77737),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds);
+                            },
+                            child: const Icon(
+                              Icons.favorite,
+                              color: Colors.white, // important for ShaderMask
+                              size: 120,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
+          );
+        },
+      ),
     );
   }
 }

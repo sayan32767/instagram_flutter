@@ -52,7 +52,7 @@ class Post {
       postId: snapshot['postId'],
       datePublished: snapshot['datePublished'],
       postUrl: snapshot['postUrl'],
-      profImage: snapshot['profImage'],
+      profImage: snapshot['profImage'] ?? '',
       likes: snapshot['likes'],
       userEmoji: snapshot['userEmoji'] ?? '',
       tagline: snapshot['tagline'] ?? '',

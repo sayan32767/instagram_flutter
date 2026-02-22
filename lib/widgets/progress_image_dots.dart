@@ -33,7 +33,7 @@ class ProgressImageDots extends StatelessWidget {
             ),
 
             errorWidget: (context, url, error) => const Center(
-              child: Icon(Icons.error, color: Colors.red),
+              child: Icon(Icons.error),
             ),
           )),
         ),

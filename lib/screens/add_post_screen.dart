@@ -33,7 +33,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
   }
 
   Future<void> _pickImage() async {
-    Uint8List file = await pickImage(ImageSource.gallery);
+    Uint8List? file = await pickImage(ImageSource.gallery);
+
+    if (file == null) return;
 
     if (!mounted) return;
 

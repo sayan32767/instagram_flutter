@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/image_preview_screen.dart';
 import 'package:instagram_flutter/utils/utils.dart';
+import 'package:instagram_flutter/widgets/my_textformfield.dart';
 import 'package:provider/provider.dart';
 
 class GeneratedImagePreviewScreen extends StatefulWidget {
@@ -128,22 +129,27 @@ class _GeneratedImagePreviewScreenState
               children: [
                 Expanded(
                   flex: 2,
-                  child: TextField(
+                  child: MyTextformfield(
                     inputFormatters: [
                       FilteringTextInputFormatter.deny(RegExp(r'\s{2,}'))
                     ],
+                    hintText: "Describe your image...",
+                    onChanged: (_) {},
                     controller: _controller,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: "Describe your image...",
-                      hintStyle: const TextStyle(color: Colors.grey),
-                      filled: true,
-                      fillColor: Colors.grey[900],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
+                    onFieldSubmitted: (_) {
+                      generateImage();
+                    },
+                    // style: const TextStyle(color: Colors.white),
+                    // decoration: InputDecoration(
+                    //   hintText: "Describe your image...",
+                    //   hintStyle: const TextStyle(color: Colors.grey),
+                    //   filled: true,
+                    //   fillColor: Colors.grey[900],
+                    //   border: OutlineInputBorder(
+                    //     borderRadius: BorderRadius.circular(4),
+                    //     borderSide: BorderSide.none,
+                    //   ),
+                    // ),
                   ),
                 ),
 
@@ -160,7 +166,7 @@ class _GeneratedImagePreviewScreenState
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[800],
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
                       ),

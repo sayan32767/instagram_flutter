@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -453,9 +454,11 @@ class FirestoreMethods {
 
     final now = FieldValue.serverTimestamp();
 
+    final List<String> participants = [uid, receiverId]..sort();
+
     /// 1️⃣ create/update chat doc
     await chatRef.set({
-      'participants': [uid, receiverId],
+      'participants': participants,
       'lastMessage': text ?? type,
       "mediaOwnerUid": type == 'text'
           ? null

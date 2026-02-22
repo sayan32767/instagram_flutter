@@ -80,7 +80,6 @@ class ProfileScreenPostsState extends State<ProfileScreenPosts> {
             return AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
               child: PostCard(
-                key: ValueKey(post.postId),
                 post: post,
               ),
             );

@@ -152,10 +152,7 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
     _hasMore = true;
     _isLoading = true;
 
-    setState(() {});
-
-    await Future.delayed(
-        const Duration(milliseconds: 300)); // simulate network delay
+    setState(() {}); // simulate network delay
 
     final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
@@ -179,8 +176,6 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
 
   // 🔹 Load first posts
   Future<void> _loadInitial() async {
-    await Future.delayed(
-        const Duration(milliseconds: 300)); // simulate network delay
     final snap = await AppFirestore.posts()
         .orderBy('datePublished', descending: true)
         .limit(_limit)
@@ -316,9 +311,11 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
                     );
                   },
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: CustomImageLoader(imageUrl: url),
-                  ),
+                      borderRadius: BorderRadius.circular(3),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: CustomImageLoader(imageUrl: url),
+                      )),
                 ),
               );
             },
@@ -718,30 +715,18 @@ class _MasonryGridSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final randomHeights = [
-      160.0,
-      220.0,
-      180.0,
-      250.0,
-      200.0,
-      170.0,
-      230.0,
-      190.0,
-      210.0,
-    ];
-
-    return MasonryGridView.builder(
+    return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
+        crossAxisSpacing: 6,
+        mainAxisSpacing: 6,
+        childAspectRatio: 1, // 🔥 Perfect square
       ),
-      mainAxisSpacing: 6,
-      crossAxisSpacing: 6,
-      itemCount: 9, // 👈 exactly 9 fake posts
+      itemCount: 18,
       itemBuilder: (context, index) {
         return Container(
-          height: randomHeights[index % randomHeights.length],
           decoration: BoxDecoration(
             color: const Color(0xFF181818),
             borderRadius: BorderRadius.circular(6),

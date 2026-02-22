@@ -2,14 +2,17 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/auth_methods.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
+import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/edit_profile_screen.dart';
 import 'package:instagram_flutter/screens/group_chooser_screen.dart';
 import 'package:instagram_flutter/screens/profile_photo_viewer.dart';
@@ -17,9 +20,11 @@ import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/screens/reels_screen.dart';
 import 'package:instagram_flutter/screens/single_reel_screen.dart';
+import 'package:instagram_flutter/utils/auth_button.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/utils.dart';
+import 'package:instagram_flutter/widgets/my_textformfield.dart';
 import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/follow_button.dart';
 import 'package:instagram_flutter/widgets/loading_builder_images.dart';
@@ -277,14 +282,14 @@ class ProfileScreenState extends State<ProfileScreen> {
     XFile? _selectedImage;
 
     showModalBottomSheet(
-      backgroundColor: mobileBackgroundColor,
+      useRootNavigator: true,
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return StatefulBuilder(
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.8,
+        child: StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             Future<void> _pickImage() async {
               final XFile? image =
@@ -298,89 +303,133 @@ class ProfileScreenState extends State<ProfileScreen> {
 
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context)
-                    .viewInsets
-                    .bottom, // To avoid keyboard overlap
-                left: 20,
-                right: 20,
-                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // Minimizes the modal height
-                children: [
-                  Container(
-                    width: double.infinity,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24),
                   ),
-                  Text(
-                    "Pick and Preview Emoji",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+
+                    /// 🔥 CUSTOM SMALL HANDLE
+                    Container(
+                      width: 32,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: Colors.white30,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  // Image preview container
-                  _selectedImage == null
-                      ? Text(
-                          "No emoji selected",
-                          style: TextStyle(fontSize: 16),
-                        )
-                      : Image.file(
-                          File(_selectedImage!.path), // Display selected image
-                          height: 150,
-                          width: 150,
-                        ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _pickImage,
-                    child: Text(
-                      "Pick an Image",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  SizedBox(height: 20),
+                    SizedBox(height: 8),
+                    Expanded(
+                      child: Container(
+                        color: mobileBackgroundColor,
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 10),
+                            child: Column(
+                              mainAxisSize: MainAxisSize
+                                  .min, // Minimizes the modal height
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                ),
+                                SizedBox(height: 10),
 
-                  _isTaglinePosting
-                      ? CircularProgressIndicator(color: Colors.white70)
-                      : ElevatedButton(
-                          // onPressed: _selectedImage != null ?
-                          onPressed: () async {
-                            setState(() {
-                              _isTaglinePosting = true;
-                            });
+                                Text(
+                                  "Pick and Preview Emoji",
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 20),
+                                // Image preview container
+                                _selectedImage == null
+                                    ? Text(
+                                        "No emoji selected",
+                                        style: TextStyle(fontSize: 16),
+                                      )
+                                    : Image.file(
+                                        File(_selectedImage!
+                                            .path), // Display selected image
+                                        height: 150,
+                                        width: 150,
+                                      ),
+                                SizedBox(height: 20),
+                                AuthButton(
+                                  color: blueColor,
+                                  isLoading: false,
+                                  onTap: _pickImage,
+                                  // child: Text(
+                                  //   "Pick an Image",
+                                  //   style: TextStyle(color: Colors.white),
+                                  // ),
+                                  text: _selectedImage == null
+                                      ? "Pick an Image"
+                                      : "Select a different image",
+                                ),
+                                SizedBox(height: 20),
 
-                            await _updateUserEmoji(_selectedImage);
-                            // await Future.delayed(Duration(seconds: 3));
+                                _isTaglinePosting
+                                    ? CircularProgressIndicator(
+                                        color: Colors.white70)
+                                    : _selectedImage != null
+                                        ? AuthButton(
+                                            color: blueColor,
+                                            isLoading: false,
+                                            onTap: () async {
+                                              setState(() {
+                                                _isTaglinePosting = true;
+                                              });
 
-                            setState(() {
-                              _isTaglinePosting = false;
-                            });
+                                              await _updateUserEmoji(
+                                                  _selectedImage);
+                                              // await Future.delayed(Duration(seconds: 3));
 
-                            Navigator.of(context).pop();
+                                              setState(() {
+                                                _isTaglinePosting = false;
+                                              });
 
-                            // Provider.of<NavigationProvider>(context,
-                            //         listen: false)
-                            //     .setPage(0);
-                            // Provider.of<NavigationProvider>(context,
-                            //         listen: false)
-                            //     .pageController!
-                            //     .jumpToPage(0);
+                                              Navigator.of(context).pop();
 
-                            showSnackBar(context, 'Emoji updated successfully');
-                          },
-                          // : null, // Disable button if no image is selected
-                          child: Text(
-                            "Update",
-                            style: TextStyle(color: Colors.white),
+                                              // Provider.of<NavigationProvider>(context,
+                                              //         listen: false)
+                                              //     .setPage(0);
+                                              // Provider.of<NavigationProvider>(context,
+                                              //         listen: false)
+                                              //     .pageController!
+                                              //     .jumpToPage(0);
+
+                                              showSnackBar(context,
+                                                  'Emoji updated successfully');
+                                            },
+                                            // : null, // Disable button if no image is selected
+                                            text: "Set as Emoji",
+                                          )
+                                        : SizedBox.shrink(),
+                                SizedBox(height: 20),
+                              ],
+                            ),
                           ),
                         ),
-                  SizedBox(height: 10),
-                ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -388,108 +437,112 @@ class ProfileScreenState extends State<ProfileScreen> {
     TextEditingController taglineController = TextEditingController();
 
     showModalBottomSheet(
-      backgroundColor: mobileBackgroundColor,
+      useRootNavigator: true,
       context: context,
-      isScrollControlled: true, // To handle the keyboard overlay properly
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return StatefulBuilder(
+      isScrollControlled: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.8,
+        child: StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context)
-                    .viewInsets
-                    .bottom, // To avoid keyboard overlap
-                left: 20,
-                right: 20,
-                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // Minimizes the modal height
-                children: [
-                  Text(
-                    "Set your tagline",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24),
                   ),
-                  SizedBox(height: 20),
-                  TextField(
-                    controller: taglineController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter your tagline',
-                      border: OutlineInputBorder(
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 8),
+
+                    /// 🔥 CUSTOM SMALL HANDLE
+                    Container(
+                      width: 32,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: Colors.white30,
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors.white, // Set border color to white
-                          width: 1.0, // Border width
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors
-                              .white, // Set border color to white when focused
-                          width: 2.0, // Border width when focused
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: Colors
-                              .white, // Set border color to white when enabled
-                          width: 1.0, // Border width when enabled
-                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  _isTaglinePosting
-                      ? CircularProgressIndicator(color: Colors.white70)
-                      : ElevatedButton(
-                          onPressed: () async {
-                            String tagline = taglineController.text;
 
-                            // if (tagline.isEmpty) return;
+                    const SizedBox(height: 8),
 
-                            setState(() {
-                              _isTaglinePosting = true;
-                            });
+                    /// 🔥 CONTENT
+                    Expanded(
+                      child: Container(
+                        color: mobileBackgroundColor,
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 10),
+                              const Text(
+                                "Set your tagline",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              MyTextformfield(
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.deny(
+                                    RegExp(r'\s{2,}'),
+                                  )
+                                ],
+                                controller: taglineController,
+                                hintText: "Enter your new tagline",
+                                onChanged: (_) {},
+                              ),
+                              const SizedBox(height: 24),
+                              AuthButton(
+                                color: blueColor,
+                                isLoading: _isTaglinePosting,
+                                text: "Set as Tagline",
+                                onTap: () async {
+                                  final tagline = taglineController.text;
 
-                            await _updateUserTagline(tagline);
+                                  setState(() {
+                                    _isTaglinePosting = true;
+                                  });
 
-                            setState(() {
-                              _isTaglinePosting = false;
-                            });
+                                  await _updateUserTagline(tagline);
 
-                            Navigator.of(context).pop();
+                                  setState(() {
+                                    _isTaglinePosting = false;
+                                  });
 
-                            // Provider.of<NavigationProvider>(context,
-                            //         listen: false)
-                            //     .setPage(0);
-                            // Provider.of<NavigationProvider>(context,
-                            //         listen: false)
-                            //     .pageController!
-                            //     .jumpToPage(0);
-                            // showSnackBar(
-                            //     context, 'Tagline updated successfully');
-                          },
-                          child: Text(
-                            "Save",
-                            style: TextStyle(color: Colors.white),
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                            ],
                           ),
                         ),
-                  SizedBox(height: 10),
-                ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -542,7 +595,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                           showDragHandle: false, // ❌ disable default
                           backgroundColor: Colors.transparent,
                           builder: (_) => FractionallySizedBox(
-                            heightFactor: 0.8,
+                            heightFactor: 0.94,
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Color(0xFF1E1E1E),
@@ -691,7 +744,11 @@ class ProfilePostsGrid extends StatefulWidget {
   State<ProfilePostsGrid> createState() => _ProfilePostsGridState();
 }
 
-class _ProfilePostsGridState extends State<ProfilePostsGrid> {
+class _ProfilePostsGridState extends State<ProfilePostsGrid>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final ScrollController _scrollController = ScrollController();
 
   List<DocumentSnapshot> _posts = [];
@@ -782,6 +839,7 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // 🔹 Initial loader
     if (_isLoading) {
       return const Center(
@@ -803,8 +861,8 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
             SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 5,
-                mainAxisSpacing: 1.5,
+                crossAxisSpacing: 0,
+                mainAxisSpacing: 0,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -817,9 +875,6 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => ProfileScreenPosts(
-                            key: Provider.of<GlobalKeyProvier>(context,
-                                    listen: false)
-                                .globalKey,
                             postId: snap.id,
                             uid: widget.uid,
                           ),
@@ -827,8 +882,15 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid> {
                       );
                     },
                     child: Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: CustomImageLoader(imageUrl: data['postUrl']),
+                      padding: const EdgeInsets.only(
+                          bottom: 2, right: 2, top: 4, left: 4),
+                      child: ClipRRect(
+                        borderRadius:
+                            BorderRadius.circular(2), // 👈 adjust radius
+                        child: CustomImageLoader(
+                          imageUrl: data['postUrl'],
+                        ),
+                      ),
                     ),
                   );
                 },
@@ -879,7 +941,10 @@ class ProfileReelsGrid extends StatefulWidget {
   State<ProfileReelsGrid> createState() => _ProfileReelsGridState();
 }
 
-class _ProfileReelsGridState extends State<ProfileReelsGrid> {
+class _ProfileReelsGridState extends State<ProfileReelsGrid>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   final ScrollController _scrollController = ScrollController();
 
   List<DocumentSnapshot> _reels = [];
@@ -970,6 +1035,7 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // 🔹 Initial loader
     if (_isLoading) {
       return const Center(
@@ -991,8 +1057,8 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
             SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 5,
-                mainAxisSpacing: 1.5,
+                crossAxisSpacing: 0,
+                mainAxisSpacing: 0,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -1009,25 +1075,30 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid> {
                         ),
                       );
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          CustomImageLoader(
-                              imageUrl: data[
-                                  'thumbnailUrl']), // Placeholder thumbnail
-                          const Positioned(
-                            bottom: 6,
-                            right: 6,
-                            child: Icon(
-                              Icons.play_arrow,
-                              color: Colors.white,
-                              size: 18,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              bottom: 2, right: 2, top: 4, left: 4),
+                          child: ClipRRect(
+                            borderRadius:
+                                BorderRadius.circular(2), // 👈 adjust radius
+                            child: CustomImageLoader(
+                              imageUrl: data['thumbnailUrl'],
                             ),
                           ),
-                        ],
-                      ),
+                        ), // Placeholder thumbnail
+                        const Positioned(
+                          bottom: 6,
+                          right: 6,
+                          child: Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
