@@ -521,15 +521,35 @@ class _SearchUsersListState extends State<SearchUsersList> {
 
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: Colors.grey.shade300,
-            backgroundImage: userData['photoUrl'] != null &&
-                    userData['photoUrl'].toString().isNotEmpty
-                ? CachedNetworkImageProvider(
-                    userData['photoUrl'],
-                    cacheManager: InstaCacheManager(),
-                  )
-                : const AssetImage('assets/images/placeholder.jpg')
-                    as ImageProvider,
+            radius: 20,
+            backgroundColor:
+                const Color.fromARGB(255, 71, 71, 71), // 👈 white base
+            child: ClipOval(
+              child: (userData['photoUrl'] != null &&
+                      userData['photoUrl'].toString().isNotEmpty)
+                  ? CachedNetworkImage(
+                      imageUrl: userData['photoUrl'],
+                      fit: BoxFit.cover,
+                      width: 40,
+                      height: 40,
+                      placeholder: (context, url) => Container(
+                        color: const Color.fromARGB(
+                            255, 54, 54, 54), // 👈 white while loading
+                      ),
+                      errorWidget: (context, url, error) => Image.asset(
+                        'assets/images/placeholder.jpg',
+                        fit: BoxFit.cover,
+                        width: 40,
+                        height: 40,
+                      ),
+                    )
+                  : Image.asset(
+                      'assets/images/placeholder.jpg',
+                      fit: BoxFit.cover,
+                      width: 40,
+                      height: 40,
+                    ),
+            ),
           ),
           title: Row(
             children: [
@@ -648,7 +668,8 @@ class _SearchUsersListState extends State<SearchUsersList> {
                   final data = _users[index].data() as Map<String, dynamic>;
 
                   return ListTile(
-                    leading: data['photoUrl'] == null
+                    leading: data['photoUrl'] == null ||
+                            data['photoUrl'].toString().isEmpty
                         ? CircleAvatar(
                             radius: 20,
                             backgroundImage: const AssetImage(

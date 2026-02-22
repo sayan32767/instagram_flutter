@@ -249,7 +249,10 @@ class _ReelPreviewState extends State<_ReelPreview> {
         ),
         child: Column(
           children: [
-            _UserHeader(uid: data['uid']),
+            _UserHeader(
+                uid: data['uid'],
+                photoUrl: data['profImage'],
+                username: data['username']),
 
             /// 🎬 THUMBNAIL
             Expanded(
@@ -391,7 +394,10 @@ class _PostPreviewState extends State<_PostPreview> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _UserHeader(uid: data['uid']),
+            _UserHeader(
+                uid: data['uid'],
+                photoUrl: data['profImage'],
+                username: data['username']),
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(bottom: Radius.circular(12)),
@@ -411,56 +417,94 @@ class _PostPreviewState extends State<_PostPreview> {
 
 class _UserHeader extends StatelessWidget {
   final String uid;
+  final String? photoUrl;
+  final String? username;
 
-  const _UserHeader({required this.uid});
+  const _UserHeader({required this.uid, this.photoUrl, this.username});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('user').doc(uid).get(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox(height: 24);
-        }
+    // return FutureBuilder<DocumentSnapshot>(
+    //   future: FirebaseFirestore.instance.collection('user').doc(uid).get(),
+    //   builder: (context, snapshot) {
+    //     if (!snapshot.hasData) {
+    //       return const SizedBox(height: 38);
+    //     }
 
-        final user = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+    //     final user = snapshot.data!.data() as Map<String, dynamic>? ?? {};
 
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-          child: Row(
-            children: [
-              /// Avatar
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: Colors.grey.shade300,
-                backgroundImage: (user['photoUrl'] != null &&
-                        user['photoUrl'].toString().isNotEmpty)
-                    ? CachedNetworkImageProvider(user['photoUrl'],
+    //     return Padding(
+    //       padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+    //       child: Row(
+    //         children: [
+    //           /// Avatar
+    //           CircleAvatar(
+    //             radius: 12,
+    //             backgroundColor: Colors.grey.shade300,
+    //             backgroundImage: (user['photoUrl'] != null &&
+    //                     user['photoUrl'].toString().isNotEmpty)
+    //                 ? CachedNetworkImageProvider(user['photoUrl'],
+    //                     cacheManager: InstaCacheManager())
+    //                 : const AssetImage('assets/images/placeholder.jpg')
+    //                     as ImageProvider,
+    //           ),
+
+    //           const SizedBox(width: 6),
+
+    //           /// Username + verified
+    //           Expanded(
+    //             child: Row(
+    //               children: [
+    //                 Text(
+    //                   user['username'] ?? "User",
+    //                   style: const TextStyle(
+    //                     fontSize: 12,
+    //                     fontWeight: FontWeight.w600,
+    //                   ),
+    //                 ),
+    //               ],
+    //             ),
+    //           ),
+    //         ],
+    //       ),
+    //     );
+    //   },
+    // );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+      child: Row(
+        children: [
+          /// Avatar
+          CircleAvatar(
+            radius: 12,
+            backgroundColor: Colors.grey.shade300,
+            backgroundImage:
+                (photoUrl != null && photoUrl.toString().isNotEmpty)
+                    ? CachedNetworkImageProvider(photoUrl ?? '',
                         cacheManager: InstaCacheManager())
                     : const AssetImage('assets/images/placeholder.jpg')
                         as ImageProvider,
-              ),
-
-              const SizedBox(width: 6),
-
-              /// Username + verified
-              Expanded(
-                child: Row(
-                  children: [
-                    Text(
-                      user['username'] ?? "User",
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
-        );
-      },
+
+          const SizedBox(width: 6),
+
+          /// Username + verified
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  username ?? "someone",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

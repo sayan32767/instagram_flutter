@@ -7,6 +7,7 @@ import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/storage_methods.dart';
 import 'package:instagram_flutter/models/user.dart' as model;
 import 'package:instagram_flutter/utils/group_storage.dart';
+import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:provider/provider.dart';
 
 class AuthMethods {
@@ -162,6 +163,8 @@ class AuthMethods {
 
   Future<void> signOut(BuildContext context) async {
     try {
+      await InstaCacheManager().emptyCache();
+
       /// 2️⃣ Clear stored group
       await GroupStorage.clear();
 

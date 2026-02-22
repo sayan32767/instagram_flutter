@@ -35,7 +35,8 @@ Future<XFile?> pickVideo(ImageSource source) async {
   return file; // return file path, NOT bytes
 }
 
-void showSnackBar(BuildContext context, String content) {
+void showSnackBar(BuildContext context, String content,
+    {Duration duration = const Duration(seconds: 2)}) {
   final overlay = Overlay.of(context);
   if (overlay == null) return;
 
@@ -109,7 +110,7 @@ void showSnackBar(BuildContext context, String content) {
 
   animationController.forward();
 
-  Future.delayed(const Duration(seconds: 2), () async {
+  Future.delayed(duration, () async {
     await animationController.reverse();
     overlayEntry.remove();
     animationController.dispose();

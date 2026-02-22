@@ -313,15 +313,41 @@ class SingleReelScreenState extends State<SingleReelScreen>
                               onTap: () => _openProfile(reelData['uid']),
                               child: CircleAvatar(
                                 radius: 16,
-                                backgroundImage:
-                                    reelData['profImage'] != null &&
-                                            reelData['profImage'] != ''
-                                        ? CachedNetworkImageProvider(
-                                            reelData['profImage'],
-                                          )
-                                        : const AssetImage(
-                                                'assets/images/placeholder.jpg')
-                                            as ImageProvider,
+                                backgroundColor: const Color.fromARGB(
+                                    255, 71, 71, 71), // 👈 white base
+                                child: ClipOval(
+                                  child: (reelData['profImage'] != null &&
+                                          reelData['profImage']
+                                              .toString()
+                                              .isNotEmpty)
+                                      ? CachedNetworkImage(
+                                          imageUrl: reelData['profImage'],
+                                          fit: BoxFit.cover,
+                                          width: 32,
+                                          height: 32,
+                                          placeholder: (context, url) =>
+                                              Container(
+                                            color: const Color.fromARGB(
+                                                255,
+                                                54,
+                                                54,
+                                                54), // 👈 white while loading
+                                          ),
+                                          errorWidget: (context, url, error) =>
+                                              Image.asset(
+                                            'assets/images/placeholder.jpg',
+                                            fit: BoxFit.cover,
+                                            width: 32,
+                                            height: 32,
+                                          ),
+                                        )
+                                      : Image.asset(
+                                          'assets/images/placeholder.jpg',
+                                          fit: BoxFit.cover,
+                                          width: 32,
+                                          height: 32,
+                                        ),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 10),

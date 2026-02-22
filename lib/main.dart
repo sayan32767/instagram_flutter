@@ -7,16 +7,11 @@ import 'package:instagram_flutter/firebase_options.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
-import 'package:instagram_flutter/resources/auth_methods.dart';
-import 'package:instagram_flutter/resources/firestore_methods.dart';
-import 'package:instagram_flutter/resources/storage_methods.dart';
-import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
-import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
-import 'package:instagram_flutter/responsive/web_screen_layout.dart';
 import 'package:instagram_flutter/screens/group_gate_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
+import 'package:instagram_flutter/utils/presence_servoce.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -50,46 +45,52 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => PlayerStateProvider()),
         ChangeNotifierProvider(create: (_) => GlobalKeyProvier()),
+        Provider(create: (_) {
+          final service = PresenceService();
+          service.start();
+          return service;
+        }),
       ],
       child: MaterialApp(
-          navigatorObservers: [routeObserver],
-          debugShowCheckedModeBanner: false,
-          title: 'Instagram',
-          theme: ThemeData.dark().copyWith(
-            primaryColor: blueColor,
-            scaffoldBackgroundColor: mobileBackgroundColor,
-            brightness: Brightness.dark,
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: blueColor,
-              selectionColor: blueColor.withOpacity(0.5),
-              selectionHandleColor: blueColor,
-            ),
+        navigatorObservers: [routeObserver],
+        debugShowCheckedModeBanner: false,
+        title: 'Instagram',
+        theme: ThemeData.dark().copyWith(
+          primaryColor: blueColor,
+          scaffoldBackgroundColor: mobileBackgroundColor,
+          brightness: Brightness.dark,
+          textSelectionTheme: TextSelectionThemeData(
+            cursorColor: blueColor,
+            selectionColor: blueColor.withOpacity(0.5),
+            selectionHandleColor: blueColor,
           ),
-          // home: const ResponsiveLayout(webScreenLayout: WebScreenLayout(), mobileScreenLayout: MobileScreenLayout())
-          home: StreamBuilder(
-              stream: FirebaseAuth.instance.authStateChanges(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.active) {
-                  if (snapshot.hasData) {
-                    // AuthMethods().signOut(
-                    //     context); // 🔥 force sign out to clear any stale state
-                    return const GroupGateScreen();
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text('${snapshot.error}'),
-                    );
-                  }
-                }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.white70,
-                    ),
+        ),
+        // home: const ResponsiveLayout(webScreenLayout: WebScreenLayout(), mobileScreenLayout: MobileScreenLayout())
+        home: StreamBuilder(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.active) {
+                if (snapshot.hasData) {
+                  // AuthMethods().signOut(
+                  //     context); // 🔥 force sign out to clear any stale state
+                  return const GroupGateScreen();
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text('${snapshot.error}'),
                   );
                 }
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white70,
+                  ),
+                );
+              }
 
-                return LoginScreen();
-              })),
+              return LoginScreen();
+            }),
+      ),
     );
   }
 }

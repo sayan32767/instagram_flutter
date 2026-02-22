@@ -11,8 +11,8 @@ class InstaCacheManager extends CacheManager {
       : super(
           Config(
             key,
-            stalePeriod: const Duration(days: 30), // ⭐ keep 30 days
-            maxNrOfCacheObjects: 2000, // ⭐ large cache
+            stalePeriod: const Duration(days: 7), // ⭐ keep 30 days
+            maxNrOfCacheObjects: 500, // ⭐ large cache
           ),
         );
 }

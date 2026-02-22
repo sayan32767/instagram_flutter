@@ -311,14 +311,36 @@ class _InboxScreenState extends State<InboxScreen> {
                         },
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundImage: user['photoUrl'] != null
-                                ? CachedNetworkImageProvider(
-                                    user['photoUrl'],
-                                    cacheManager: InstaCacheManager(),
-                                  )
-                                : const AssetImage(
-                                        'assets/images/placeholder.jpg')
-                                    as ImageProvider,
+                            radius: 20,
+                            backgroundColor: const Color.fromARGB(
+                                255, 71, 71, 71), // 👈 white base
+                            child: ClipOval(
+                              child: (user['photoUrl'] != null &&
+                                      user['photoUrl'].toString().isNotEmpty)
+                                  ? CachedNetworkImage(
+                                      imageUrl: user['photoUrl'],
+                                      fit: BoxFit.cover,
+                                      width: 40,
+                                      height: 40,
+                                      placeholder: (context, url) => Container(
+                                        color: const Color.fromARGB(255, 54, 54,
+                                            54), // 👈 white while loading
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          Image.asset(
+                                        'assets/images/placeholder.jpg',
+                                        fit: BoxFit.cover,
+                                        width: 40,
+                                        height: 40,
+                                      ),
+                                    )
+                                  : Image.asset(
+                                      'assets/images/placeholder.jpg',
+                                      fit: BoxFit.cover,
+                                      width: 40,
+                                      height: 40,
+                                    ),
+                            ),
                           ),
                           title: Row(
                             children: [

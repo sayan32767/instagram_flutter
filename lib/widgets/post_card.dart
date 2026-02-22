@@ -213,7 +213,6 @@ class _PostCardState extends State<PostCard> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text('Could not load image'),
-                                Icon(Icons.error),
                               ],
                             ),
                           ),

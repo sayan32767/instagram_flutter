@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
-import 'package:instagram_flutter/utils/global_variables.dart';
+import 'package:instagram_flutter/utils/presence_servoce.dart';
+import 'package:instagram_flutter/widgets/connection_banner.dart';
 import 'package:provider/provider.dart';
 
 class ResponsiveLayout extends StatefulWidget {
@@ -18,29 +19,27 @@ class ResponsiveLayout extends StatefulWidget {
 
 class _ResponsiveLayoutState extends State<ResponsiveLayout> {
   @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    // addData();
-  }
-
-  // addData() async {
-  //   UserProvider _userProvider = Provider.of(context, listen: false);
-  //   await _userProvider.refreshUser();
-  // }
-
-  @override
   Widget build(BuildContext context) {
-    // return LayoutBuilder(
-    //   builder: (context, constraints) {
-    //     // if (constraints.maxWidth > webScreenSize) {
-    //     //   return widget.webScreenLayout;
-    //     // }
-    //     return widget.mobileScreenLayout;
-    //   }
-    // );
-    return Provider.of<UserProvider>(context).getUser != null
-        ? widget.mobileScreenLayout
-        : LoginScreen();
+    final user = context.watch<UserProvider>().getUser;
+
+    if (user == null) {
+      return LoginScreen();
+    }
+
+    final presence = context.read<PresenceService>();
+
+    return ValueListenableBuilder(
+      valueListenable: presence.isOffline,
+      builder: (context, offline, _) {
+        return Stack(
+          children: [
+            widget.mobileScreenLayout,
+            ConnectionBanner(
+              isOffline: offline,
+            ),
+          ],
+        );
+      },
+    );
   }
 }

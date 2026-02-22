@@ -9,35 +9,72 @@ class PresenceService with WidgetsBindingObserver {
 
   Timer? _heartbeatTimer;
 
-  /// START presence tracking
+  StreamSubscription? _connectionSub;
+
+  final ValueNotifier<bool> isOffline = ValueNotifier(false);
+
+  Timer? _debounceTimer;
+  bool _lastRawState = false;
+  late final StreamSubscription _authSub;
+
+  void updateRawConnectionState(bool offline) {
+    /// If state didn't change → ignore
+    if (offline == _lastRawState) return;
+
+    _lastRawState = offline;
+
+    _debounceTimer?.cancel();
+
+    /// ⏳ Wait 2 seconds before confirming state change
+    _debounceTimer = Timer(const Duration(seconds: 2), () {
+      isOffline.value = offline;
+    });
+  }
+
   void start() {
     WidgetsBinding.instance.addObserver(this);
 
-    _updateLastActive(); // immediate ping
+    _authSub = _auth.authStateChanges().listen((user) {
+      _connectionSub?.cancel();
 
-    /// heartbeat every 60s (industry standard: 30–90s)
+      if (user != null) {
+        _updateLastActive();
+        _listenToConnection();
+      } else {
+        /// User logged out → stop everything
+        _heartbeatTimer?.cancel();
+        isOffline.value = false;
+      }
+    });
+
     _heartbeatTimer = Timer.periodic(
       const Duration(seconds: 60),
       (_) => _updateLastActive(),
     );
+
+    _listenToConnection();
   }
 
-  /// STOP presence tracking
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _heartbeatTimer?.cancel();
+  void _listenToConnection() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    _connectionSub = _firestore
+        .collection('user')
+        .doc(_auth.currentUser!.uid)
+        .snapshots(includeMetadataChanges: true)
+        .listen((snapshot) {
+      updateRawConnectionState(snapshot.metadata.isFromCache);
+    });
   }
 
-  /// APP LIFECYCLE HANDLING
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    /// Only care about RESUMED
     if (state == AppLifecycleState.resumed) {
       _updateLastActive();
     }
   }
 
-  /// 🔥 CORE: update lastActive using SERVER time
   Future<void> _updateLastActive() async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
@@ -46,8 +83,15 @@ class PresenceService with WidgetsBindingObserver {
       await _firestore.collection('user').doc(uid).update({
         'lastActive': FieldValue.serverTimestamp(),
       });
-    } catch (_) {
-      /// silently ignore network errors
-    }
+    } catch (_) {}
+  }
+
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _heartbeatTimer?.cancel();
+    _connectionSub?.cancel();
+    _debounceTimer?.cancel();
+    _authSub.cancel();
+    isOffline.dispose();
   }
 }
