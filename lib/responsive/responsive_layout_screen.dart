@@ -34,8 +34,11 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
         return Stack(
           children: [
             widget.mobileScreenLayout,
-            ConnectionBanner(
-              isOffline: offline,
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConnectionBanner(
+                isOffline: offline,
+              ),
             ),
           ],
         );

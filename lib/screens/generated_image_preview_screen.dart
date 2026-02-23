@@ -168,7 +168,7 @@ class _GeneratedImagePreviewScreenState
                       backgroundColor: Colors.grey[800],
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(30),
                       ),
                     ),
                   ),

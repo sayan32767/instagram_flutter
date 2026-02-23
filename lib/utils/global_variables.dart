@@ -19,7 +19,6 @@ const webScreenSize = 600;
 //   ProfileScreen(uid: FirebaseAuth.instance.currentUser!.uid)
 // ];
 
-
 class NavigationProvider with ChangeNotifier {
   int? _page;
 

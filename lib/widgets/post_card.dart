@@ -14,7 +14,9 @@ import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/like_animation.dart';
 import 'package:instagram_flutter/widgets/share_screen_sheet.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/gestures.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -257,113 +259,59 @@ class _PostCardState extends State<PostCard> {
           ),
 
           // LIKE, COMMENT SECTION
-          Row(
-            children: [
-              LikeAnimation(
-                isAnimating: widget.post.likes.contains(user.uid),
-                smallLike: true,
-                child: IconButton(
-                    onPressed: () async {
-                      await FirestoreMethods().likePost('posts', user.uid,
-                          widget.post.postId, widget.post.likes);
-                      setState(() {
-                        widget.post.likes.contains(user.uid)
-                            ? widget.post.likes.remove(user.uid)
-                            : widget.post.likes.add(user.uid);
-                      });
-                    },
-                    icon: widget.post.likes.contains(user.uid)
-                        ? const Icon(
-                            Icons.favorite,
-                            color: Colors.red,
-                          )
-                        : const Icon(
-                            Icons.favorite_border,
-                            color: Colors.white,
-                          )),
-              ),
-              IconButton(
-                onPressed: () {
-                  Navigator.of(context, rootNavigator: true).push(
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) =>
-                          CommentsScreen(snap: widget.post.toJson()),
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(0.0, 1.0);
-                        const end = Offset.zero;
-                        const curve = Curves.ease;
-
-                        var tween = Tween(begin: begin, end: end)
-                            .chain(CurveTween(curve: curve));
-
-                        return SlideTransition(
-                          position: animation.drive(tween),
-                          child: child,
-                        );
-                      },
-                    ),
-                  );
-                },
-                icon: const Icon(
-                  Icons.comment_outlined,
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  HapticFeedback.lightImpact(); // subtle tap feel
-                  _openShareSheet(widget.post.toJson());
-                },
-                icon: const Icon(
-                  Icons.send,
-                ),
-              ),
-            ],
-          ),
-
-          // DESCRIPTION AND NUMBER OF COMMENTS
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 10.0, 0, 6),
+            child: Row(
               children: [
-                DefaultTextStyle(
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                  child: Text(
-                    widget.post.likes.length == 0
-                        ? 'No likes yet'
-                        : widget.post.likes.length == 1
-                            ? '${widget.post.likes.length} like'
-                            : '${widget.post.likes.length} likes',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
+                SizedBox(
+                  width: 14,
                 ),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.only(top: 4),
+                GestureDetector(
+                  onTap: () async {
+                    await FirestoreMethods().likePost('posts', user.uid,
+                        widget.post.postId, widget.post.likes);
+                    setState(() {
+                      widget.post.likes.contains(user.uid)
+                          ? widget.post.likes.remove(user.uid)
+                          : widget.post.likes.add(user.uid);
+                    });
+                  },
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      widget.post.description != ''
-                          ? Expanded(
-                              child: Text(
-                                '${widget.post.description}',
-                                maxLines: null,
-                                overflow: TextOverflow.clip,
-                              ),
-                            )
-                          : Container()
+                      LikeAnimation(
+                        isAnimating: widget.post.likes.contains(user.uid),
+                        smallLike: true,
+                        child: Container(
+                            child: widget.post.likes.contains(user.uid)
+                                ? PhosphorIcon(
+                                    PhosphorIcons.heart(
+                                        PhosphorIconsStyle.fill),
+                                    color: Colors.redAccent,
+                                  )
+                                : PhosphorIcon(
+                                    PhosphorIcons.heart(
+                                        PhosphorIconsStyle.regular),
+                                    color: Colors.white,
+                                  )),
+                      ),
+                      if (widget.post.likes.length > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(
+                            widget.post.likes.length == 1
+                                ? '1'
+                                : '${widget.post.likes.length}',
+                            style: TextStyle(color: Colors.white, fontSize: 13),
+                          ),
+                        )
                     ],
                   ),
                 ),
-                InkWell(
+                SizedBox(
+                  width: 12,
+                ),
+                GestureDetector(
                   onTap: () {
-                    HapticFeedback.lightImpact(); // subtle tap feel
                     Navigator.of(context, rootNavigator: true).push(
                       PageRouteBuilder(
                         pageBuilder: (context, animation, secondaryAnimation) =>
@@ -385,32 +333,345 @@ class _PostCardState extends State<PostCard> {
                       ),
                     );
                   },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 4),
-                    child: Text(
-                      widget.post.commentCount == null
-                          ? 'Add a comment'
-                          : widget.post.commentCount == 0
-                              ? 'No comments yet'
-                              : widget.post.commentCount == 1
-                                  ? 'View 1 comment'
-                                  : 'View all ${widget.post.commentCount} comments',
-                      style: TextStyle(fontSize: 16, color: secondaryColor),
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PhosphorIcon(
+                        PhosphorIcons.chatCircle(PhosphorIconsStyle.regular),
+                        color: Colors.white,
+                      ),
+                      widget.post.commentCount != null
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 2),
+                              child: Text(
+                                widget.post.commentCount == 0
+                                    ? ''
+                                    : widget.post.commentCount == 1
+                                        ? '1'
+                                        : '${widget.post.commentCount}',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 13),
+                              ),
+                            )
+                          : Container()
+                    ],
                   ),
                 ),
+                SizedBox(
+                  width: 12,
+                ),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact(); // subtle tap feel
+                    _openShareSheet(widget.post.toJson());
+                  },
+                  child: PhosphorIcon(
+                    size: 22,
+                    PhosphorIcons.paperPlaneTilt(PhosphorIconsStyle.regular),
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // DESCRIPTION AND NUMBER OF COMMENTS
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // DefaultTextStyle(
+                //   style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                //         fontWeight: FontWeight.w800,
+                //       ),
+                //   child: Text(
+                //     widget.post.likes.length == 0
+                //         ? 'No likes yet'
+                //         : widget.post.likes.length == 1
+                //             ? '${widget.post.likes.length} like'
+                //             : '${widget.post.likes.length} likes',
+                //     style: Theme.of(context).textTheme.bodyMedium,
+                //   ),
+                // ),
+                // Container(
+                //   width: double.infinity,
+                //   padding: EdgeInsets.only(top: 4),
+                //   child: Row(
+                //     crossAxisAlignment: CrossAxisAlignment.start,
+                //     children: [
+                //       widget.post.description != ''
+                //           ? Expanded(
+                //               child: Text(
+                //                 '${widget.post.description}' +
+                //                     'whsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssbdjjjjjjjsanashc sahc shcj schs cjsh csjac shc sj                                  aausub',
+                //                 maxLines: null,
+                //                 overflow: TextOverflow.clip,
+                //               ),
+                //             )
+                //           : Container()
+                //     ],
+                //   ),
+                // ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
+                  child: widget.post.description != null &&
+                          widget.post.description != ""
+                      ? Padding(
+                          padding: const EdgeInsets.only(bottom: 4.0),
+                          child: ExpandableCaption(
+                            uid: widget.post.uid,
+                            username: widget.post.username ?? null,
+                            text: widget.post.description!,
+                            previewLimit: 140,
+                            maxLimit: 500,
+                          ),
+                        )
+                      : const SizedBox(),
+                ),
+                // InkWell(
+                //   onTap: () {
+                //     HapticFeedback.lightImpact(); // subtle tap feel
+                //     Navigator.of(context, rootNavigator: true).push(
+                //       PageRouteBuilder(
+                //         pageBuilder: (context, animation, secondaryAnimation) =>
+                //             CommentsScreen(snap: widget.post.toJson()),
+                //         transitionsBuilder:
+                //             (context, animation, secondaryAnimation, child) {
+                //           const begin = Offset(0.0, 1.0);
+                //           const end = Offset.zero;
+                //           const curve = Curves.ease;
+
+                //           var tween = Tween(begin: begin, end: end)
+                //               .chain(CurveTween(curve: curve));
+
+                //           return SlideTransition(
+                //             position: animation.drive(tween),
+                //             child: child,
+                //           );
+                //         },
+                //       ),
+                //     );
+                //   },
+                //   child: Container(
+                //     padding: EdgeInsets.symmetric(vertical: 4),
+                //     child: Text(
+                //       widget.post.commentCount == null
+                //           ? 'Add a comment'
+                //           : widget.post.commentCount == 0
+                //               ? 'No comments yet'
+                //               : widget.post.commentCount == 1
+                //                   ? 'View 1 comment'
+                //                   : 'View all ${widget.post.commentCount} comments',
+                //       style: TextStyle(fontSize: 16, color: secondaryColor),
+                //     ),
+                //   ),
+                // ),
                 Container(
                   padding: EdgeInsets.symmetric(vertical: 4).copyWith(top: 0),
                   child: Text(
-                    DateFormat.yMMMd()
-                        .add_jm()
-                        .format(widget.post.datePublished.toDate()),
-                    style: TextStyle(fontSize: 16, color: secondaryColor),
+                    instagramTime(widget.post.datePublished.toDate()),
+                    style: TextStyle(fontSize: 14, color: secondaryColor),
                   ),
                 ),
               ],
             ),
           )
+        ],
+      ),
+    );
+  }
+}
+
+String instagramTime(DateTime date) {
+  final now = DateTime.now();
+  final difference = now.difference(date);
+
+  if (difference.inSeconds < 60) {
+    return '${difference.inSeconds}s';
+  } else if (difference.inMinutes < 60) {
+    return '${difference.inMinutes}m';
+  } else if (difference.inHours < 24) {
+    return '${difference.inHours}h';
+  } else if (difference.inDays < 7) {
+    return '${difference.inDays}d';
+  } else {
+    // 🔥 Show exact date after 6 days
+
+    if (now.year == date.year) {
+      // Same year → Jan 12
+      return DateFormat('MMM d').format(date);
+    } else {
+      // Different year → Jan 12, 2023
+      return DateFormat('MMM d, yyyy').format(date);
+    }
+  }
+}
+
+String cleanCaption(String text) {
+  text = text.trim();
+
+  // Remove multiple spaces / line breaks
+  text = text.replaceAll(RegExp(r'\s+'), ' ');
+
+  // Limit extreme repeated characters (aaaaaaa → aaa)
+  text = text.replaceAll(RegExp(r'(.)\1{5,}'), r'\1\1\1');
+
+  return text;
+}
+
+class ExpandableCaption extends StatefulWidget {
+  final String text;
+  final String uid;
+  final String? username; // TODO: pass username for bolding
+
+  /// Characters shown before "See more"
+  final int previewLimit;
+
+  /// Absolute maximum characters allowed
+  final int maxLimit;
+
+  const ExpandableCaption({
+    super.key,
+    required this.uid,
+    required this.text,
+    this.username = '',
+    this.previewLimit = 140,
+    this.maxLimit = 500, // hard safety cap
+  });
+
+  @override
+  State<ExpandableCaption> createState() => _ExpandableCaptionState();
+}
+
+class _ExpandableCaptionState extends State<ExpandableCaption> {
+  bool isExpanded = false;
+  List<TextSpan> buildSpans(String text) {
+    final RegExp hashtagRegExp = RegExp(r'(#\w+)');
+
+    final matches = hashtagRegExp.allMatches(text);
+
+    if (matches.isEmpty) {
+      return [TextSpan(text: text)];
+    }
+
+    int lastMatchEnd = 0;
+    List<TextSpan> spans = [];
+
+    for (final match in matches) {
+      // Normal text before hashtag
+      if (match.start > lastMatchEnd) {
+        spans.add(
+          TextSpan(
+            text: text.substring(lastMatchEnd, match.start),
+          ),
+        );
+      }
+
+      // Hashtag text
+      final hashtag = match.group(0)!;
+
+      spans.add(
+        TextSpan(
+          text: hashtag,
+          style: const TextStyle(
+            color: Colors.blue,
+            fontWeight: FontWeight.w500,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              print("Tapped $hashtag");
+              // 🔥 Later navigate to hashtag page
+            },
+        ),
+      );
+
+      lastMatchEnd = match.end;
+    }
+
+    // Remaining text after last hashtag
+    if (lastMatchEnd < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(lastMatchEnd),
+        ),
+      );
+    }
+
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String cleaned = cleanCaption(widget.text);
+
+    // 🔥 Hard truncate (even when expanded)
+    if (cleaned.length > widget.maxLimit) {
+      cleaned = cleaned.substring(0, widget.maxLimit);
+    }
+
+    final shouldTrim = cleaned.length > widget.previewLimit;
+
+    final displayText = (!isExpanded && shouldTrim)
+        ? cleaned.substring(0, widget.previewLimit)
+        : cleaned;
+
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          height: 1.4,
+        ),
+        children: [
+          TextSpan(
+            text: '${widget.username} ',
+            style: TextStyle(fontWeight: FontWeight.bold),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfileScreen(uid: widget.uid),
+                  ),
+                );
+              },
+          ),
+
+          // TextSpan(text: displayText),
+          ...buildSpans(displayText),
+          if (shouldTrim && !isExpanded)
+            TextSpan(
+              text: '... See more',
+              style: const TextStyle(
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  setState(() {
+                    isExpanded = true;
+                  });
+                },
+            ),
+          if (shouldTrim && isExpanded)
+            TextSpan(
+              text: '  See less',
+              style: const TextStyle(
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  setState(() {
+                    isExpanded = false;
+                  });
+                },
+            ),
         ],
       ),
     );

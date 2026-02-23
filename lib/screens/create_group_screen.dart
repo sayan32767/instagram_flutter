@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/main.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
@@ -60,17 +61,19 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       await GroupStorage.save(groupId);
       AppFirestore.setGroup(groupId);
 
-      if (!mounted) return;
+      MyApp.restart(context);
 
-      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => const ResponsiveLayout(
-            webScreenLayout: WebScreenLayout(),
-            mobileScreenLayout: MobileScreenLayout(),
-          ),
-        ),
-        (route) => false,
-      );
+      // if (!mounted) return;
+
+      // Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      //   MaterialPageRoute(
+      //     builder: (_) => const ResponsiveLayout(
+      //       webScreenLayout: WebScreenLayout(),
+      //       mobileScreenLayout: MobileScreenLayout(),
+      //     ),
+      //   ),
+      //   (route) => false,
+      // );
     } catch (e) {
       showSnackBar(context, e.toString().replaceAll("Exception: ", ""));
     } finally {
@@ -97,10 +100,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          "Back to Groups",
-          style: TextStyle(color: Colors.white70, fontSize: 20),
-        ),
+        // title: const Text(
+        //   "Back to Groups",
+        //   style: TextStyle(color: Colors.white70, fontSize: 20),
+        // ),
       ),
       backgroundColor: mobileBackgroundColor,
       body: Center(

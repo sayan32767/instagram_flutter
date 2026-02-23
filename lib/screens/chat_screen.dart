@@ -11,7 +11,9 @@ import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/widgets/chat_bubble.dart';
+import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/typing_bubble.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -75,7 +77,13 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
 
-    _markAsRead();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _markAsRead();
+        }
+      });
+    });
     _loadLatestMessages().then((_) => _listenForNewMessages());
     // ⭐ ADD THIS
 
@@ -395,16 +403,16 @@ class _ChatHeader extends StatelessWidget {
 
           return Row(
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                    ? CachedNetworkImageProvider(
-                        photoUrl,
-                        cacheManager: InstaCacheManager(),
-                      )
-                    : const AssetImage('assets/images/placeholder.jpg')
-                        as ImageProvider,
-              ),
+              photoUrl == null || photoUrl.toString().isEmpty
+                  ? const CircleAvatar(
+                      radius: 18,
+                      backgroundImage:
+                          AssetImage('assets/images/placeholder.jpg'),
+                    )
+                  : ProgressImageDots(
+                      url: photoUrl,
+                      radius: 18,
+                    ),
               const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -496,7 +504,12 @@ class _ChatInput extends StatelessWidget {
                 ),
               ),
               child:
-                  const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                  // Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                  PhosphorIcon(
+                PhosphorIcons.paperPlaneRight(PhosphorIconsStyle.fill),
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],

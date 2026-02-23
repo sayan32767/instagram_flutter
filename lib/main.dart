@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/route_observer.dart';
 import 'package:instagram_flutter/firebase_options.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_provider.dart';
 import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
+import 'package:instagram_flutter/resources/auth_methods.dart';
 import 'package:instagram_flutter/screens/group_gate_screen.dart';
 import 'package:instagram_flutter/screens/login_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
@@ -31,20 +33,36 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  static void restart(BuildContext context) {
+    context.findAncestorStateOfType<_MyAppState>()?.restart();
+  }
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Key _appKey = UniqueKey();
+
+  void restart() {
+    setState(() {
+      _appKey = UniqueKey(); // 🔥 full subtree destroy
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
+      key: _appKey, // 🔥 this forces full rebuild
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => UserProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => PlayerStateProvider()),
         ChangeNotifierProvider(create: (_) => GlobalKeyProvier()),
+        ChangeNotifierProvider(create: (_) => GroupProvider()),
         Provider(create: (_) {
           final service = PresenceService();
           service.start();
@@ -54,42 +72,37 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         navigatorObservers: [routeObserver],
         debugShowCheckedModeBanner: false,
-        title: 'Instagram',
         theme: ThemeData.dark().copyWith(
           primaryColor: blueColor,
-          scaffoldBackgroundColor: mobileBackgroundColor,
-          brightness: Brightness.dark,
           textSelectionTheme: TextSelectionThemeData(
-            cursorColor: blueColor,
-            selectionColor: blueColor.withOpacity(0.5),
-            selectionHandleColor: blueColor,
+            cursorColor: blueColor, // cursor
+            selectionColor: blueColor.withOpacity(0.4), // highlight background
+            selectionHandleColor: blueColor, // drag handles
           ),
+          scaffoldBackgroundColor: mobileBackgroundColor,
         ),
-        // home: const ResponsiveLayout(webScreenLayout: WebScreenLayout(), mobileScreenLayout: MobileScreenLayout())
         home: StreamBuilder(
-            stream: FirebaseAuth.instance.authStateChanges(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.active) {
-                if (snapshot.hasData) {
-                  // AuthMethods().signOut(
-                  //     context); // 🔥 force sign out to clear any stale state
-                  return const GroupGateScreen();
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Text('${snapshot.error}'),
-                  );
-                }
-              }
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.white70,
-                  ),
-                );
-              }
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            // 🔥 While waiting → show splash, not login
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                backgroundColor: mobileBackgroundColor,
+                body: Center(
+                  child: CircularProgressIndicator(color: Colors.white70),
+                ),
+              );
+            }
 
-              return LoginScreen();
-            }),
+            if (snapshot.hasData) {
+              // AuthMethods()
+              //     .signOut(context); // 🔥 force sign out to test presence
+              return const GroupGateScreen();
+            }
+
+            return LoginScreen();
+          },
+        ),
       ),
     );
   }

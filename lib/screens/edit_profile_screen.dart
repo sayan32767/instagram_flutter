@@ -40,11 +40,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
 
     _bioController = TextEditingController(
-      text: widget.userData == null ? '' : widget.userData['bio'],
+      text:
+          Provider.of<UserProvider>(context, listen: false).getUser?.bio ?? '',
     );
 
     _usernameController = TextEditingController(
-      text: widget.userData == null ? '' : widget.userData['username'],
+      text:
+          Provider.of<UserProvider>(context, listen: false).getUser?.username ??
+              '',
     );
   }
 
@@ -120,41 +123,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         setState(() {
           _isLoading = false;
         });
-        showSnackBar(context, 'Failed to update profile, please try again');
+        showSnackBar(
+            context, 'Failed to update profile, please try again, $res');
       } else {
         await Provider.of<UserProvider>(context, listen: false).refreshUser();
         setState(() {
           _isLoading = false;
         });
-
-        showSnackBar(context, 'Profile updated successfully');
-
-        Provider.of<NavigationProvider>(context, listen: false).setPage(0);
-
-        Provider.of<NavigationProvider>(context, listen: false)
-            .pageController!
-            .jumpToPage(0);
-
-        /// 🔥 refresh home feed
-        final key =
-            Provider.of<GlobalKeyProvier>(context, listen: false).globalKey;
-
-        if (key?.currentState is FeedScreenState) {
-          (key?.currentState as FeedScreenState).refresh();
-        }
-
-        Navigator.pop(context);
+        showSnackBar(context, "Profile updated successfully");
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<UserProvider>(context).getUser;
     return Scaffold(
         appBar: AppBar(
           backgroundColor: mobileBackgroundColor,
           centerTitle: false,
-          title: Text('Edit Profile'),
+          title: Text('Edit Profile',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           actions: [],
         ),
         body: SafeArea(
@@ -165,42 +154,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(flex: 2, child: Container()),
-              Stack(
-                children: [
-                  _image != null
-                      ? CircleAvatar(
-                          radius: 64, backgroundImage: MemoryImage(_image!))
-                      : clickFlag
-                          ? CircleAvatar(
-                              radius: 64,
-                              backgroundImage:
-                                  AssetImage('assets/images/placeholder.jpg'),
-                              backgroundColor: Colors.grey[300],
-                            )
-                          : widget.userData == null
-                              ? CircleAvatar(
-                                  radius: 64,
-                                  backgroundImage: AssetImage(
-                                      'assets/images/placeholder.jpg'),
-                                  backgroundColor: Colors.grey[300],
-                                )
-                              : widget.userData['photoUrl'] == null
-                                  ? CircleAvatar(
-                                      radius: 64,
-                                      backgroundImage: AssetImage(
-                                          'assets/images/placeholder.jpg'),
-                                      backgroundColor: Colors.grey[300],
-                                    )
-                                  : ProgressImageDots(
-                                      url: widget.userData['photoUrl'],
-                                      radius: 64),
-                  Positioned(
-                      bottom: -10,
-                      left: 80,
-                      child: IconButton(
-                          onPressed: selectImage,
-                          icon: const Icon(Icons.add_a_photo)))
-                ],
+              GestureDetector(
+                onTap: selectImage,
+                child: Stack(
+                  children: [
+                    _image != null
+                        ? CircleAvatar(
+                            radius: 64, backgroundImage: MemoryImage(_image!))
+                        : clickFlag
+                            ? CircleAvatar(
+                                radius: 64,
+                                backgroundImage:
+                                    AssetImage('assets/images/placeholder.jpg'),
+                                backgroundColor: Colors.grey[300],
+                              )
+                            : widget.userData == null
+                                ? CircleAvatar(
+                                    radius: 64,
+                                    backgroundImage: AssetImage(
+                                        'assets/images/placeholder.jpg'),
+                                    backgroundColor: Colors.grey[300],
+                                  )
+                                : user?.photoUrl == null ||
+                                        user?.photoUrl.toString().isEmpty ==
+                                            true
+                                    ? CircleAvatar(
+                                        radius: 64,
+                                        backgroundImage: AssetImage(
+                                            'assets/images/placeholder.jpg'),
+                                        backgroundColor: Colors.grey[300],
+                                      )
+                                    : ProgressImageDots(
+                                        url: user?.photoUrl ?? '', radius: 64),
+                    Positioned(
+                        bottom: -10,
+                        left: 80,
+                        child: IconButton(
+                            onPressed: selectImage,
+                            icon: const Icon(Icons.add_a_photo)))
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               TextButton(
@@ -216,18 +209,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       color: blueColor,
                     ),
                   )),
-              TextFieldInput(
-                  textEditingController: _usernameController,
-                  textInputFormatter: LowerCaseTextFormatter(),
-                  textInputType: TextInputType.text,
-                  hintText: 'Enter new username'),
-              const SizedBox(height: 24),
+
+              // TODO: UPDATING USERNAME IS CURRENTLY DISABLED AS IT REQUIRES SIGNIFICANT CHANGES IN THE BACKEND AND OTHER PARTS OF THE APP. THE CODE FOR UPDATING USERNAME IS KEPT COMMENTED FOR FUTURE IMPLEMENTATION.
+
+              // TextFieldInput(
+              //     textEditingController: _usernameController,
+              //     textInputFormatter: LowerCaseTextFormatter(),
+              //     textInputType: TextInputType.text,
+              //     hintText: 'Enter new username'),
+              // const SizedBox(height: 12),
               TextFieldInput(
                   textEditingController: _bioController,
                   textInputType: TextInputType.text,
                   hintText: 'Enter new bio'),
               const SizedBox(height: 24),
-              InkWell(
+              GestureDetector(
                 onTap: updateUser,
                 child: Container(
                   width: double.infinity,
@@ -236,7 +232,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: const ShapeDecoration(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(4)),
+                        borderRadius: BorderRadius.all(Radius.circular(40)),
                       ),
                       color: blueColor),
                   child: _isLoading

@@ -15,6 +15,7 @@ import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/instagram_searchbar.dart';
 import 'package:instagram_flutter/widgets/my_textformfield.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -338,7 +339,7 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
                         backgroundColor: Colors.grey[800],
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
                     ),
@@ -366,7 +367,11 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
                                   height: 50,
                                   cacheManager: InstaCacheManager(),
                                 )
-                              : Icon(Icons.music_note),
+                              : PhosphorIcon(
+                                  PhosphorIconsRegular.speakerSimpleLow,
+                                  size: 40,
+                                  color: Colors.white70,
+                                ),
                           title: Text(track['name']),
                           subtitle:
                               Text('${track['artist']} • ${track['album']}'),
@@ -374,7 +379,11 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
                             _showModal(track);
                           },
                           trailing: track['preview_url'] == null
-                              ? Icon(Icons.music_off, color: Colors.grey)
+                              ? PhosphorIcon(
+                                  PhosphorIconsRegular.speakerSimpleSlash,
+                                  size: 24,
+                                  color: Colors.grey,
+                                )
                               : InkWell(
                                   onTap: () {
                                     if (_playingPreviewUrl ==
@@ -393,9 +402,16 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
                                             color: Colors.white70,
                                           ),
                                         )
-                                      : Icon(isPlaying && !_isPaused
-                                          ? Icons.pause
-                                          : Icons.play_arrow),
+                                      // : Icon(isPlaying && !_isPaused
+                                      //     ? Icons.pause
+                                      //     : Icons.play_arrow),
+                                      : PhosphorIcon(
+                                          isPlaying && !_isPaused
+                                              ? PhosphorIconsRegular.pause
+                                              : PhosphorIconsRegular.play,
+                                          size: 24,
+                                          color: Colors.white70,
+                                        ),
                                 ),
                         );
                       },

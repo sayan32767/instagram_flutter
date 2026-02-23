@@ -36,14 +36,14 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
 
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
-            height: 210,
+            height: 170,
             child: null,
           );
         }
 
         if (!snapshot.hasData) {
           return const SizedBox(
-            height: 210,
+            height: 170,
             child: Center(
               child: Text('No stories available'),
             ),
@@ -67,7 +67,7 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
         }
 
         return SizedBox(
-          height: 210,
+          height: 170,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),

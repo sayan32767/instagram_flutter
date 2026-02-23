@@ -7,6 +7,7 @@ import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
+import 'package:instagram_flutter/screens/group_chooser_screen.dart';
 import 'package:instagram_flutter/screens/inbox_screen.dart';
 import 'package:instagram_flutter/screens/story_screen.dart';
 import 'package:instagram_flutter/utils/utils.dart';
@@ -14,6 +15,7 @@ import 'package:instagram_flutter/widgets/post_card.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/widgets/story_card.dart';
 import 'package:instagram_flutter/widgets/story_list_widgets.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -176,38 +178,59 @@ class FeedScreenState extends State<FeedScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                        child: GestureDetector(
+                          child: PhosphorIcon(
+                            PhosphorIcons.plus(PhosphorIconsStyle.bold),
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          onTap: () {
+                            Navigator.of(context, rootNavigator: true).push(
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        AddPostScreen(),
+                                transitionsBuilder: (context, animation,
+                                    secondaryAnimation, child) {
+                                  const begin = Offset(-1.0, 0.0);
+                                  const end = Offset.zero;
+                                  const curve = Curves.easeInToLinear;
+
+                                  var tween = Tween(begin: begin, end: end)
+                                      .chain(CurveTween(curve: curve));
+
+                                  return SlideTransition(
+                                    position: animation.drive(tween),
+                                    child: child,
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: SvgPicture.asset(
                           'assets/images/ic_instagram.svg',
                           color: primaryColor,
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.add_circle_outline,
-                            size: 28, color: primaryColor),
-                        onPressed: () {
-                          Navigator.of(context, rootNavigator: true).push(
-                            PageRouteBuilder(
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) =>
-                                      AddPostScreen(),
-                              transitionsBuilder: (context, animation,
-                                  secondaryAnimation, child) {
-                                const begin = Offset(0.0, 1.0);
-                                const end = Offset.zero;
-                                const curve = Curves.ease;
-
-                                var tween = Tween(begin: begin, end: end)
-                                    .chain(CurveTween(curve: curve));
-
-                                return SlideTransition(
-                                  position: animation.drive(tween),
-                                  child: child,
-                                );
-                              },
-                            ),
-                          );
-                        },
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                        child: GestureDetector(
+                          child: PhosphorIcon(
+                            PhosphorIcons.users(PhosphorIconsStyle.regular),
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) =>
+                                    const GroupChooserScreen()));
+                          },
+                        ),
                       ),
                     ],
                   ),

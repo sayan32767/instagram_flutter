@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class CustomImageLoader extends StatelessWidget {
   final String imageUrl;
@@ -25,12 +26,16 @@ class CustomImageLoader extends StatelessWidget {
 
       /// On error
       errorWidget: (context, url, error) {
-        return const Center(
+        return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('Could not load image'),
-              Icon(Icons.error),
+              PhosphorIcon(
+                PhosphorIcons.imageBroken(),
+                size: 24,
+                color: Colors.white70,
+              ),
             ],
           ),
         );

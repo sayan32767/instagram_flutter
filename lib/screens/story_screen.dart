@@ -11,6 +11,7 @@ import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/progress_image_dots.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
 class StoryScreen extends StatefulWidget {
@@ -197,9 +198,12 @@ class _StoryScreenState extends State<StoryScreen> {
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
                         children: [
-                          _buildCard(Icons.edit, 'Text Story'),
-                          _buildCard(Icons.music_note, 'Audio Story'),
-                          _buildCard(Icons.delete, 'Remove Your\nStory',
+                          _buildCard(
+                              PhosphorIconsRegular.pencilSimple, 'Text Story'),
+                          _buildCard(PhosphorIconsRegular.musicNoteSimple,
+                              'Audio Story'),
+                          _buildCard(PhosphorIconsRegular.trashSimple,
+                              'Remove Your\nStory',
                               user: user),
                         ],
                       )

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/main.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
 import 'package:instagram_flutter/responsive/web_screen_layout.dart';
@@ -43,17 +44,19 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
       await GroupStorage.save(groupId);
       AppFirestore.setGroup(groupId);
 
-      if (!mounted) return;
+      MyApp.restart(context);
 
-      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => const ResponsiveLayout(
-            webScreenLayout: WebScreenLayout(),
-            mobileScreenLayout: MobileScreenLayout(),
-          ),
-        ),
-        (route) => false,
-      );
+      // if (!mounted) return;
+
+      // Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      //   MaterialPageRoute(
+      //     builder: (_) => const ResponsiveLayout(
+      //       webScreenLayout: WebScreenLayout(),
+      //       mobileScreenLayout: MobileScreenLayout(),
+      //     ),
+      //   ),
+      //   (route) => false,
+      // );
     } catch (e) {
       showSnackBar(context, e.toString().replaceAll("Exception: ", ""));
     } finally {
@@ -65,6 +68,7 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: mobileBackgroundColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -80,11 +84,11 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          "Back to Groups",
-          style: TextStyle(
-              color: Colors.white70, fontSize: 20, fontWeight: FontWeight.w600),
-        ),
+        // title: const Text(
+        //   "Back to Groups",
+        //   style: TextStyle(
+        //       color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        // ),
       ),
       backgroundColor: mobileBackgroundColor,
       body: Center(
@@ -133,7 +137,7 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
 
               const SizedBox(height: 10),
 
-              InkWell(
+              GestureDetector(
                 onTap: _loading ? null : _joinGroup,
                 child: Container(
                   height: 60,
@@ -142,7 +146,7 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: const ShapeDecoration(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(4)),
+                        borderRadius: BorderRadius.all(Radius.circular(40)),
                       ),
                       color: blueColor),
                   child: _loading

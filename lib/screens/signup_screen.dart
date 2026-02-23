@@ -80,38 +80,28 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    String res =
-        await AuthMethods().checkAndAddUsername(_usernameController.text);
-
+    String res = await AuthMethods().signUpUser(
+        email: _emailController.text,
+        password: _passwordController.text,
+        username: _usernameController.text,
+        bio: _bioController.text,
+        file: _image);
+    setState(() {
+      _isLoading = false;
+    });
     if (res != 'success') {
-      setState(() {
-        _isLoading = false;
-      });
-      showSnackBar(
-          context, 'Username updating failed, please choose another username');
+      showSnackBar(context, res);
     } else {
-      String res = await AuthMethods().signUpUser(
-          email: _emailController.text,
-          password: _passwordController.text,
-          username: _usernameController.text,
-          bio: _bioController.text,
-          file: _image);
-      setState(() {
-        _isLoading = false;
-      });
-      if (res != 'success') {
-        showSnackBar(context, 'Failed to sign up, please try again');
-      } else {
-        // Navigator.of(context).pushReplacement(MaterialPageRoute(
-        //     builder: (context) => const ResponsiveLayout(
-        //         webScreenLayout: WebScreenLayout(),
-        //         mobileScreenLayout: MobileScreenLayout())));
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const GroupGateScreen(),
-          ),
-        );
-      }
+      // Navigator.of(context).pushReplacement(MaterialPageRoute(
+      //     builder: (context) => const ResponsiveLayout(
+      //         webScreenLayout: WebScreenLayout(),
+      //         mobileScreenLayout: MobileScreenLayout())));
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const GroupGateScreen(),
+        ),
+      );
+      ////////////MAYBE NEED TO CHANGE HERE
     }
   }
 
@@ -161,24 +151,24 @@ class _SignupScreenState extends State<SignupScreen> {
               textInputFormatter: LowerCaseTextFormatter(),
               textInputType: TextInputType.text,
               hintText: 'Enter your username'),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           TextFieldInput(
               textEditingController: _emailController,
               textInputType: TextInputType.emailAddress,
               hintText: 'Enter your email'),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           TextFieldInput(
               textEditingController: _passwordController,
               textInputType: TextInputType.visiblePassword,
               isPass: true,
               hintText: 'Enter your password'),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           TextFieldInput(
               textEditingController: _bioController,
               textInputType: TextInputType.text,
               hintText: 'Enter your bio'),
           const SizedBox(height: 24),
-          InkWell(
+          GestureDetector(
             onTap: signUpUser,
             child: Container(
               width: double.infinity,
@@ -187,7 +177,7 @@ class _SignupScreenState extends State<SignupScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: const ShapeDecoration(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(4)),
+                    borderRadius: BorderRadius.all(Radius.circular(40)),
                   ),
                   color: blueColor),
               child: _isLoading

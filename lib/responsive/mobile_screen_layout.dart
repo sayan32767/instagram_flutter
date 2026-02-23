@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
@@ -16,6 +17,7 @@ import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/utils/presence_servoce.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
 class MobileScreenLayout extends StatefulWidget {
@@ -222,67 +224,135 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
           allowImplicitScrolling: true,
         ),
         bottomNavigationBar: CupertinoTabBar(
-          height: 75,
+          height: 65,
           backgroundColor: mobileBackgroundColor,
+          currentIndex: _page,
+          onTap: (page) {
+            navigationTapped(page);
+            // HapticFeedback.lightImpact(); // 🔥 premium feel
+          },
           items: [
+            /// 🏠 HOME
             BottomNavigationBarItem(
-              icon: Icon(
-                Icons.home,
-                color: _page == 0 ? primaryColor : secondaryColor,
+              icon: AnimatedNavIcon(
+                isActive: _page == 0,
+                icon: PhosphorIcons.house(_page == 0
+                    ? PhosphorIconsStyle.fill
+                    : PhosphorIconsStyle.regular),
               ),
               label: '',
-              backgroundColor: primaryColor,
             ),
+
+            /// 🎬 REELS
             BottomNavigationBarItem(
-              icon: Icon(
-                Icons.play_circle_outline,
-                color: _page == 1 ? primaryColor : secondaryColor,
+              icon: AnimatedNavIcon(
+                isActive: _page == 1,
+                icon: PhosphorIcons.playCircle(_page == 1
+                    ? PhosphorIconsStyle.fill
+                    : PhosphorIconsStyle.regular),
               ),
               label: '',
-              backgroundColor: primaryColor,
             ),
+
+            /// ✈️ CHAT
             BottomNavigationBarItem(
-              icon: Icon(
-                Icons.messenger_outline,
-                color: _page == 2 ? primaryColor : secondaryColor,
+              icon: AnimatedNavIcon(
+                isActive: _page == 2,
+                icon: PhosphorIcons.paperPlaneTilt(_page == 2
+                    ? PhosphorIconsStyle.fill
+                    : PhosphorIconsStyle.regular),
+                size: 26,
               ),
               label: '',
-              backgroundColor: primaryColor,
             ),
+
+            /// 🔍 SEARCH
             BottomNavigationBarItem(
-              icon: Icon(
-                Icons.search,
-                color: _page == 3 ? primaryColor : secondaryColor,
+              icon: AnimatedNavIcon(
+                isActive: _page == 3,
+                icon: PhosphorIcons.magnifyingGlass(_page == 3
+                    ? PhosphorIconsStyle.bold
+                    : PhosphorIconsStyle.regular),
               ),
               label: '',
-              backgroundColor: primaryColor,
             ),
+
+            /// 👤 PROFILE
             BottomNavigationBarItem(
-              // icon: Icon(
-              //   Icons.person,
-              //   color: _page == 4 ? primaryColor : secondaryColor,
-              // ),
-              icon: CircleAvatar(
-                backgroundColor: secondaryColor,
-                radius: _page == 4 ? 16 : 14,
-                backgroundImage: Provider.of<UserProvider>(context)
-                            .getUser
-                            ?.photoUrl !=
-                        null
-                    ? CachedNetworkImageProvider(
-                        Provider.of<UserProvider>(context).getUser!.photoUrl!,
-                        cacheManager: InstaCacheManager())
-                    : AssetImage('assets/images/placeholder.jpg')
-                        as ImageProvider,
+              icon: AnimatedScale(
+                scale: _page == 4 ? 1.0 : 1.0,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutBack,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  padding: const EdgeInsets.all(0),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _page == 4 ? Colors.white : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 14,
+                    backgroundColor: primaryColor,
+                    backgroundImage:
+                        Provider.of<UserProvider>(context).getUser?.photoUrl !=
+                                null
+                            ? CachedNetworkImageProvider(
+                                Provider.of<UserProvider>(context)
+                                    .getUser!
+                                    .photoUrl!,
+                                cacheManager: InstaCacheManager(),
+                              )
+                            : const AssetImage(
+                                'assets/images/placeholder.jpg',
+                              ) as ImageProvider,
+                  ),
+                ),
               ),
               label: '',
-              backgroundColor: primaryColor,
             ),
           ],
-          currentIndex: _page,
-          onTap: navigationTapped,
         ),
       ),
+    );
+  }
+}
+
+class AnimatedNavIcon extends StatelessWidget {
+  final bool isActive;
+  final IconData icon;
+  final double size;
+
+  const AnimatedNavIcon({
+    super.key,
+    required this.isActive,
+    required this.icon,
+    this.size = 27,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(
+        begin: isActive ? 1.0 : 1.05,
+        end: isActive ? 1.05 : 1.0,
+      ),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: PhosphorIcon(
+            icon,
+            size: size,
+            color: isActive ? primaryColor : primaryColor,
+            // fill:
+            //     isActive ? PhosphorIconsStyle.fill : PhosphorIconsStyle.regular,
+          ),
+        );
+      },
     );
   }
 }

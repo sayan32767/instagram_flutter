@@ -7,6 +7,7 @@ import 'package:instagram_flutter/screens/story_screen.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/story_list_widgets.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
 class AddToStoryCard extends StatelessWidget {
@@ -17,7 +18,7 @@ class AddToStoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final User user = Provider.of<UserProvider>(context).getUser!;
+    final User? user = Provider.of<UserProvider>(context).getUser;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -27,7 +28,7 @@ class AddToStoryCard extends StatelessWidget {
         children: [
           Container(
             width: MediaQuery.of(context).size.width * 0.33,
-            height: 200,
+            height: 150,
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 24, 24, 24),
               borderRadius: BorderRadius.circular(12.0),
@@ -43,7 +44,9 @@ class AddToStoryCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
-                        userProfilePicUrl == null
+                        // userProfilePicUrl == null
+                        user?.photoUrl == null ||
+                                user?.photoUrl?.toString().isEmpty == true
                             ? CircleAvatar(
                                 radius: 16,
                                 backgroundImage:
@@ -51,7 +54,8 @@ class AddToStoryCard extends StatelessWidget {
                                 backgroundColor:
                                     const Color.fromARGB(255, 24, 24, 24),
                               )
-                            : ProgressImageDots(url: userProfilePicUrl!),
+                            : ProgressImageDots(
+                                url: user!.photoUrl!, radius: 16),
                         SizedBox(width: 8.0),
                         Flexible(
                           fit: FlexFit.loose,
@@ -59,7 +63,10 @@ class AddToStoryCard extends StatelessWidget {
                             children: [
                               Flexible(
                                 child: Text(
-                                  userName,
+                                  user?.username == null ||
+                                          user?.username?.isEmpty == true
+                                      ? 'Your Story'
+                                      : user!.username,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -104,12 +111,17 @@ class AddToStoryCard extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 70.0),
+                  padding: const EdgeInsets.only(top: 42.0),
                   child: Align(
                     alignment: Alignment.topCenter,
-                    child: Icon(
-                      Icons.add_circle,
-                      size: 60,
+                    // child: Icon(
+                    //   Icons.add_circle,
+                    //   size: 60,
+                    //   color: Colors.grey,
+                    // ),
+                    child: PhosphorIcon(
+                      PhosphorIconsRegular.plusCircle,
+                      size: 50,
                       color: Colors.grey,
                     ),
                   ),

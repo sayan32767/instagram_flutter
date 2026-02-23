@@ -20,7 +20,7 @@ class AuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: isLoading ? null : onTap, // prevent double taps while loading
       child: Container(
         height: height,
@@ -29,16 +29,16 @@ class AuthButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: ShapeDecoration(
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
+            borderRadius: BorderRadius.all(Radius.circular(40)),
           ),
           color: color,
         ),
         child: isLoading
             ? const SizedBox(
-                height: 20,
-                width: 20,
+                height: 35,
+                width: 35,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: 4,
                   color: Colors.white70,
                 ),
               )

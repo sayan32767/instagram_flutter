@@ -101,26 +101,81 @@ class StorageMethods {
     final image = img.decodeImage(file);
     if (image == null) return null;
 
-    /// 🔹 Resize to max width = 1080 while keeping aspect ratio
-    final resized =
-        image.width > 1080 ? img.copyResize(image, width: 1080) : image;
+    img.Image resized;
+    Uint8List? result;
 
-    // Convert to JPG
-    final jpg = img.encodeJpg(resized, quality: 95);
-    // quality 95 here because final compression happens next
+    /// 🔥 DIFFERENT COMPRESSION BASED ON TYPE
+    if (childName != "profilePics") {
+      // =========================
+      // 📸 FEED POST COMPRESSION
+      // =========================
 
-    // Compress
-    final compressed = await FlutterImageCompress.compressWithList(
-      jpg,
-      quality: 75,
-      format: CompressFormat.jpeg,
-    );
+      // Resize longest side to 960px
+      if (image.width > 960 || image.height > 960) {
+        if (image.width > image.height) {
+          resized = img.copyResize(image, width: 960);
+        } else {
+          resized = img.copyResize(image, height: 960);
+        }
+      } else {
+        resized = image;
+      }
 
-    final sizeMB = compressed.lengthInBytes / (1024 * 1024);
+      // Light sharpen
+      // resized = img.unsharpMask(resized, amount: 0.6);
 
-    if (sizeMB > 2) {
-      throw Exception("Image too large");
+      int quality = 78;
+
+      result = Uint8List.fromList(
+        img.encodeJpg(resized, quality: quality),
+      );
+
+      if (result == null) throw Exception("Failed to upload image");
+
+      // Reduce until under 700KB
+      while (result!.lengthInBytes > 700 * 1024 && quality > 60) {
+        quality -= 4;
+        result = Uint8List.fromList(
+          img.encodeJpg(resized, quality: quality),
+        );
+      }
+    } else {
+      // =========================
+      // 👤 PROFILE PIC COMPRESSION
+      // =========================
+
+      // Crop square from center
+      final size = image.width < image.height ? image.width : image.height;
+
+      final cropped = img.copyCrop(
+        image,
+        x: (image.width - size) ~/ 2,
+        y: (image.height - size) ~/ 2,
+        width: size,
+        height: size,
+      );
+
+      // Resize to 320x320
+      resized = img.copyResize(cropped, width: 320, height: 320);
+
+      int quality = 70;
+
+      result = Uint8List.fromList(
+        img.encodeJpg(resized, quality: quality),
+      );
+
+      if (result == null) throw Exception("Failed to upload image");
+
+      // Reduce until under 200KB
+      while (result!.lengthInBytes > 200 * 1024 && quality > 50) {
+        quality -= 5;
+        result = Uint8List.fromList(
+          img.encodeJpg(resized, quality: quality),
+        );
+      }
     }
+
+    if (result == null) throw Exception("Image upload failed");
 
     final uid = _auth.currentUser!.uid;
     final id = const Uuid().v1(); // unique for ALL uploads
@@ -134,9 +189,11 @@ class StorageMethods {
     final request = http.MultipartRequest("POST", uri)
       ..fields["upload_preset"] = _uploadPreset
       ..fields["public_id"] = publicId
+      ..fields["quality"] = "auto"
+      ..fields["fetch_format"] = "auto"
       ..fields["asset_folder"] = childName // ⭐ ADD THIS
       ..files.add(
-        http.MultipartFile.fromBytes("file", compressed, filename: "$id.jpg"),
+        http.MultipartFile.fromBytes("file", result, filename: "$id.jpg"),
       );
 
     final response = await request.send();
@@ -148,7 +205,25 @@ class StorageMethods {
     final data = json.decode(await response.stream.bytesToString())
         as Map<String, dynamic>;
 
-    return data["secure_url"];
+    // final rawUrl = data["secure_url"] as String;
+
+    // String optimizedUrl;
+
+    // if (isPost) {
+    //   // For posts, we want to limit to 960px on longest side and use Cloudinary's transformations for optimization
+    //   optimizedUrl = rawUrl.replaceFirst(
+    //     "/upload/",
+    //     "/upload/f_auto,q_auto,c_limit,w_960/",
+    //   );
+    // } else {
+    //   // For profile pics, we want a square 320x320 image, so we use Cloudinary's transformations to crop and resize
+    //   optimizedUrl = rawUrl.replaceFirst(
+    //     "/upload/",
+    //     "/upload/f_auto,q_auto,c_fill,w_320,h_320,g_face/",
+    //   );
+    // }
+
+    return data["secure_url"] as String;
   }
 
   /// NOTE:

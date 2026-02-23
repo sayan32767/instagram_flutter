@@ -50,11 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
       //     builder: (context) => const ResponsiveLayout(
       //         webScreenLayout: WebScreenLayout(),
       //         mobileScreenLayout: MobileScreenLayout())));
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const GroupGateScreen(),
-        ),
-      );
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => const GroupGateScreen(),
+      ));
+      ////////////MAYBE NEED TO CHANGE HERE
     }
   }
 
@@ -84,14 +83,14 @@ class _LoginScreenState extends State<LoginScreen> {
               textEditingController: _emailController,
               textInputType: TextInputType.emailAddress,
               hintText: 'Enter your email'),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           TextFieldInput(
               textEditingController: _passwordController,
               textInputType: TextInputType.visiblePassword,
               isPass: true,
               hintText: 'Enter your password'),
           const SizedBox(height: 24),
-          InkWell(
+          GestureDetector(
             onTap: loginUser,
             child: Container(
               height: 60,
@@ -100,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: const ShapeDecoration(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(4)),
+                    borderRadius: BorderRadius.all(Radius.circular(40)),
                   ),
                   color: blueColor),
               child: _isLoading

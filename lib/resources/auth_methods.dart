@@ -23,54 +23,91 @@ class AuthMethods {
     return model.User.fromSnap(snap);
   }
 
-  Future<String> signUpUser(
-      {required String email,
-      required String password,
-      required String username,
-      required String bio,
-      Uint8List? file}) async {
-    String res = "Random error occurred";
+  // TO CHECK USERNAME, WE HAVE ANOTHER FUNCTION, BUT HERE THAT IS NOT IN USE, TAHT IS FOR UPDATING
+  Future<String> signUpUser({
+    required String email,
+    required String password,
+    required String username,
+    required String bio,
+    Uint8List? file,
+  }) async {
     try {
-      if (email.isNotEmpty && password.isNotEmpty && username.isNotEmpty) {
-        UserCredential cred = await _auth.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-
-        String? photoUrl = await StorageMethods()
-            .uploadImageToStorage('profilePics', file, false);
-
-        model.User user = model.User(
-          userEmoji: "",
-          username: username,
-          uid: cred.user!.uid,
-          email: email,
-          bio: bio,
-          followers: [],
-          following: [],
-          photoUrl: photoUrl,
-          tagline: '',
-        );
-
-        await _firestore
-            .collection('user')
-            .doc(cred.user!.uid)
-            .set(user.toJson());
-
-        res = 'success';
-      } else {
-        res = 'Please fill the form (bio could be empty)';
+      if (email.isEmpty || password.isEmpty || username.isEmpty) {
+        return 'Please fill all required fields';
       }
-      // } on FirebaseAuthException catch(e) {
-      //   if (e.code == 'invalid-email') {
-      //     res = 'The email address is badly formatted';
-      //   } else if (e.code == 'weak-password') {
-      //     res = 'Password should be atleast 8 characters';
-      //   }
+
+      final normalizedUsername = username.trim().toLowerCase();
+
+      final usernameRef =
+          _firestore.collection('usernames').doc(normalizedUsername);
+
+      // 🔍 1️⃣ Check username BEFORE creating auth user
+      final usernameSnap = await usernameRef.get();
+      if (usernameSnap.exists) {
+        return "Username already taken";
+      }
+
+      // 🔐 2️⃣ Create Firebase Auth user
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      final uid = cred.user!.uid;
+
+      // 🖼 3️⃣ Upload profile image (optional)
+      String? photoUrl;
+      if (file != null) {
+        photoUrl = await StorageMethods()
+            .uploadImageToStorage('profilePics', file, false);
+      }
+
+      final user = model.User(
+        userEmoji: "",
+        username: normalizedUsername,
+        uid: uid,
+        email: email.trim(),
+        bio: bio.trim(),
+        followers: [],
+        following: [],
+        photoUrl: photoUrl,
+        tagline: '',
+      );
+
+      // 🧾 4️⃣ Atomic transaction
+      await _firestore.runTransaction((transaction) async {
+        final freshUsernameSnap = await transaction.get(usernameRef);
+
+        // Double-check to prevent race condition
+        if (freshUsernameSnap.exists) {
+          throw Exception("Username already taken");
+        }
+
+        transaction.set(
+          _firestore.collection('user').doc(uid),
+          user.toJson(),
+        );
+
+        transaction.set(usernameRef, {'uid': uid});
+      });
+
+      return "success";
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        return 'Email already in use';
+      } else if (e.code == 'invalid-email') {
+        return 'Invalid email format';
+      } else if (e.code == 'weak-password') {
+        return 'Password should be at least 6 characters';
+      }
+      return "Authentication error";
     } catch (e) {
-      res = e.toString();
+      // 🧹 Rollback auth user if transaction failed
+      if (_auth.currentUser != null) {
+        await _auth.currentUser!.delete();
+      }
+      return "Failed to signup";
     }
-    return res;
   }
 
   Future<String> loginUser(
@@ -92,90 +129,122 @@ class AuthMethods {
     return res;
   }
 
-  Future<String> updateUser(
-      {required String username,
-      required String bio,
-      required Uint8List? file,
-      required bool clickFlag}) async {
-    String res = 'Random error occurred.';
+  Future<String> updateUser({
+    required String username,
+    required String bio,
+    required Uint8List? file,
+    required bool clickFlag,
+  }) async {
     try {
-      if (username.isNotEmpty) {
-        User currentUser = _auth.currentUser!;
-        DocumentReference docRef =
-            _firestore.collection('user').doc(currentUser.uid);
+      if (username.trim().isEmpty) {
+        return "Please enter all the fields.";
+      }
 
-        String? photoUrl = await StorageMethods()
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return "User not authenticated";
+
+      final uid = currentUser.uid;
+      final normalizedUsername = username.trim().toLowerCase();
+
+      final userRef = _firestore.collection('user').doc(uid);
+      final userSnap = await userRef.get();
+      final oldUsername = userSnap.data()?['username'];
+
+      String? photoUrl;
+
+      // 🔥 Upload only if user changed image
+      if (clickFlag && file != null) {
+        photoUrl = await StorageMethods()
             .uploadImageToStorage('profilePics', file, false);
+      } else if (clickFlag && file == null) {
+        photoUrl = null; // User removed their profile picture
+      }
 
-        // await docRef.update({
-        //   'username': username,
-        //   'bio': bio,
-        //   'photoUrl': photoUrl,
-        // });
+      // ===============================
+      // 🔹 CASE 1: Username NOT changed
+      // ===============================
+      if (oldUsername == normalizedUsername) {
+        await userRef.update({
+          'bio': bio.trim(),
+          if (clickFlag && photoUrl != null) 'photoUrl': photoUrl,
+          if (clickFlag && photoUrl == null) 'photoUrl': null,
+        });
 
-        if (clickFlag) {
-          await docRef.update({
-            'username': username,
-            'bio': bio,
-            'photoUrl': photoUrl,
-          });
-        } else {
-          await docRef.update({
-            'username': username,
-            'bio': bio,
-            // 'photoUrl': photoUrl,
-          });
+        return "success";
+      }
+
+      // ===============================
+      // 🔹 CASE 2: Username changed
+      // ===============================
+      final newUsernameRef =
+          _firestore.collection('usernames').doc(normalizedUsername);
+
+      final oldUsernameRef =
+          _firestore.collection('usernames').doc(oldUsername);
+
+      await _firestore.runTransaction((transaction) async {
+        final newUsernameSnap = await transaction.get(newUsernameRef);
+
+        if (newUsernameSnap.exists) {
+          throw Exception("Username already taken.");
         }
 
-        res = 'success';
-      } else {
-        res = 'Please enter all the fields.';
-      }
+        transaction.set(newUsernameRef, {'uid': uid});
+        transaction.delete(oldUsernameRef);
+
+        transaction.update(userRef, {
+          'username': normalizedUsername,
+          'bio': bio.trim(),
+          if (clickFlag && photoUrl != null) 'photoUrl': photoUrl,
+          if (clickFlag && photoUrl == null) 'photoUrl': null,
+        });
+      });
+
+      return "success";
     } catch (e) {
-      res = e.toString();
+      // print("Update user error: $e");
+      return e.toString();
     }
-    return res;
   }
 
   Future<String> checkAndAddUsername(String username) async {
-    String res = 'Random error occurred.';
-
     try {
-      final QuerySnapshot result = await _firestore
-          .collection('user')
-          .where('username', isEqualTo: username)
-          .get();
+      final normalizedUsername = username.trim().toLowerCase();
 
-      final List<DocumentSnapshot> documents = result.docs;
-
-      if (documents.isEmpty) {
-        res = 'success';
-      } else if (documents.first.id == _auth.currentUser!.uid) {
-        res = 'success';
-      } else {
-        res = 'Username already taken. Please choose another.';
+      if (normalizedUsername.isEmpty) {
+        return "Username cannot be empty";
       }
+
+      final usernameRef =
+          _firestore.collection('usernames').doc(normalizedUsername);
+
+      final snap = await usernameRef.get();
+
+      // 🔥 If username doesn't exist → available
+      if (!snap.exists) {
+        return "success";
+      }
+
+      final existingUid = snap.data()?['uid'];
+
+      // 🔥 If username belongs to current user → allowed
+      if (_auth.currentUser != null && existingUid == _auth.currentUser!.uid) {
+        return "success";
+      }
+
+      return "Username already taken. Please choose another.";
     } catch (e) {
-      res = e.toString();
+      return "Error checking username";
     }
-    return res;
   }
 
   Future<void> signOut(BuildContext context) async {
     try {
-      await InstaCacheManager().emptyCache();
-
-      /// 2️⃣ Clear stored group
-      await GroupStorage.clear();
-
-      /// 3️⃣ Reset in-memory group
-      AppFirestore.setGroup(null); // see small change below
-
-      /// CLEAR PROVIDER STATES IF ANY (e.g., UserProvider) --- OPTIONAL, depends on your app's architecture
-      Provider.of<UserProvider>(context, listen: false).clearUser();
-
-      /// 1️⃣ Firebase sign out
       await _auth.signOut();
+      await Provider.of<UserProvider>(context, listen: false).clearUser();
+      await InstaCacheManager().emptyCache();
+      await GroupStorage.clear();
+      AppFirestore.setGroup(null);
     } catch (e) {
       print("Sign out error: $e");
     }

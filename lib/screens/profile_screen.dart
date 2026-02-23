@@ -29,7 +29,14 @@ import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/follow_button.dart';
 import 'package:instagram_flutter/widgets/loading_builder_images.dart';
 import 'package:instagram_flutter/models/user.dart' as model;
+import 'package:instagram_flutter/widgets/text_field_input.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
+
+// USER PHOTO, USERNAME, BIO
+// ALL BEING FETCHED FORM PROVIDER,
+// ALTHOUGH A QUERY HAPPENS
+// ONLY IF PROFILE IS OF CURRENT USERS
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -57,6 +64,8 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   void refresh() async {
     await loadProfileData();
+
+    await Provider.of<UserProvider>(context, listen: false).refreshUser();
 
     _postsKey.currentState?.refreshPosts();
     _reelsKey.currentState?.refreshReels();
@@ -97,6 +106,8 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader() {
+    final currentUser =
+        Provider.of<UserProvider>(context, listen: true).getUser;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -104,30 +115,56 @@ class ProfileScreenState extends State<ProfileScreen> {
           /// 👤 Avatar + stats + follow button
           Row(
             children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      opaque: false,
-                      transitionDuration: const Duration(milliseconds: 250),
-                      pageBuilder: (_, __, ___) =>
-                          ProfilePhotoViewer(imageUrl: userData['photoUrl']),
-                    ),
-                  );
-                },
-                child: userData['photoUrl'] == null ||
-                        userData['photoUrl'].toString().isEmpty
-                    ? const CircleAvatar(
-                        radius: 40,
-                        backgroundImage:
-                            AssetImage('assets/images/placeholder.jpg'),
-                      )
-                    : ProgressImageDots(
-                        url: userData['photoUrl'],
-                        radius: 40,
+              if (userData['uid'] != currentUser?.uid)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        opaque: false,
+                        transitionDuration: const Duration(milliseconds: 250),
+                        pageBuilder: (_, __, ___) =>
+                            ProfilePhotoViewer(imageUrl: userData['photoUrl']),
                       ),
-              ),
+                    );
+                  },
+                  child: userData['photoUrl'] == null ||
+                          userData['photoUrl'].toString().isEmpty
+                      ? const CircleAvatar(
+                          radius: 40,
+                          backgroundImage:
+                              AssetImage('assets/images/placeholder.jpg'),
+                        )
+                      : ProgressImageDots(
+                          url: userData['photoUrl'],
+                          radius: 40,
+                        ),
+                ),
+              if (userData['uid'] == currentUser?.uid)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        opaque: false,
+                        transitionDuration: const Duration(milliseconds: 250),
+                        pageBuilder: (_, __, ___) =>
+                            ProfilePhotoViewer(imageUrl: currentUser?.photoUrl),
+                      ),
+                    );
+                  },
+                  child: currentUser?.photoUrl == null ||
+                          currentUser?.photoUrl?.toString().isEmpty == true
+                      ? const CircleAvatar(
+                          radius: 40,
+                          backgroundImage:
+                              AssetImage('assets/images/placeholder.jpg'),
+                        )
+                      : ProgressImageDots(
+                          url: currentUser!.photoUrl!,
+                          radius: 40,
+                        ),
+                ),
 
               /// 📊 Stats + Signout
               Expanded(
@@ -174,25 +211,47 @@ class ProfileScreenState extends State<ProfileScreen> {
           ),
 
           /// 🧑 Username
-          Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(top: 15),
-            child: Text(
-              userData['username'] ?? "",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
+          if (userData['uid'] != currentUser?.uid)
+            Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(top: 15),
+              child: Text(
+                userData['username'] ?? "",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
+
+          if (userData['uid'] == currentUser?.uid)
+            Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(top: 15),
+              child: Text(
+                currentUser?.username ?? "",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
 
           /// 📄 Bio (safe — never null)
-          Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(top: 1),
-            child:
-                userData['bio'] != null && userData['bio'].toString().isNotEmpty
-                    ? Text(userData['bio'], overflow: TextOverflow.ellipsis)
-                    : const SizedBox.shrink(),
-          ),
+          if (userData['uid'] != currentUser?.uid)
+            Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(top: 1),
+              child: userData['bio'] != null &&
+                      userData['bio'].toString().isNotEmpty
+                  ? Text(userData['bio'], overflow: TextOverflow.ellipsis)
+                  : const SizedBox.shrink(),
+            ),
+          if (userData['uid'] == currentUser?.uid)
+            Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(top: 1),
+              child: currentUser?.bio != null &&
+                      currentUser?.bio?.toString().isNotEmpty == true
+                  ? Text(currentUser!.bio!, overflow: TextOverflow.ellipsis)
+                  : const SizedBox.shrink(),
+            ),
 
           /// ✏️ Owner actions
           FirebaseAuth.instance.currentUser!.uid == widget.uid
@@ -314,18 +373,18 @@ class ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 8),
+                    // const SizedBox(height: 8),
 
                     /// 🔥 CUSTOM SMALL HANDLE
-                    Container(
-                      width: 32,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: Colors.white30,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    SizedBox(height: 8),
+                    // Container(
+                    //   width: 32,
+                    //   height: 3,
+                    //   decoration: BoxDecoration(
+                    //     color: Colors.white30,
+                    //     borderRadius: BorderRadius.circular(10),
+                    //   ),
+                    // ),
+                    // SizedBox(height: 8),
                     Expanded(
                       child: Container(
                         color: mobileBackgroundColor,
@@ -336,7 +395,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize
                                   .min, // Minimizes the modal height
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Container(
                                   width: double.infinity,
@@ -346,7 +405,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 Text(
                                   "Pick and Preview Emoji",
                                   style: TextStyle(
-                                    color: Colors.white70,
+                                    color: Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -460,19 +519,19 @@ class ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 8),
+                    // const SizedBox(height: 8),
 
-                    /// 🔥 CUSTOM SMALL HANDLE
-                    Container(
-                      width: 32,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: Colors.white30,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
+                    // /// 🔥 CUSTOM SMALL HANDLE
+                    // Container(
+                    //   width: 32,
+                    //   height: 3,
+                    //   decoration: BoxDecoration(
+                    //     color: Colors.white30,
+                    //     borderRadius: BorderRadius.circular(10),
+                    //   ),
+                    // ),
 
-                    const SizedBox(height: 8),
+                    // const SizedBox(height: 8),
 
                     /// 🔥 CONTENT
                     Expanded(
@@ -482,30 +541,32 @@ class ProfileScreenState extends State<ProfileScreen> {
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
-                            vertical: 10,
+                            vertical: 18,
                           ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              SizedBox(height: 10),
+                              // SizedBox(height: 10),
                               const Text(
                                 "Set your tagline",
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white70,
+                                  color: Colors.white,
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              MyTextformfield(
+                              TextFieldInput(
+                                textInputType: TextInputType.text,
+                                textEditingController: taglineController,
                                 inputFormatters: [
                                   FilteringTextInputFormatter.deny(
                                     RegExp(r'\s{2,}'),
                                   )
                                 ],
-                                controller: taglineController,
+                                // controller: taglineController,
                                 hintText: "Enter your new tagline",
-                                onChanged: (_) {},
+                                // onChanged: (_) {},
                               ),
                               const SizedBox(height: 24),
                               AuthButton(
@@ -588,44 +649,50 @@ class ProfileScreenState extends State<ProfileScreen> {
                   if (FirebaseAuth.instance.currentUser!.uid == widget.uid)
                     GestureDetector(
                       onTap: () {
-                        showModalBottomSheet(
-                          useRootNavigator: true,
-                          context: context,
-                          isScrollControlled: true,
-                          showDragHandle: false, // ❌ disable default
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => FractionallySizedBox(
-                            heightFactor: 0.94,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Color(0xFF1E1E1E),
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(24),
-                                ),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const SizedBox(height: 8),
+                        // showModalBottomSheet(
+                        //   useRootNavigator: true,
+                        //   context: context,
+                        //   isScrollControlled: true,
+                        //   showDragHandle: false, // ❌ disable default
+                        //   backgroundColor: Colors.transparent,
+                        //   builder: (_) => FractionallySizedBox(
+                        //     heightFactor: 0.94,
+                        //     child: Container(
+                        //       decoration: BoxDecoration(
+                        //         color: Color(0xFF1E1E1E),
+                        //         borderRadius: BorderRadius.vertical(
+                        //           top: Radius.circular(24),
+                        //         ),
+                        //       ),
+                        //       child: Column(
+                        //         mainAxisSize: MainAxisSize.min,
+                        //         children: [
+                        //           const SizedBox(height: 8),
 
-                                  /// 🔥 CUSTOM SMALL HANDLE
-                                  Container(
-                                    width: 32,
-                                    height: 3, // 👈 smaller height
-                                    decoration: BoxDecoration(
-                                      color: Colors.white30,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
+                        //           /// 🔥 CUSTOM SMALL HANDLE
+                        //           Container(
+                        //             width: 32,
+                        //             height: 3, // 👈 smaller height
+                        //             decoration: BoxDecoration(
+                        //               color: Colors.white30,
+                        //               borderRadius: BorderRadius.circular(10),
+                        //             ),
+                        //           ),
 
-                                  const SizedBox(height: 8),
+                        //           const SizedBox(height: 8),
 
-                                  const Expanded(
-                                    child: GroupChooserScreen(),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        //           const Expanded(
+                        //             child: GroupChooserScreen(),
+                        //           ),
+                        //         ],
+                        //       ),
+                        //     ),
+                        //   ),
+                        // );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GroupChooserScreen(),
                           ),
                         );
                       },
@@ -687,9 +754,19 @@ class ProfileScreenState extends State<ProfileScreen> {
                               .color
                               ?.withOpacity(0.6),
 
-                          tabs: const [
-                            Tab(icon: Icon(Icons.grid_on, size: 20)),
-                            Tab(icon: Icon(Icons.video_library, size: 20)),
+                          tabs: [
+                            Tab(
+                              icon: PhosphorIcon(
+                                PhosphorIcons.gridFour(),
+                                size: 26,
+                              ),
+                            ),
+                            Tab(
+                              icon: PhosphorIcon(
+                                PhosphorIcons.video(),
+                                size: 26,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -883,10 +960,10 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid>
                     },
                     child: Padding(
                       padding: const EdgeInsets.only(
-                          bottom: 2, right: 2, top: 4, left: 4),
+                          bottom: 1, right: 1, top: 0.5, left: 0.5),
                       child: ClipRRect(
                         borderRadius:
-                            BorderRadius.circular(2), // 👈 adjust radius
+                            BorderRadius.circular(0), // 👈 adjust radius
                         child: CustomImageLoader(
                           imageUrl: data['postUrl'],
                         ),
@@ -1080,21 +1157,21 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid>
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(
-                              bottom: 2, right: 2, top: 4, left: 4),
+                              bottom: 1, right: 1, top: 0.5, left: 0.5),
                           child: ClipRRect(
                             borderRadius:
-                                BorderRadius.circular(2), // 👈 adjust radius
+                                BorderRadius.circular(0), // 👈 adjust radius
                             child: CustomImageLoader(
                               imageUrl: data['thumbnailUrl'],
                             ),
                           ),
                         ), // Placeholder thumbnail
-                        const Positioned(
+                        Positioned(
                           bottom: 6,
                           right: 6,
-                          child: Icon(
-                            Icons.play_arrow,
-                            color: Colors.white,
+                          child: PhosphorIcon(
+                            PhosphorIcons.play(),
+                            color: Colors.white70,
                             size: 18,
                           ),
                         ),

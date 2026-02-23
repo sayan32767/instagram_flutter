@@ -19,6 +19,7 @@ import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/widgets/like_animation.dart';
 import 'package:instagram_flutter/widgets/share_screen_sheet.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -634,18 +635,35 @@ class ReelsScreenState extends State<ReelsScreen>
                             bottom: 120,
                             child: Column(
                               children: [
-                                IconButton(
-                                  onPressed: () async {
-                                    await FirestoreMethods().likePost('reels',
-                                        uid, data['reelId'], reel['likes']);
-                                  },
-                                  icon: Icon(
-                                      isLiked
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color:
-                                          isLiked ? Colors.red : Colors.white),
-                                ),
+                                ValueListenableBuilder<bool>(
+                                    valueListenable: _likeAnim,
+                                    builder: (_, value, __) {
+                                      return LikeAnimation(
+                                        isAnimating: value,
+                                        duration:
+                                            const Duration(milliseconds: 400),
+                                        onEnd: () => _likeAnim.value = false,
+                                        child: IconButton(
+                                          onPressed: () async {
+                                            await FirestoreMethods().likePost(
+                                                'reels',
+                                                uid,
+                                                data['reelId'],
+                                                data['likes']);
+                                          },
+                                          icon: PhosphorIcon(
+                                              isLiked
+                                                  ? PhosphorIcons.heart(
+                                                      PhosphorIconsStyle.fill)
+                                                  : PhosphorIcons.heart(
+                                                      PhosphorIconsStyle
+                                                          .regular),
+                                              color: isLiked
+                                                  ? Colors.red
+                                                  : Colors.white),
+                                        ),
+                                      );
+                                    }),
                                 Text(likeCount.toString(),
                                     style: const TextStyle(
                                         color: Colors.white70, fontSize: 12)),
@@ -679,7 +697,9 @@ class ReelsScreenState extends State<ReelsScreen>
                                       ),
                                     );
                                   },
-                                  icon: const Icon(Icons.comment_outlined,
+                                  icon: PhosphorIcon(
+                                      PhosphorIcons.chatCircle(
+                                          PhosphorIconsStyle.regular),
                                       color: Colors.white),
                                 ),
                                 Text(commentCount.toString(),
@@ -692,7 +712,9 @@ class ReelsScreenState extends State<ReelsScreen>
                                         .lightImpact(); // subtle tap feel
                                     _openShareSheet(data);
                                   },
-                                  icon: const Icon(Icons.send_outlined,
+                                  icon: PhosphorIcon(
+                                      PhosphorIcons.paperPlaneTilt(
+                                          PhosphorIconsStyle.regular),
                                       color: Colors.white),
                                 ),
                               ],
@@ -704,11 +726,14 @@ class ReelsScreenState extends State<ReelsScreen>
                             opacity: _isMutedGlobal ? 1 : 0,
                             duration: const Duration(milliseconds: 250),
                             child: Center(
-                              child: Icon(
+                              child: PhosphorIcon(
                                   _isMutedGlobal
-                                      ? Icons.volume_off
-                                      : Icons.volume_up,
-                                  size: 28),
+                                      ? PhosphorIcons.speakerSimpleSlash(
+                                          PhosphorIconsStyle.regular)
+                                      : PhosphorIcons.speakerHigh(
+                                          PhosphorIconsStyle.regular),
+                                  size: 28,
+                                  color: Colors.white),
                             ),
                           ),
 
@@ -735,8 +760,9 @@ class ReelsScreenState extends State<ReelsScreen>
                                         end: Alignment.bottomRight,
                                       ).createShader(bounds);
                                     },
-                                    child: const Icon(
-                                      Icons.favorite,
+                                    child: PhosphorIcon(
+                                      PhosphorIcons.heart(
+                                          PhosphorIconsStyle.fill),
                                       color: Colors
                                           .white, // important for ShaderMask
                                       size: 120,

@@ -7,6 +7,7 @@ import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/utils/utils.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class ShareSheet extends StatefulWidget {
   const ShareSheet({super.key, required this.post, required this.type});
@@ -164,7 +165,8 @@ class _ShareSheetState extends State<ShareSheet> {
                 hintStyle: const TextStyle(color: Colors.white54),
                 filled: true,
                 fillColor: Colors.white10,
-                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                prefixIcon: PhosphorIcon(PhosphorIcons.magnifyingGlass(),
+                    color: Colors.white54),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,

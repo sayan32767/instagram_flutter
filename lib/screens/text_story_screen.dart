@@ -10,6 +10,7 @@ import 'package:instagram_flutter/screens/feed_screen.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/my_textformfield.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
 class TextStoryScreen extends StatefulWidget {
@@ -168,8 +169,8 @@ class _TextStoryScreenState extends State<TextStoryScreen> {
                         ),
                       ),
                       if (color == _storyColor)
-                        Icon(
-                          Icons.check,
+                        PhosphorIcon(
+                          PhosphorIcons.check(),
                           color: Colors.black, // Icon color
                           size: 24, // Icon size
                         ),

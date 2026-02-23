@@ -17,6 +17,7 @@ import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/widgets/like_animation.dart';
 import 'package:instagram_flutter/widgets/share_screen_sheet.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:video_player/video_player.dart';
 
 class SingleReelScreen extends StatefulWidget {
@@ -373,27 +374,38 @@ class SingleReelScreenState extends State<SingleReelScreen>
                     bottom: 120,
                     child: Column(
                       children: [
-                        IconButton(
-                          onPressed: () async {
-                            if (_isLiking) return;
-                            _isLiking = true;
-                            await FirestoreMethods().likePost(
-                              'reels',
-                              uid,
-                              reelData['reelId'],
-                              reelData['likes'] ?? [],
-                            );
-                            _isLiking = false;
-                          },
-                          icon: Icon(
-                            (reelData['likes'] ?? []).contains(uid)
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            color: (reelData['likes'] ?? []).contains(uid)
-                                ? Colors.red
-                                : Colors.white,
-                          ),
-                        ),
+                        ValueListenableBuilder<bool>(
+                            valueListenable: _likeAnim,
+                            builder: (_, value, __) {
+                              return LikeAnimation(
+                                  isAnimating: value,
+                                  duration: const Duration(milliseconds: 400),
+                                  onEnd: () => _likeAnim.value = false,
+                                  child: IconButton(
+                                    onPressed: () async {
+                                      if (_isLiking) return;
+                                      _isLiking = true;
+                                      await FirestoreMethods().likePost(
+                                        'reels',
+                                        uid,
+                                        reelData['reelId'],
+                                        reelData['likes'] ?? [],
+                                      );
+                                      _isLiking = false;
+                                    },
+                                    icon: PhosphorIcon(
+                                      (reelData['likes'] ?? []).contains(uid)
+                                          ? PhosphorIcons.heart(
+                                              PhosphorIconsStyle.fill)
+                                          : PhosphorIcons.heart(
+                                              PhosphorIconsStyle.regular),
+                                      color: (reelData['likes'] ?? [])
+                                              .contains(uid)
+                                          ? Colors.red
+                                          : Colors.white,
+                                    ),
+                                  ));
+                            }),
                         Text(reelData['likes'].length.toString(),
                             style: const TextStyle(
                                 color: Colors.white70, fontSize: 12)),
@@ -425,7 +437,9 @@ class SingleReelScreenState extends State<SingleReelScreen>
                               ),
                             );
                           },
-                          icon: const Icon(Icons.comment_outlined,
+                          icon: PhosphorIcon(
+                              PhosphorIcons.chatCircle(
+                                  PhosphorIconsStyle.regular),
                               color: Colors.white),
                         ),
                         Text((reelData['commentCount'] ?? 0).toString(),
@@ -437,7 +451,9 @@ class SingleReelScreenState extends State<SingleReelScreen>
                             HapticFeedback.lightImpact(); // subtle tap feel
                             _openShareSheet(reelData as Map<String, dynamic>);
                           },
-                          icon: const Icon(Icons.send_outlined,
+                          icon: PhosphorIcon(
+                              PhosphorIcons.paperPlaneTilt(
+                                  PhosphorIconsStyle.regular),
                               color: Colors.white),
                         ),
                       ],
@@ -449,7 +465,10 @@ class SingleReelScreenState extends State<SingleReelScreen>
                     opacity: _isMuted ? 1 : 0,
                     duration: const Duration(milliseconds: 250),
                     child: Center(
-                      child: Icon(_isMuted ? Icons.volume_off : Icons.volume_up,
+                      child: PhosphorIcon(
+                          _isMuted
+                              ? PhosphorIcons.speakerSimpleSlash()
+                              : PhosphorIcons.speakerHigh(),
                           size: 28),
                     ),
                   ),
@@ -477,8 +496,8 @@ class SingleReelScreenState extends State<SingleReelScreen>
                                 end: Alignment.bottomRight,
                               ).createShader(bounds);
                             },
-                            child: const Icon(
-                              Icons.favorite,
+                            child: PhosphorIcon(
+                              PhosphorIcons.heart(PhosphorIconsStyle.fill),
                               color: Colors.white, // important for ShaderMask
                               size: 120,
                             ),

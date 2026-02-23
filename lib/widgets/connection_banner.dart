@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class ConnectionBanner extends StatefulWidget {
   final bool isOffline;
@@ -131,10 +132,10 @@ class _ConnectionBannerState extends State<ConnectionBanner>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              PhosphorIcon(
                                 widget.isOffline
-                                    ? Icons.wifi_off_rounded
-                                    : Icons.wifi_rounded,
+                                    ? PhosphorIcons.wifiSlash()
+                                    : PhosphorIcons.wifiHigh(),
                                 color: Colors.white,
                                 size: 18,
                               ),

@@ -6,15 +6,19 @@ class MyTextformfield extends StatefulWidget {
   final TextEditingController controller;
   final void Function(String) onChanged;
   final String? hintText;
+  final bool? autofocus;
   final Color? color;
   final FocusNode? focusNode; // ⭐ NEW
   final void Function(String)? onFieldSubmitted; // ⭐ NEW
   final List<TextInputFormatter>? inputFormatters; // ⭐ NEW
+  final Widget? leading; // ⭐ NEW
 
   const MyTextformfield({
+    this.leading,
     super.key,
     required this.controller,
     required this.onChanged,
+    this.autofocus,
     this.focusNode, // ⭐ NEW
     this.onFieldSubmitted, // ⭐ NEW
     this.hintText,
@@ -48,11 +52,17 @@ class _MyTextformfieldState extends State<MyTextformfield> {
 
   @override
   Widget build(BuildContext context) {
+    // final inputBorder = OutlineInputBorder(
+    //   borderSide:
+    //       Divider.createBorderSide(context, color: widget.color ?? null),
+    // );
+
     final inputBorder = OutlineInputBorder(
-      borderSide:
-          Divider.createBorderSide(context, color: widget.color ?? null),
+      borderRadius: BorderRadius.circular(40),
+      borderSide: BorderSide.none,
     );
     return TextFormField(
+        autofocus: widget.autofocus ?? false,
         inputFormatters:
             widget.inputFormatters != null ? widget.inputFormatters! : null,
         onFieldSubmitted: widget.onFieldSubmitted, // ⭐ NEW
@@ -61,6 +71,7 @@ class _MyTextformfieldState extends State<MyTextformfield> {
         focusNode: widget.focusNode, // ⭐ NEW
         onChanged: widget.onChanged,
         decoration: InputDecoration(
+            prefixIcon: widget.leading,
             filled: true,
             fillColor: widget.color == null
                 ? Colors.grey[800]
@@ -72,9 +83,10 @@ class _MyTextformfieldState extends State<MyTextformfield> {
             contentPadding: const EdgeInsets.all(8),
             hintStyle: TextStyle(
                 color: widget.color == null
-                    ? Colors.white
+                    ? Colors.white70
                     : getTextColor(widget.color!))),
         style: TextStyle(
+            fontSize: 16,
             color: widget.color == null
                 ? Colors.white
                 : getTextColor(widget.color!)),

@@ -9,6 +9,7 @@ import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:instagram_flutter/widgets/story_list_widgets.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
 class StoryCard extends StatelessWidget {
@@ -39,7 +40,7 @@ class StoryCard extends StatelessWidget {
       children: [
         Container(
           width: MediaQuery.of(context).size.width * 0.33,
-          height: 200,
+          height: 150,
           decoration: BoxDecoration(
             color: const Color.fromARGB(255, 24, 24, 24),
             borderRadius: BorderRadius.circular(12.0),
@@ -169,7 +170,7 @@ class StoryCard extends StatelessWidget {
           ),
         ),
         Positioned(
-          top: 70,
+          top: 42,
           left: 0,
           right: 0,
           child: Align(
@@ -191,9 +192,21 @@ class StoryCard extends StatelessWidget {
                               strokeWidth: 3, color: Colors.grey),
                         )
                       : playerStateProvider.isPlaying
-                          ? Icon(Icons.pause)
-                          : Icon(Icons.play_arrow)
-                  : Icon(Icons.play_arrow),
+                          ? PhosphorIcon(
+                              PhosphorIconsRegular.pause,
+                              size: 24,
+                              color: Colors.white70,
+                            )
+                          : PhosphorIcon(
+                              PhosphorIconsRegular.play,
+                              size: 24,
+                              color: Colors.white70,
+                            )
+                  : PhosphorIcon(
+                      PhosphorIconsRegular.play,
+                      size: 24,
+                      color: Colors.white70,
+                    ),
             ),
           ),
         )

@@ -10,6 +10,7 @@ import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/feed_screen.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/utils.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -215,8 +216,8 @@ class _ReelPreviewScreenState extends State<ReelPreviewScreen> {
                           shape: BoxShape.circle,
                         ),
                         padding: const EdgeInsets.all(20),
-                        child: const Icon(
-                          Icons.volume_off,
+                        child: PhosphorIcon(
+                          PhosphorIcons.speakerSimpleSlash(),
                           color: Colors.white,
                           size: 50,
                         ),

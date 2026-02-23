@@ -10,6 +10,7 @@ class ProgressImageDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(radius);
     return Stack(
       children: [
         CircleAvatar(
@@ -32,9 +33,9 @@ class ProgressImageDots extends StatelessWidget {
               ),
             ),
 
-            errorWidget: (context, url, error) => const Center(
+            errorWidget: (context, url, error) => Center(
               child: CircleAvatar(
-                radius: 20,
+                radius: radius ?? 20,
                 backgroundColor:
                     const Color.fromARGB(255, 71, 71, 71), // 👈 white base
                 child: ClipOval(),

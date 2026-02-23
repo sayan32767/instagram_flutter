@@ -7,6 +7,7 @@ import 'package:instagram_flutter/screens/profile_posts_screen.dart';
 import 'package:instagram_flutter/screens/reels_screen.dart';
 import 'package:instagram_flutter/screens/single_reel_screen.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class MessageBubble extends StatelessWidget {
   final Map<String, dynamic> msg;
@@ -272,12 +273,15 @@ class _ReelPreviewState extends State<_ReelPreview> {
                     else
                       Container(
                         color: Colors.black12,
-                        child: const Icon(Icons.play_arrow, size: 40),
+                        child: const Center(child: Text("No thumbnail")),
                       ),
-                    const Icon(
-                      Icons.play_circle_fill,
-                      color: Colors.white,
+                    PhosphorIcon(
+                      PhosphorIcons.playCircle(),
                       size: 40,
+                      color: Colors.white70,
+                      // Icons.play_arrow,
+                      // size: 40,
+                      // color: Colors.white70,
                     ),
                   ],
                 ),
