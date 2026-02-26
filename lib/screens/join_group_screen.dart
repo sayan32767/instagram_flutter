@@ -58,7 +58,9 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
       //   (route) => false,
       // );
     } catch (e) {
-      showSnackBar(context, e.toString().replaceAll("Exception: ", ""));
+      // showSnackBar(context, e.toString().replaceAll("Exception: ", ""));
+      showSnackBar(context,
+          "Failed to join group. Please check your credentials and try again.");
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -66,138 +68,141 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: mobileBackgroundColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // setState(() {
-            //   _showingGroupLists = true;
-            //   _showCreateGroup = false;
-            // });
-            Navigator.pop(context);
-          },
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: mobileBackgroundColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              // setState(() {
+              //   _showingGroupLists = true;
+              //   _showCreateGroup = false;
+              // });
+              Navigator.pop(context);
+            },
+          ),
+          // title: const Text(
+          //   "Back to Groups",
+          //   style: TextStyle(
+          //       color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          // ),
         ),
-        // title: const Text(
-        //   "Back to Groups",
-        //   style: TextStyle(
-        //       color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-        // ),
-      ),
-      backgroundColor: mobileBackgroundColor,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Please enter your group details",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        backgroundColor: mobileBackgroundColor,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Please enter your group details",
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              /// Group ID
-              TextFieldInput(
-                textInputFormatter: LowerCaseTextFormatter(),
-                hintText: "Group Name",
-                textInputType: TextInputType.text,
-                textEditingController: _groupController,
-              ),
+                /// Group ID
+                TextFieldInput(
+                  textInputFormatter: LowerCaseTextFormatter(),
+                  hintText: "Group Name",
+                  textInputType: TextInputType.text,
+                  textEditingController: _groupController,
+                ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              /// Password
-              TextFieldInput(
-                hintText: "Password",
-                textInputType: TextInputType.visiblePassword,
-                textEditingController: _passController,
-                isPass: true,
-              ),
+                /// Password
+                TextFieldInput(
+                  hintText: "Password",
+                  textInputType: TextInputType.visiblePassword,
+                  textEditingController: _passController,
+                  isPass: true,
+                ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              /// Error
-              // if (_error != null)
-              //   Text(
-              //     _error!,
-              //     style: const TextStyle(color: Colors.red),
-              //   ),
+                /// Error
+                // if (_error != null)
+                //   Text(
+                //     _error!,
+                //     style: const TextStyle(color: Colors.red),
+                //   ),
 
-              const SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-              GestureDetector(
-                onTap: _loading ? null : _joinGroup,
-                child: Container(
-                  height: 60,
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: const ShapeDecoration(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(40)),
-                      ),
-                      color: blueColor),
-                  child: _loading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                          color: Colors.white70,
-                        ))
-                      : const Text(
-                          'Join Group',
-                          style: TextStyle(color: Colors.white),
+                GestureDetector(
+                  onTap: _loading ? null : _joinGroup,
+                  child: Container(
+                    height: 60,
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: const ShapeDecoration(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(40)),
                         ),
+                        color: blueColor),
+                    child: _loading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                            color: Colors.white70,
+                          ))
+                        : const Text(
+                            'Join Group',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                  ),
                 ),
-              ),
 
-              // OR CREATE NEW GROUP
-              const SizedBox(height: 28),
-              const Text(
-                "OR",
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: () {
-                  // setState(() {
-                  //   _showCreateGroup = true;
-                  // });
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateGroupScreen(),
+                // OR CREATE NEW GROUP
+                const SizedBox(height: 28),
+                const Text(
+                  "OR",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () {
+                    // setState(() {
+                    //   _showCreateGroup = true;
+                    // });
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreateGroupScreen(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 60,
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: const ShapeDecoration(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(4)),
+                      ),
+                      color: Colors.transparent,
                     ),
-                  );
-                },
-                child: Container(
-                  height: 60,
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: const ShapeDecoration(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                    child: const Text(
+                      'Create New Group',
+                      style: TextStyle(color: Colors.white70),
                     ),
-                    color: Colors.transparent,
-                  ),
-                  child: const Text(
-                    'Create New Group',
-                    style: TextStyle(color: Colors.white70),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

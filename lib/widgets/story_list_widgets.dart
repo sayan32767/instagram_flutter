@@ -6,6 +6,7 @@ import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/story_full_screen.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/add_to_story_card.dart';
+import 'package:instagram_flutter/widgets/story_audio_full_screen.dart';
 import 'package:instagram_flutter/widgets/story_card.dart';
 import 'package:instagram_flutter/widgets/story_text_card.dart';
 import 'package:provider/provider.dart';
@@ -35,10 +36,7 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 170,
-            child: null,
-          );
+          return const StoryRowSkeleton();
         }
 
         if (!snapshot.hasData) {
@@ -166,27 +164,133 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
     }
 
     if (storyType == 'MUSIC' && storyData != null) {
-      final previewUrl = storyData['preview_url'];
+      final previewUrl = storyData['previewUrl'] ?? storyData['preview_url'];
 
       return GestureDetector(
         onTap: () {
+          debugPrint('Preview URL: $previewUrl');
           if (previewUrl == null || previewUrl.isEmpty) {
             showSnackBar(context, "No preview available for this track");
             return;
+          } else {
+            // PLAY THE AUDIO
+            Navigator.of(context, rootNavigator: true).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => StoryAudioFullScreen(
+                  albumArtUrl: storyData['artworkUrl100'] ?? '',
+                  songName: storyData['trackName'] ?? 'Unknown Track',
+                  artistName: storyData['artistName'] ?? 'Unknown Artist',
+                  userProfilePicUrl: photoUrl,
+                  userName: username,
+                  songUrl: previewUrl,
+                ),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(0.0, 1.0);
+                  const end = Offset.zero;
+                  const curve = Curves.ease;
+
+                  var tween = Tween(begin: begin, end: end)
+                      .chain(CurveTween(curve: curve));
+
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
+              ),
+            );
           }
         },
         child: StoryCard(
-          albumArtUrl: storyData['album_art_url'],
-          artistName: storyData['artist'],
-          songName: storyData['name'],
-          songUrl: previewUrl,
-          userProfilePicUrl: photoUrl,
-          userName: username,
-          uid: uid,
+          albumArtUrl: storyData['artworkUrl100'],
+          artistName: storyData['artistName'],
+          songName: storyData['trackName'],
+          songUrl: previewUrl as String?,
+          userProfilePicUrl: photoUrl as String?,
+          userName: username as String,
+          uid: uid as String,
         ),
       );
     }
 
     return const SizedBox();
+  }
+}
+
+class StoryRowSkeleton extends StatelessWidget {
+  const StoryRowSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: const [
+        SizedBox(width: 16),
+        _SingleStorySkeleton(),
+        SizedBox(width: 12),
+        _SingleStorySkeleton(),
+        // SizedBox(width: 12),
+        // _SingleStorySkeleton(),
+      ],
+    );
+  }
+}
+
+class _SingleStorySkeleton extends StatefulWidget {
+  const _SingleStorySkeleton();
+
+  @override
+  State<_SingleStorySkeleton> createState() => _SingleStorySkeletonState();
+}
+
+class _SingleStorySkeletonState extends State<_SingleStorySkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: 0.3, end: 0.7).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: Column(
+        children: [
+          // Avatar skeleton
+          // const CircleAvatar(
+          //   radius: 28,
+          //   backgroundColor: Color(0xFF1E1E1E),
+          // ),
+          // const SizedBox(height: 8),
+
+          // Story card skeleton
+          Container(
+            width: MediaQuery.of(context).size.width * 0.33,
+            height: 170,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

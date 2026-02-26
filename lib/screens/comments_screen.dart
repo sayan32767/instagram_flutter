@@ -144,207 +144,211 @@ class _CommentsScreenState extends State<CommentsScreen> {
   Widget build(BuildContext context) {
     final User user = Provider.of<UserProvider>(context).getUser!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Comments",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            "Comments",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
 
-        /// ⭐ Dark gradient only in AppBar area
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.black87,
-                Colors.black54,
-                Colors.transparent,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+          /// ⭐ Dark gradient only in AppBar area
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black87,
+                  Colors.black54,
+                  Colors.transparent,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
         ),
-      ),
 
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        child: _isLoading
-            ? Container(
-                key: const ValueKey("skeleton"),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: ListView.separated(
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 4,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Color.fromARGB(255, 24, 24, 24),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  height: 12,
-                                  width: 120 + (index * 10), // slight variation
-                                  decoration: BoxDecoration(
-                                    color:
-                                        const Color.fromARGB(255, 24, 24, 24),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Container(
-                                  height: 12,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        const Color.fromARGB(255, 24, 24, 24),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                // const SizedBox(height: 6),
-                                // Container(
-                                //   height: 12,
-                                //   width: 180,
-                                //   decoration: BoxDecoration(
-                                //     color:
-                                //         const Color.fromARGB(255, 24, 24, 24),
-                                //     borderRadius: BorderRadius.circular(6),
-                                //   ),
-                                // ),
-                              ],
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: _isLoading
+              ? Container(
+                  key: const ValueKey("skeleton"),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: 4,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Color.fromARGB(255, 24, 24, 24),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              )
-            : _comments.isEmpty
-                ? const Center(child: Text("No comments yet"))
-                : Stack(
-                    children: [
-                      RefreshIndicator(
-                        color: Colors.white,
-                        backgroundColor: Colors.grey.shade900,
-                        onRefresh: _loadInitialComments,
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          controller: _scrollController,
-                          itemCount: _comments.length,
-                          itemBuilder: (context, index) {
-                            return TweenAnimationBuilder<double>(
-                              key: ValueKey(_comments[index].id),
-                              tween: Tween(begin: 0, end: 1),
-                              duration: Duration(
-                                  milliseconds: 300 + (index % 8) * 30),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, value, child) {
-                                return Opacity(
-                                  opacity: value,
-                                  child: Transform.translate(
-                                    offset: Offset(0, 15 * (1 - value)),
-                                    child: child,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 12,
+                                    width:
+                                        120 + (index * 10), // slight variation
+                                    decoration: BoxDecoration(
+                                      color:
+                                          const Color.fromARGB(255, 24, 24, 24),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                   ),
-                                );
-                              },
-                              child: CommentCard(
-                                snap: _comments[index].data(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      if (_isFetchingMore)
-                        Positioned(
-                          bottom: 16,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(221, 63, 63, 63)
-                                    .withOpacity(0.6),
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                              child: const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white70,
-                                ),
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    height: 12,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          const Color.fromARGB(255, 24, 24, 24),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  // const SizedBox(height: 6),
+                                  // Container(
+                                  //   height: 12,
+                                  //   width: 180,
+                                  //   decoration: BoxDecoration(
+                                  //     color:
+                                  //         const Color.fromARGB(255, 24, 24, 24),
+                                  //     borderRadius: BorderRadius.circular(6),
+                                  //   ),
+                                  // ),
+                                ],
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                    ],
+                      );
+                    },
                   ),
-      ),
+                )
+              : _comments.isEmpty
+                  ? const Center(child: Text("No comments yet"))
+                  : Stack(
+                      children: [
+                        RefreshIndicator(
+                          color: Colors.white,
+                          backgroundColor: Colors.grey.shade900,
+                          onRefresh: _loadInitialComments,
+                          child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            controller: _scrollController,
+                            itemCount: _comments.length,
+                            itemBuilder: (context, index) {
+                              return TweenAnimationBuilder<double>(
+                                key: ValueKey(_comments[index].id),
+                                tween: Tween(begin: 0, end: 1),
+                                duration: Duration(
+                                    milliseconds: 300 + (index % 8) * 30),
+                                curve: Curves.easeOutCubic,
+                                builder: (context, value, child) {
+                                  return Opacity(
+                                    opacity: value,
+                                    child: Transform.translate(
+                                      offset: Offset(0, 15 * (1 - value)),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: CommentCard(
+                                  snap: _comments[index].data(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        if (_isFetchingMore)
+                          Positioned(
+                            bottom: 16,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(221, 63, 63, 63)
+                                      .withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                child: const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+        ),
 
-      // 🔹 INPUT BAR
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          height: kToolbarHeight,
-          margin: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              user.photoUrl == null
-                  ? CircleAvatar(
-                      radius: 16,
-                      backgroundImage:
-                          const AssetImage('assets/images/placeholder.jpg'),
-                      backgroundColor: Colors.grey[300],
-                    )
-                  : ProgressImageDots(url: user.photoUrl!),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: TextField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                      hintText: 'Comment as ${user.username}',
-                      border: InputBorder.none,
+        // 🔹 INPUT BAR
+        bottomNavigationBar: SafeArea(
+          child: Container(
+            height: kToolbarHeight,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                user.photoUrl == null
+                    ? CircleAvatar(
+                        radius: 16,
+                        backgroundImage:
+                            const AssetImage('assets/images/placeholder.jpg'),
+                        backgroundColor: Colors.grey[300],
+                      )
+                    : ProgressImageDots(url: user.photoUrl!),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        hintText: 'Comment as ${user.username}',
+                        border: InputBorder.none,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              GestureDetector(
-                onTap: () => _postComment(user),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    'Post',
-                    style: TextStyle(color: Colors.blueAccent),
+                GestureDetector(
+                  onTap: () => _postComment(user),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      'Post',
+                      style: TextStyle(color: Colors.blueAccent),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

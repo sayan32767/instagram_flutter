@@ -1,39 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 
 class User {
-  final String email;
   final String uid;
-  final String? photoUrl;
   final String username;
-  final String bio;
-  final List followers;
-  final List following;
-  final String tagline;
-  final String userEmoji;
+  final String email;
 
   const User({
-    required this.email,
     required this.uid,
-    required this.photoUrl,
     required this.username,
-    required this.bio,
-    required this.followers,
-    required this.following,
-    required this.tagline,
-    required this.userEmoji,
+    required this.email,
   });
 
   Map<String, dynamic> toJson() => {
         "username": username,
         "uid": uid,
         "email": email,
-        "photoUrl": photoUrl,
-        "bio": bio,
-        "followers": followers,
-        "following": following,
-        "tagline": tagline,
-        "userEmoji": userEmoji,
       };
 
   static User fromSnap(DocumentSnapshot snap) {
@@ -43,12 +24,6 @@ class User {
       username: snapshot['username'],
       uid: snapshot['uid'],
       email: snapshot['email'],
-      photoUrl: snapshot['photoUrl'],
-      bio: snapshot['bio'] ?? "",
-      followers: snapshot['followers'],
-      following: snapshot['following'],
-      tagline: snapshot['tagline'] ?? "",
-      userEmoji: snapshot['userEmoji'] ?? "",
     );
   }
 }

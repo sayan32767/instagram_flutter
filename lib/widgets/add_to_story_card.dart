@@ -94,7 +94,8 @@ class AddToStoryCard extends StatelessWidget {
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: EdgeInsets.all(16.0),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
                     color: Colors.black.withOpacity(0.5),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,19 +112,30 @@ class AddToStoryCard extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 42.0),
+                  padding: const EdgeInsets.only(top: 50.0),
                   child: Align(
                     alignment: Alignment.topCenter,
-                    // child: Icon(
-                    //   Icons.add_circle,
-                    //   size: 60,
-                    //   color: Colors.grey,
-                    // ),
-                    child: PhosphorIcon(
-                      PhosphorIconsRegular.plusCircle,
-                      size: 50,
-                      color: Colors.grey,
+
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return const LinearGradient(
+                          colors: [
+                            Color(0xFF833AB4),
+                            Color(0xFFE1306C),
+                            Color(0xFFF77737),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ).createShader(bounds);
+                      },
+                      blendMode: BlendMode.srcIn,
+                      child: PhosphorIcon(
+                        PhosphorIconsRegular.plusCircle,
+                        size: 50,
+                        color: Colors.white, // Important: must NOT be grey
+                      ),
                     ),
+                    // child: null,
                   ),
                 )
               ],

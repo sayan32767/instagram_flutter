@@ -223,11 +223,23 @@ class _ChatScreenState extends State<ChatScreen> {
     HapticFeedback.lightImpact(); // subtle tap feel
 
     await FirestoreMethods().sendMessage(
+      senderUsername: Provider.of<UserProvider>(context, listen: false)
+          .getUser!
+          .username, // ⭐ pass sender username
       mediaOwnerId: null,
       mediaOwnerUsername: null,
       receiverId: widget.otherUid,
       type: 'text',
       text: text,
+    );
+
+    FirestoreMethods().sendPushNotification(
+      text: text,
+      receiverUid: widget.otherUid,
+      type: 'text',
+      senderUsername: Provider.of<UserProvider>(context, listen: false)
+          .getUser!
+          .username, // ⭐ pass sender username
     );
 
     _controller.clear();
@@ -253,92 +265,95 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final currentUid =
         Provider.of<UserProvider>(context, listen: false).getUser!.uid;
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0, // 🔥 IMPORTANT
-        surfaceTintColor: Colors.transparent, // 🔥 VERY IMPORTANT
-        backgroundColor: Colors.black,
-        title: _ChatHeader(
-            otherUid: widget.otherUid,
-            chatId: widget.chatId,
-            isTyping: _otherTyping),
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-              color: Colors.white70,
-            ))
-          : Column(
-              children: [
-                // ================= MESSAGES =================
-                Expanded(
-                  child: Stack(
-                    children: [
-                      ListView.builder(
-                        controller: _scrollController,
-                        reverse: true,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 14),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final msg =
-                              _messages[index].data() as Map<String, dynamic>;
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(
+          elevation: 0,
+          scrolledUnderElevation: 0, // 🔥 IMPORTANT
+          surfaceTintColor: Colors.transparent, // 🔥 VERY IMPORTANT
+          backgroundColor: Colors.black,
+          title: _ChatHeader(
+              otherUid: widget.otherUid,
+              chatId: widget.chatId,
+              isTyping: _otherTyping),
+        ),
+        body: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                color: Colors.white70,
+              ))
+            : Column(
+                children: [
+                  // ================= MESSAGES =================
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        ListView.builder(
+                          controller: _scrollController,
+                          reverse: true,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 14),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final msg =
+                                _messages[index].data() as Map<String, dynamic>;
 
-                          final isMe = msg['senderId'] == uid;
+                            final isMe = msg['senderId'] == uid;
 
-                          return Align(
-                            alignment: isMe
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: MessageBubble(msg: msg, isMe: isMe),
-                          );
-                        },
-                      ),
+                            return Align(
+                              alignment: isMe
+                                  ? Alignment.centerRight
+                                  : Alignment.centerLeft,
+                              child: MessageBubble(msg: msg, isMe: isMe),
+                            );
+                          },
+                        ),
 
-                      /// 🔥 WHATSAPP STYLE TOP LOADER
-                      if (_isFetchingMore)
-                        Positioned(
-                          top: 12,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(221, 63, 63, 63)
-                                    .withOpacity(0.6),
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                              child: const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white70,
+                        /// 🔥 WHATSAPP STYLE TOP LOADER
+                        if (_isFetchingMore)
+                          Positioned(
+                            top: 12,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(221, 63, 63, 63)
+                                      .withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                child: const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white70,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
 
-                if (_otherTyping && widget.otherUid != currentUid)
-                  TypingBubble(isMe: false),
+                  if (_otherTyping && widget.otherUid != currentUid)
+                    TypingBubble(isMe: false),
 
-                // ================= INPUT =================
-                _ChatInput(
-                  controller: _controller,
-                  onTyping: _onTypingChanged,
-                  onSend: _sendText,
-                ),
-              ],
-            ),
+                  // ================= INPUT =================
+                  _ChatInput(
+                    controller: _controller,
+                    onTyping: _onTypingChanged,
+                    onSend: _sendText,
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

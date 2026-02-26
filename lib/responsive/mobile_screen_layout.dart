@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/feed_screen.dart';
@@ -16,7 +17,7 @@ import 'package:instagram_flutter/screens/search_screen.dart';
 import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
-import 'package:instagram_flutter/utils/presence_servoce.dart';
+import 'package:instagram_flutter/utils/update_last_seen.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -34,7 +35,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
-  late PresenceService _presence;
+  late UpdateLastSeen _presence;
 
   late final List<Widget> homeScreenItems;
 
@@ -43,7 +44,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
     super.initState();
 
     pageController = PageController();
-    _presence = PresenceService()..start();
+    _presence = UpdateLastSeen()..start();
 
     homeScreenItems = [
       FeedScreen(key: globalKey),
@@ -96,12 +97,12 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
     }
 
     // 🔥 If user tapped Profile tab → refresh
-    // if (page == 4 && _page != 4) {
-    //   if (profileKey.currentState is ProfileScreenState) {
-    //     final state = profileKey.currentState as ProfileScreenState;
-    //     state.refresh();
-    //   }
-    // }
+    if (page == 4 && _page != 4) {
+      if (profileKey.currentState is ProfileScreenState) {
+        final state = profileKey.currentState as ProfileScreenState;
+        state.refresh();
+      }
+    }
 
     // 🔥 If user tapped the current tab
     if (page == _page) {
@@ -178,6 +179,17 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
       return false;
     }
 
+    if (_page == 0) {
+      if (globalKey.currentState is FeedScreenState) {
+        final state = globalKey.currentState as FeedScreenState;
+
+        if (!state.isAtTop) {
+          state.scrollToTop();
+          return false;
+        }
+      }
+    }
+
     return true;
   }
 
@@ -220,10 +232,15 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
           onPageChanged: onPageChanged,
           controller: pageController,
           children: homeScreenItems,
-          physics: const ClampingScrollPhysics(), // Android-like
+          physics: const BouncingScrollPhysics(
+            decelerationRate: ScrollDecelerationRate.fast,
+          ),
           allowImplicitScrolling: true,
         ),
         bottomNavigationBar: CupertinoTabBar(
+          border: const Border(
+            top: BorderSide(color: Color.fromARGB(255, 38, 38, 38), width: 0.5),
+          ),
           height: 65,
           backgroundColor: mobileBackgroundColor,
           currentIndex: _page,
@@ -296,18 +313,19 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                   child: CircleAvatar(
                     radius: 14,
                     backgroundColor: primaryColor,
-                    backgroundImage:
-                        Provider.of<UserProvider>(context).getUser?.photoUrl !=
-                                null
-                            ? CachedNetworkImageProvider(
-                                Provider.of<UserProvider>(context)
-                                    .getUser!
-                                    .photoUrl!,
-                                cacheManager: InstaCacheManager(),
-                              )
-                            : const AssetImage(
-                                'assets/images/placeholder.jpg',
-                              ) as ImageProvider,
+                    backgroundImage: Provider.of<GroupMemberProvider>(context)
+                                .getUser
+                                ?.photoUrl !=
+                            null
+                        ? CachedNetworkImageProvider(
+                            Provider.of<GroupMemberProvider>(context)
+                                .getUser!
+                                .photoUrl!,
+                            cacheManager: InstaCacheManager(),
+                          )
+                        : const AssetImage(
+                            'assets/images/placeholder.jpg',
+                          ) as ImageProvider,
                   ),
                 ),
               ),

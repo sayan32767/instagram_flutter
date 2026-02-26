@@ -6,7 +6,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/screens/chat_screen.dart';
+import 'package:instagram_flutter/screens/people_add_screen.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -172,11 +174,65 @@ class _InboxScreenState extends State<InboxScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isInitialLoading) {
-      return Scaffold(
+      return SafeArea(
+        top: false,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              "Chats",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.black87, Colors.black54, Colors.transparent],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+          body: ListView.builder(
+            itemCount: 8,
+            itemBuilder: (context, index) {
+              return const _ChatSkeletonTile();
+            },
+          ),
+        ),
+      );
+    }
+
+    // if (_chats.isEmpty) {
+    //   return const Scaffold(
+    //     body: Center(child: Text("No chats yet")),
+    //   );
+    // }
+
+    return SafeArea(
+      top: false,
+      child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            "Chats",
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Row(
+            children: [
+              const Text("Chats",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Spacer(),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PeopleAddScreen()),
+                  );
+                },
+                child: PhosphorIcon(
+                  PhosphorIcons.userCirclePlus(),
+                  size: 27,
+                ),
+              ),
+            ],
           ),
           foregroundColor: Colors.white,
           backgroundColor: Colors.transparent,
@@ -191,265 +247,238 @@ class _InboxScreenState extends State<InboxScreen> {
             ),
           ),
         ),
-        body: ListView.builder(
-          itemCount: 8,
-          itemBuilder: (context, index) {
-            return const _ChatSkeletonTile();
-          },
-        ),
-      );
-    }
+        body: _isInitialLoading
+            // ? const Center(
+            //     child: CircularProgressIndicator(
+            //     color: Colors.white70,
+            //   ))
 
-    // if (_chats.isEmpty) {
-    //   return const Scaffold(
-    //     body: Center(child: Text("No chats yet")),
-    //   );
-    // }
+            ? const SizedBox.shrink()
+            : Stack(
+                children: [
+                  RefreshIndicator(
+                    color: Colors.white,
+                    backgroundColor: Colors.grey.shade900,
+                    onRefresh: _refresh,
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      controller: _scrollController,
+                      itemCount: _chats.length,
+                      itemBuilder: (context, index) {
+                        final chat = _chats[index];
+                        final data = chat.data() as Map<String, dynamic>;
 
-    return Scaffold(
-      appBar: AppBar(
-        title:
-            const Text("Chats", style: TextStyle(fontWeight: FontWeight.bold)),
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.black87, Colors.black54, Colors.transparent],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-        ),
-      ),
-      body: _isInitialLoading
-          // ? const Center(
-          //     child: CircularProgressIndicator(
-          //     color: Colors.white70,
-          //   ))
+                        final participants =
+                            List<String>.from(data['participants'] ?? []);
+                        final otherUid = participants
+                            .firstWhere((id) => id != uid, orElse: () => uid);
 
-          ? const SizedBox.shrink()
-          : Stack(
-              children: [
-                RefreshIndicator(
-                  color: Colors.white,
-                  backgroundColor: Colors.grey.shade900,
-                  onRefresh: _refresh,
-                  child: ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    controller: _scrollController,
-                    itemCount: _chats.length,
-                    itemBuilder: (context, index) {
-                      final chat = _chats[index];
-                      final data = chat.data() as Map<String, dynamic>;
+                        final user = _usersMap[otherUid] ?? {};
 
-                      final participants =
-                          List<String>.from(data['participants'] ?? []);
-                      final otherUid = participants
-                          .firstWhere((id) => id != uid, orElse: () => uid);
+                        final unread = (data['unreadCount_$uid'] ?? 0) > 0;
+                        final isMe = data['lastSender'] == uid;
 
-                      final user = _usersMap[otherUid] ?? {};
+                        // ---------- ONLINE ----------
+                        bool otherOnline = false;
+                        final Timestamp? lastActive = user['lastActive'];
 
-                      final unread = (data['unreadCount_$uid'] ?? 0) > 0;
-                      final isMe = data['lastSender'] == uid;
+                        if (lastActive != null) {
+                          final diff =
+                              DateTime.now().difference(lastActive.toDate());
+                          otherOnline = diff.inMinutes < 2;
+                        }
 
-                      // ---------- ONLINE ----------
-                      bool otherOnline = false;
-                      final Timestamp? lastActive = user['lastActive'];
+                        // ---------- TYPING ----------
+                        final typingMap = data['typing'] ?? {};
+                        final otherTyping = typingMap[otherUid] == true;
 
-                      if (lastActive != null) {
-                        final diff =
-                            DateTime.now().difference(lastActive.toDate());
-                        otherOnline = diff.inMinutes < 2;
-                      }
+                        // ---------- SUBTITLE ----------
+                        String subtitle;
 
-                      // ---------- TYPING ----------
-                      final typingMap = data['typing'] ?? {};
-                      final otherTyping = typingMap[otherUid] == true;
+                        if (otherTyping && otherUid != uid) {
+                          subtitle = "typing...";
+                        } else if (unread &&
+                            data['lastMessage'] != null &&
+                            data['lastMessageType'] == 'text') {
+                          subtitle = data['lastMessage'];
+                        } else if (unread &&
+                            data['lastMessageType'] != 'text') {
+                          final type = data['lastMessageType'] ?? 'post';
+                          final owner = data['mediaOwnerUsername'] ?? "someone";
+                          subtitle = "Sent a $type by $owner";
+                        } else if (otherOnline) {
+                          subtitle = "Active Now";
+                        } else if (data['lastMessageType'] == 'text' &&
+                            data['lastMessage'] != null) {
+                          subtitle = data['lastMessage'];
+                        } else {
+                          final type = data['lastMessageType'] ?? 'post';
+                          final owner = data['mediaOwnerUsername'] ?? "someone";
+                          subtitle = isMe
+                              ? "You sent a $type by $owner"
+                              : "Sent a $type by $owner";
+                        }
 
-                      // ---------- SUBTITLE ----------
-                      String subtitle;
-
-                      if (otherTyping && otherUid != uid) {
-                        subtitle = "typing...";
-                      } else if (unread &&
-                          data['lastMessage'] != null &&
-                          data['lastMessageType'] == 'text') {
-                        subtitle = data['lastMessage'];
-                      } else if (unread && data['lastMessageType'] != 'text') {
-                        final type = data['lastMessageType'] ?? 'post';
-                        final owner = data['mediaOwnerUsername'] ?? "someone";
-                        subtitle = "Sent a $type by $owner";
-                      } else if (otherOnline) {
-                        subtitle = "Active Now";
-                      } else if (data['lastMessageType'] == 'text' &&
-                          data['lastMessage'] != null) {
-                        subtitle = data['lastMessage'];
-                      } else {
-                        final type = data['lastMessageType'] ?? 'post';
-                        final owner = data['mediaOwnerUsername'] ?? "someone";
-                        subtitle = isMe
-                            ? "You sent a $type by $owner"
-                            : "Sent a $type by $owner";
-                      }
-
-                      return TweenAnimationBuilder<double>(
-                        key: ValueKey(chat.id),
-                        tween: Tween(begin: 0, end: 1),
-                        duration:
-                            Duration(milliseconds: 350 + (index % 10) * 40),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 20 * (1 - value)),
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            radius: 20,
-                            backgroundColor: const Color.fromARGB(
-                                255, 71, 71, 71), // 👈 white base
-                            child: ClipOval(
-                              child: (user['photoUrl'] != null &&
-                                      user['photoUrl'].toString().isNotEmpty)
-                                  ? CachedNetworkImage(
-                                      imageUrl: user['photoUrl'],
-                                      fit: BoxFit.cover,
-                                      width: 40,
-                                      height: 40,
-                                      placeholder: (context, url) => Container(
-                                        color: const Color.fromARGB(255, 54, 54,
-                                            54), // 👈 white while loading
-                                      ),
-                                      errorWidget: (context, url, error) =>
-                                          Image.asset(
+                        return TweenAnimationBuilder<double>(
+                          key: ValueKey(chat.id),
+                          tween: Tween(begin: 0, end: 1),
+                          duration:
+                              Duration(milliseconds: 350 + (index % 10) * 40),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 20 * (1 - value)),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              radius: 20,
+                              backgroundColor: const Color.fromARGB(
+                                  255, 71, 71, 71), // 👈 white base
+                              child: ClipOval(
+                                child: (user['photoUrl'] != null &&
+                                        user['photoUrl'].toString().isNotEmpty)
+                                    ? CachedNetworkImage(
+                                        imageUrl: user['photoUrl'],
+                                        fit: BoxFit.cover,
+                                        width: 40,
+                                        height: 40,
+                                        placeholder: (context, url) =>
+                                            Container(
+                                          color: const Color.fromARGB(255, 54,
+                                              54, 54), // 👈 white while loading
+                                        ),
+                                        errorWidget: (context, url, error) =>
+                                            Image.asset(
+                                          'assets/images/placeholder.jpg',
+                                          fit: BoxFit.cover,
+                                          width: 40,
+                                          height: 40,
+                                        ),
+                                      )
+                                    : Image.asset(
                                         'assets/images/placeholder.jpg',
                                         fit: BoxFit.cover,
                                         width: 40,
                                         height: 40,
                                       ),
-                                    )
-                                  : Image.asset(
-                                      'assets/images/placeholder.jpg',
-                                      fit: BoxFit.cover,
-                                      width: 40,
-                                      height: 40,
-                                    ),
-                            ),
-                          ),
-                          title: Row(
-                            children: [
-                              Text(
-                                user['username'] ?? "User",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
                               ),
-                            ],
-                          ),
-                          subtitle: Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight:
-                                  unread ? FontWeight.w600 : FontWeight.normal,
-                              color: unread
-                                  ? Colors.white
-                                  : subtitle == 'typing...' ||
-                                          subtitle == 'Active Now'
-                                      ? Colors.white
-                                      : Colors.grey.shade600,
-                              // fontStyle: subtitle == "typing..."
-                              //     ? FontStyle.italic
-                              //     : null,
                             ),
-                          ),
-                          trailing: unread
-                              ? CircleAvatar(
-                                  radius: 10,
-                                  backgroundColor: Colors.white,
-                                  child: Text(
-                                    (data['unreadCount_$uid']).toString(),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade800,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                )
-                              : null,
-                          onTap: () {
-                            Navigator.of(context, rootNavigator: true).push(
-                              PageRouteBuilder(
-                                transitionDuration: const Duration(
-                                    milliseconds: 200), // ⭐ Android default
-                                reverseTransitionDuration:
-                                    const Duration(milliseconds: 200),
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        ChatScreen(
-                                  chatId: chat.id,
-                                  otherUid: otherUid,
+                            title: Row(
+                              children: [
+                                Text(
+                                  user['username'] ?? "User",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
                                 ),
-                                transitionsBuilder: (context, animation,
-                                    secondaryAnimation, child) {
-                                  final tween = Tween(
-                                    begin: const Offset(1.0, 0.0), // from right
-                                    end: Offset.zero,
-                                  ).chain(
-                                    CurveTween(
-                                        curve: Curves
-                                            .fastOutSlowIn), // ⭐ Material default curve
-                                  );
-
-                                  return SlideTransition(
-                                    position: animation.drive(tween),
-                                    child: child,
-                                  );
-                                },
+                              ],
+                            ),
+                            subtitle: Text(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: unread
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: unread
+                                    ? Colors.white
+                                    : subtitle == 'typing...' ||
+                                            subtitle == 'Active Now'
+                                        ? Colors.white
+                                        : Colors.grey.shade600,
+                                // fontStyle: subtitle == "typing..."
+                                //     ? FontStyle.italic
+                                //     : null,
                               ),
-                            );
-                          },
-                        ),
-                      );
-                    },
+                            ),
+                            trailing: unread
+                                ? CircleAvatar(
+                                    radius: 10,
+                                    backgroundColor: Colors.white,
+                                    child: Text(
+                                      (data['unreadCount_$uid']).toString(),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade800,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                            onTap: () {
+                              Navigator.of(context, rootNavigator: true).push(
+                                PageRouteBuilder(
+                                  transitionDuration: const Duration(
+                                      milliseconds: 200), // ⭐ Android default
+                                  reverseTransitionDuration:
+                                      const Duration(milliseconds: 200),
+                                  pageBuilder: (context, animation,
+                                          secondaryAnimation) =>
+                                      ChatScreen(
+                                    chatId: chat.id,
+                                    otherUid: otherUid,
+                                  ),
+                                  transitionsBuilder: (context, animation,
+                                      secondaryAnimation, child) {
+                                    final tween = Tween(
+                                      begin:
+                                          const Offset(1.0, 0.0), // from right
+                                      end: Offset.zero,
+                                    ).chain(
+                                      CurveTween(
+                                          curve: Curves
+                                              .fastOutSlowIn), // ⭐ Material default curve
+                                    );
+
+                                    return SlideTransition(
+                                      position: animation.drive(tween),
+                                      child: child,
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                if (_chats.isEmpty) Center(child: Text("No chats yet")),
-                if (_isFetchingMore)
-                  Positioned(
-                    bottom: 20,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(221, 63, 63, 63)
-                              .withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white70,
+                  if (_chats.isEmpty) Center(child: Text("No chats yet")),
+                  if (_isFetchingMore)
+                    Positioned(
+                      bottom: 20,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(221, 63, 63, 63)
+                                .withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          child: const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white70,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 }

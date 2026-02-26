@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/post.dart';
@@ -43,8 +45,7 @@ class FirestoreMethods {
   Future<String> updateTagline(String text) async {
     String res = 'Some error occurred!';
     try {
-      await _firestore
-          .collection('user')
+      await AppFirestore.collection('members')
           .doc(_auth.currentUser!.uid)
           .update({'tagline': text});
 
@@ -60,7 +61,9 @@ class FirestoreMethods {
 
     try {
       if (emoji == null) {
-        await _firestore.collection('user').doc(_auth.currentUser!.uid).update({
+        await AppFirestore.collection('members')
+            .doc(_auth.currentUser!.uid)
+            .update({
           'userEmoji': FieldValue.delete(),
         });
       } else {
@@ -69,7 +72,9 @@ class FirestoreMethods {
         String emojiUrl =
             await StorageMethods().uploadImageToStorage('emojis', file, false);
 
-        await _firestore.collection('user').doc(_auth.currentUser!.uid).update({
+        await AppFirestore.collection('members')
+            .doc(_auth.currentUser!.uid)
+            .update({
           'userEmoji': emojiUrl,
         });
       }
@@ -128,95 +133,95 @@ class FirestoreMethods {
     return res;
   }
 
-  Future<void> deleteDuplicatePhotos() async {
-    try {
-      // Initialize Firestore and Firebase Storage
-      FirebaseFirestore firestore = FirebaseFirestore.instance;
+  // Future<void> deleteDuplicatePhotos() async {
+  //   try {
+  //     // Initialize Firestore and Firebase Storage
+  //     FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-      // Fetch all posts
-      QuerySnapshot allPostsSnapshot = await AppFirestore.posts().get();
+  //     // Fetch all posts
+  //     QuerySnapshot allPostsSnapshot = await AppFirestore.posts().get();
 
-      // Map to store image hashes
-      Map<String, String> imageHashes = {};
-      Map<String, String> imageUrlsToDelete = {};
+  //     // Map to store image hashes
+  //     Map<String, String> imageHashes = {};
+  //     Map<String, String> imageUrlsToDelete = {};
 
-      // Iterate through each document
-      for (QueryDocumentSnapshot doc in allPostsSnapshot.docs) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        String photoUrl = data['postUrl'];
+  //     // Iterate through each document
+  //     for (QueryDocumentSnapshot doc in allPostsSnapshot.docs) {
+  //       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  //       String photoUrl = data['postUrl'];
 
-        // Download image
-        Uint8List imageData = await downloadImage(photoUrl);
-        String hash = computeImageHash(imageData);
+  //       // Download image
+  //       Uint8List imageData = await downloadImage(photoUrl);
+  //       String hash = computeImageHash(imageData);
 
-        // Check for duplicates
-        if (imageHashes.containsKey(hash)) {
-          // Mark the URL for deletion
-          imageUrlsToDelete[photoUrl] = doc.id;
-        } else {
-          imageHashes[hash] = photoUrl;
-        }
-      }
+  //       // Check for duplicates
+  //       if (imageHashes.containsKey(hash)) {
+  //         // Mark the URL for deletion
+  //         imageUrlsToDelete[photoUrl] = doc.id;
+  //       } else {
+  //         imageHashes[hash] = photoUrl;
+  //       }
+  //     }
 
-      for (String url in imageUrlsToDelete.keys) {
-        await AppFirestore.posts()
-            .where('postUrl', isEqualTo: url)
-            .get()
-            .then((snapshot) {
-          for (var doc in snapshot.docs) {
-            doc.reference.delete();
-          }
-        });
-      }
-      print('Cleanup completed. Duplicates have been removed.');
-    } catch (e) {
-      print('An error occurred while cleaning up duplicates: $e');
-    }
-  }
+  //     for (String url in imageUrlsToDelete.keys) {
+  //       await AppFirestore.posts()
+  //           .where('postUrl', isEqualTo: url)
+  //           .get()
+  //           .then((snapshot) {
+  //         for (var doc in snapshot.docs) {
+  //           doc.reference.delete();
+  //         }
+  //       });
+  //     }
+  //     print('Cleanup completed. Duplicates have been removed.');
+  //   } catch (e) {
+  //     print('An error occurred while cleaning up duplicates: $e');
+  //   }
+  // }
 
-  Future<Uint8List> downloadImage(String url) async {
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      return response.bodyBytes;
-    } else {
-      throw Exception('Failed to download image');
-    }
-  }
+  // Future<Uint8List> downloadImage(String url) async {
+  //   final response = await http.get(Uri.parse(url));
+  //   if (response.statusCode == 200) {
+  //     return response.bodyBytes;
+  //   } else {
+  //     throw Exception('Failed to download image');
+  //   }
+  // }
 
-  String computeImageHash(Uint8List data) {
-    var digest = sha256.convert(data);
-    return digest.toString();
-  }
+  // String computeImageHash(Uint8List data) {
+  //   var digest = sha256.convert(data);
+  //   return digest.toString();
+  // }
 
-  Future<void> cleanUpDuplicatePosts() async {
-    try {
-      // Fetch all posts from the 'posts' collection
-      QuerySnapshot allPostsSnapshot = await AppFirestore.posts().get();
+  // Future<void> cleanUpDuplicatePosts() async {
+  //   try {
+  //     // Fetch all posts from the 'posts' collection
+  //     QuerySnapshot allPostsSnapshot = await AppFirestore.posts().get();
 
-      // A map to keep track of seen descriptions
-      Map<String, String> seenDescriptions = {};
+  //     // A map to keep track of seen descriptions
+  //     Map<String, String> seenDescriptions = {};
 
-      // Iterate through each document in the snapshot
-      for (QueryDocumentSnapshot doc in allPostsSnapshot.docs) {
-        // Get the post data
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        String description = data['description'];
+  //     // Iterate through each document in the snapshot
+  //     for (QueryDocumentSnapshot doc in allPostsSnapshot.docs) {
+  //       // Get the post data
+  //       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  //       String description = data['description'];
 
-        if (seenDescriptions.containsKey(description)) {
-          // If the description is already seen, delete the current document
-          await AppFirestore.posts().doc(doc.id).delete();
-          print('Deleted duplicate post with description: $description');
-        } else {
-          // Otherwise, add it to the seen descriptions map
-          seenDescriptions[description] = doc.id;
-        }
-      }
+  //       if (seenDescriptions.containsKey(description)) {
+  //         // If the description is already seen, delete the current document
+  //         await AppFirestore.posts().doc(doc.id).delete();
+  //         print('Deleted duplicate post with description: $description');
+  //       } else {
+  //         // Otherwise, add it to the seen descriptions map
+  //         seenDescriptions[description] = doc.id;
+  //       }
+  //     }
 
-      print('Cleanup completed. Duplicates have been removed.');
-    } catch (e) {
-      print('An error occurred while cleaning up duplicates: $e');
-    }
-  }
+  //     print('Cleanup completed. Duplicates have been removed.');
+  //   } catch (e) {
+  //     print('An error occurred while cleaning up duplicates: $e');
+  //   }
+  // }
 
   // Upload Post
   Future<String> uploadPost(
@@ -230,7 +235,7 @@ class FirestoreMethods {
     String res = 'Some Error Occurred';
     try {
       DocumentSnapshot lastPostSnapshot =
-          await _firestore.collection('user').doc(uid).get();
+          await AppFirestore.collection('members').doc(uid).get();
 
       if (lastPostSnapshot.exists &&
           lastPostSnapshot.data() != null &&
@@ -266,7 +271,7 @@ class FirestoreMethods {
 
           AppFirestore.posts().doc(postId).set(post.toJson());
 
-          await _firestore.collection('user').doc(uid).update({
+          await AppFirestore.collection('members').doc(uid).update({
             'lastPostTime': DateTime.now(),
           });
 
@@ -357,32 +362,32 @@ class FirestoreMethods {
     }
   }
 
-  Future<void> followUser(String uid, String followId) async {
-    try {
-      DocumentSnapshot snap =
-          await _firestore.collection('user').doc(uid).get();
-      List following = (snap.data()! as Map)['following'];
-      if (following.contains(followId)) {
-        await _firestore.collection('user').doc(followId).update({
-          'followers': FieldValue.arrayRemove([uid])
-        });
+  // Future<void> followUser(String uid, String followId) async {
+  //   try {
+  //     DocumentSnapshot snap =
+  //         await _firestore.collection('user').doc(uid).get();
+  //     List following = (snap.data()! as Map)['following'];
+  //     if (following.contains(followId)) {
+  //       await _firestore.collection('user').doc(followId).update({
+  //         'followers': FieldValue.arrayRemove([uid])
+  //       });
 
-        await _firestore.collection('user').doc(uid).update({
-          'following': FieldValue.arrayRemove([followId])
-        });
-      } else {
-        await _firestore.collection('user').doc(followId).update({
-          'followers': FieldValue.arrayUnion([uid])
-        });
+  //       await _firestore.collection('user').doc(uid).update({
+  //         'following': FieldValue.arrayRemove([followId])
+  //       });
+  //     } else {
+  //       await _firestore.collection('user').doc(followId).update({
+  //         'followers': FieldValue.arrayUnion([uid])
+  //       });
 
-        await _firestore.collection('user').doc(uid).update({
-          'following': FieldValue.arrayUnion([followId])
-        });
-      }
-    } catch (e) {
-      print(e.toString());
-    }
-  }
+  //       await _firestore.collection('user').doc(uid).update({
+  //         'following': FieldValue.arrayUnion([followId])
+  //       });
+  //     }
+  //   } catch (e) {
+  //     print(e.toString());
+  //   }
+  // }
 
   Future<String> uploadReel(
     String description,
@@ -433,11 +438,75 @@ class FirestoreMethods {
     return res;
   }
 
+  Future<void> sendPushNotification({
+    required String receiverUid,
+    required String senderUsername,
+    String? mediaOwnerUsername,
+    String? mediaOwnerId,
+    String type = 'text', // text | reel | post
+    String? text,
+  }) async {
+    final String baseUrl = dotenv.get('BASE_URL_MESSAGING', fallback: '');
+    debugPrint("Sending push notification to $receiverUid via $baseUrl");
+
+    try {
+      await AppFirestore.collection('members')
+          .doc(receiverUid)
+          .get()
+          .then((doc) async {
+        if (!doc.exists) {
+          debugPrint('No member document found for receiverUid: $receiverUid');
+          return null;
+        }
+
+        final result = await http.post(
+          Uri.parse("$baseUrl/send-dm-push"),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "receiverId": receiverUid,
+            "title": senderUsername,
+            "body": type == 'text'
+                ? text ?? "Sent you a message"
+                : (type == 'reel'
+                    ? "🎥 Sent a reel by $mediaOwnerUsername"
+                    : "📷 Sent a post by $mediaOwnerUsername"),
+          }),
+        );
+
+        if (result.statusCode != 200) {
+          debugPrint(
+              'Failed to send push notification. Status code: ${result.statusCode}, Response: ${result.body}');
+          return 'Failed to send push notification';
+        } else {
+          debugPrint('Push notification sent successfully: ${result.body}');
+        }
+      });
+    } catch (e) {
+      debugPrint('Error fetching member document: $e');
+    }
+  }
+
+  Future<String> getOrCreateChat(String otherUid) async {
+    final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+    final chatId = getChatId(currentUid, otherUid);
+
+    final chatRef = AppFirestore.chats().doc(chatId);
+
+    await chatRef.set({
+      'participants': [currentUid, otherUid]..sort(),
+      'lastMessage': null,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    });
+    return chatId;
+  }
+
   String getChatId(String uid1, String uid2) {
     return uid1.compareTo(uid2) <= 0 ? '${uid1}_$uid2' : '${uid2}_$uid1';
   }
 
   Future<void> sendMessage({
+    required String senderUsername,
     required String? mediaOwnerUsername,
     required String? mediaOwnerId,
     required String receiverId,
@@ -479,7 +548,19 @@ class FirestoreMethods {
 
     /// 2️⃣ create message
     await msgRef.set({
+      "mediaOwnerUid": type == 'text'
+          ? null
+          : (mediaOwnerId != null && mediaOwnerId.isNotEmpty
+              ? mediaOwnerId
+              : null),
+      "mediaOwnerUsername": type == 'text'
+          ? null
+          : (mediaOwnerUsername != null && mediaOwnerUsername.isNotEmpty
+              ? mediaOwnerUsername
+              : null),
       'senderId': uid,
+      'senderUsername': senderUsername,
+      'receiverId': receiverId,
       'type': type,
       'text': text,
       'reelId': reelId,

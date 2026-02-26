@@ -66,7 +66,7 @@ class StoryCard extends StatelessWidget {
                     children: [
                       user.uid == uid
                           ? Container(
-                              padding: EdgeInsets.all(4.0),
+                              padding: EdgeInsets.all(2),
                               color: Colors.black.withOpacity(0.6),
                               child: Column(
                                 children: [
@@ -140,7 +140,7 @@ class StoryCard extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: EdgeInsets.all(8.0),
+                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
                   color: Colors.black.withOpacity(0.6),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,47 +169,47 @@ class StoryCard extends StatelessWidget {
             ],
           ),
         ),
-        Positioned(
-          top: 42,
-          left: 0,
-          right: 0,
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[900]!.withOpacity(0.6),
-                shape: BoxShape.rectangle,
-                borderRadius: BorderRadius.circular(200.0),
-              ),
-              padding: EdgeInsets.all(10),
-              child: playerStateProvider.url == songUrl &&
-                      playerStateProvider.uid == uid
-                  ? playerStateProvider.isLoading
-                      ? SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 3, color: Colors.grey),
-                        )
-                      : playerStateProvider.isPlaying
-                          ? PhosphorIcon(
-                              PhosphorIconsRegular.pause,
-                              size: 24,
-                              color: Colors.white70,
-                            )
-                          : PhosphorIcon(
-                              PhosphorIconsRegular.play,
-                              size: 24,
-                              color: Colors.white70,
-                            )
-                  : PhosphorIcon(
-                      PhosphorIconsRegular.play,
-                      size: 24,
-                      color: Colors.white70,
-                    ),
-            ),
-          ),
-        )
+        // Positioned(
+        //   top: 42,
+        //   left: 0,
+        //   right: 0,
+        //   child: Align(
+        //     alignment: Alignment.topCenter,
+        //     child: Container(
+        //       decoration: BoxDecoration(
+        //         color: Colors.grey[900]!.withOpacity(0.6),
+        //         shape: BoxShape.rectangle,
+        //         borderRadius: BorderRadius.circular(200.0),
+        //       ),
+        //       padding: EdgeInsets.all(10),
+        //       child: playerStateProvider.url == songUrl &&
+        //               playerStateProvider.uid == uid
+        //           ? playerStateProvider.isLoading
+        //               ? SizedBox(
+        //                   height: 24,
+        //                   width: 24,
+        //                   child: CircularProgressIndicator(
+        //                       strokeWidth: 3, color: Colors.grey),
+        //                 )
+        //               : playerStateProvider.isPlaying
+        //                   ? PhosphorIcon(
+        //                       PhosphorIconsRegular.pause,
+        //                       size: 24,
+        //                       color: Colors.white70,
+        //                     )
+        //                   : PhosphorIcon(
+        //                       PhosphorIconsRegular.play,
+        //                       size: 24,
+        //                       color: Colors.white70,
+        //                     )
+        //           : PhosphorIcon(
+        //               PhosphorIconsRegular.play,
+        //               size: 24,
+        //               color: Colors.white70,
+        //             ),
+        //     ),
+        //   ),
+        // )
       ],
     );
   }

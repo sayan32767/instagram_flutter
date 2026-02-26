@@ -344,7 +344,7 @@ class StorageMethods {
         uploadPath = compressedPath;
       }
     } catch (e) {
-      throw Exception("Failed to compress video: $e");
+      throw Exception("Failed to compress video");
     }
 
     /// 🔥 IMPORTANT: return Telegram file_id

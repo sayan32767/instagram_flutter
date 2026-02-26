@@ -1,8 +1,10 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/storage_methods.dart';
 import 'package:instagram_flutter/models/user.dart' as model;
@@ -28,8 +30,8 @@ class AuthMethods {
     required String email,
     required String password,
     required String username,
-    required String bio,
-    Uint8List? file,
+    // required String bio,
+    // Uint8List? file,
   }) async {
     try {
       if (email.isEmpty || password.isEmpty || username.isEmpty) {
@@ -56,22 +58,20 @@ class AuthMethods {
       final uid = cred.user!.uid;
 
       // 🖼 3️⃣ Upload profile image (optional)
-      String? photoUrl;
-      if (file != null) {
-        photoUrl = await StorageMethods()
-            .uploadImageToStorage('profilePics', file, false);
-      }
+      // String? photoUrl;
+      // if (file != null) {
+      //   photoUrl = await StorageMethods()
+      //       .uploadImageToStorage('profilePics', file, false);
+      // }
 
       final user = model.User(
-        userEmoji: "",
+        // userEmoji: "",
         username: normalizedUsername,
         uid: uid,
         email: email.trim(),
-        bio: bio.trim(),
-        followers: [],
-        following: [],
-        photoUrl: photoUrl,
-        tagline: '',
+        // bio: bio.trim(),
+        // photoUrl: photoUrl,
+        // tagline: '',
       );
 
       // 🧾 4️⃣ Atomic transaction
@@ -146,9 +146,11 @@ class AuthMethods {
       final uid = currentUser.uid;
       final normalizedUsername = username.trim().toLowerCase();
 
-      final userRef = _firestore.collection('user').doc(uid);
+      // final userRef = _firestore.collection('user').doc(uid);
+      final userRef = AppFirestore.collection('members').doc(uid);
       final userSnap = await userRef.get();
-      final oldUsername = userSnap.data()?['username'];
+      final oldUsername =
+          (userSnap.data() as Map<String, dynamic>?)?['username'];
 
       String? photoUrl;
 
@@ -240,6 +242,13 @@ class AuthMethods {
 
   Future<void> signOut(BuildContext context) async {
     try {
+      final token = await FirebaseMessaging.instance.getToken();
+      await FirebaseFirestore.instance
+          .collection('users_private')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .update({
+        'fcmTokens': FieldValue.arrayRemove([token])
+      });
       await _auth.signOut();
       await Provider.of<UserProvider>(context, listen: false).clearUser();
       await InstaCacheManager().emptyCache();

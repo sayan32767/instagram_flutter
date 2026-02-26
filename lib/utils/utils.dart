@@ -53,10 +53,16 @@ void showSnackBar(BuildContext context, String content,
     reverseCurve: Curves.easeInCubic,
   );
 
+  final mediaQuery = MediaQuery.of(context);
+
+  final bottomInset = mediaQuery.viewInsets.bottom > 0
+      ? mediaQuery.viewInsets.bottom
+      : mediaQuery.viewPadding.bottom;
+
   overlayEntry = OverlayEntry(
     builder: (context) {
       return Positioned(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        bottom: bottomInset + 16,
         left: 16,
         right: 16,
         child: FadeTransition(
@@ -77,14 +83,18 @@ void showSnackBar(BuildContext context, String content,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade900,
+                    color: const Color(0xFF1E1E1E),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.08),
+                      width: 1,
+                    ),
                     boxShadow: const [
                       BoxShadow(
-                        color: Colors.black38,
-                        blurRadius: 12,
-                        offset: Offset(0, 6),
-                      )
+                        color: Colors.black54,
+                        blurRadius: 20,
+                        offset: Offset(0, 8),
+                      ),
                     ],
                   ),
                   child: Text(

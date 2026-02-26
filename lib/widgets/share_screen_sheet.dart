@@ -4,10 +4,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
 
 class ShareSheet extends StatefulWidget {
   const ShareSheet({super.key, required this.post, required this.type});
@@ -136,286 +138,318 @@ class _ShareSheetState extends State<ShareSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          /// 🔘 Drag handle
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            height: 4,
-            width: 40,
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(10),
-            ),
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            color: const Color.fromARGB(255, 16, 16, 16),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-
-          /// 🔍 Search field
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: "Search username...",
-                hintStyle: const TextStyle(color: Colors.white54),
-                filled: true,
-                fillColor: Colors.white10,
-                prefixIcon: PhosphorIcon(PhosphorIcons.magnifyingGlass(),
-                    color: Colors.white54),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+          child: Column(
+            children: [
+              /// 🔘 Drag handle
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              onChanged: (val) {
-                _debounce?.cancel();
 
-                _debounce = Timer(const Duration(milliseconds: 400), () {
-                  final trimmed = val.trim().toLowerCase();
+              /// 🔍 Search field
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: "Search username...",
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: Colors.white10,
+                    prefixIcon: PhosphorIcon(PhosphorIcons.magnifyingGlass(),
+                        color: Colors.white54),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: (val) {
+                    _debounce?.cancel();
 
-                  _query = trimmed;
+                    _debounce = Timer(const Duration(milliseconds: 400), () {
+                      final trimmed = val.trim().toLowerCase();
 
-                  if (_query.isNotEmpty) {
-                    _loadUsers(isNewSearch: true);
-                  } else {
-                    _users.clear();
-                    _loadUsers().then((_) {
-                      if (mounted) setState(() {});
+                      _query = trimmed;
+
+                      if (_query.isNotEmpty) {
+                        _loadUsers(isNewSearch: true);
+                      } else {
+                        _users.clear();
+                        _loadUsers().then((_) {
+                          if (mounted) setState(() {});
+                        });
+                      }
                     });
-                  }
-                });
-              },
-            ),
-          ),
+                  },
+                ),
+              ),
 
-          const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: child,
-                );
-              },
-              child: _isLoading
-                  ? Container(
-                      key: const ValueKey("skeleton"),
-                      // height: 200,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: List.generate(4, (index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Row(
-                              children: [
-                                const CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: Color(0xFF181818),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Container(
-                                    height: 14,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF181818),
-                                      borderRadius: BorderRadius.circular(6),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    );
+                  },
+                  child: _isLoading
+                      ? Container(
+                          key: const ValueKey("skeleton"),
+                          // height: 200,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: List.generate(4, (index) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                child: Row(
+                                  children: [
+                                    const CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor: Color(0xFF181818),
                                     ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ),
-                    )
-                  : Container(
-                      key: const ValueKey("content"),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        switchInCurve: Curves.easeOut,
-                        switchOutCurve: Curves.easeIn,
-                        child: _users.isEmpty
-                            ? const Center(
-                                key: ValueKey("empty"),
-                                child: Text(
-                                  "No users found",
-                                  style: TextStyle(color: Colors.white70),
-                                ),
-                              )
-                            : Stack(
-                                key: const ValueKey("list"),
-                                children: [
-                                  ListView.builder(
-                                    controller: _scrollController,
-                                    itemCount: _users.length,
-                                    itemBuilder: (context, index) {
-                                      final data = _users[index].data()
-                                          as Map<String, dynamic>;
-
-                                      final id = _users[index].id;
-                                      final username = data['username'] ?? '';
-                                      final photoUrl = data['photoUrl'] ?? '';
-
-                                      return TweenAnimationBuilder<double>(
-                                        key: ValueKey(_users[index].id),
-                                        tween: Tween(begin: 0, end: 1),
-                                        duration: Duration(
-                                            milliseconds:
-                                                250 + (index % 8) * 25),
-                                        curve: Curves.easeOutCubic,
-                                        builder: (context, value, child) {
-                                          return Opacity(
-                                            opacity: value,
-                                            child: Transform.translate(
-                                              offset:
-                                                  Offset(0, 15 * (1 - value)),
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                        child: InkWell(
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Container(
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF181818),
                                           borderRadius:
-                                              BorderRadius.circular(12),
-                                          onTap: () async {
-                                            final receiverId = id;
-
-                                            await FirestoreMethods()
-                                                .sendMessage(
-                                              mediaOwnerId: widget.post['uid'],
-                                              mediaOwnerUsername:
-                                                  widget.post['username'],
-                                              receiverId: receiverId,
-                                              type: widget.type,
-                                              postId: widget.type == 'post'
-                                                  ? widget.post['postId']
-                                                  : null,
-                                              reelId: widget.type == 'reel'
-                                                  ? widget.post['reelId']
-                                                  : null,
-                                            );
-
-                                            if (!mounted) return;
-
-                                            Navigator.pop(context);
-
-                                            showSnackBar(context,
-                                                "${widget.type[0].toUpperCase() + widget.type.substring(1)} sent to $username");
-                                          },
-                                          child: ListTile(
-                                            leading: CircleAvatar(
-                                              radius: 18,
-                                              backgroundColor:
-                                                  Colors.grey.shade800,
-                                              backgroundImage: photoUrl
-                                                      .toString()
-                                                      .isNotEmpty
-                                                  ? CachedNetworkImageProvider(
-                                                      photoUrl,
-                                                      cacheManager:
-                                                          InstaCacheManager(),
-                                                    )
-                                                  : const AssetImage(
-                                                          'assets/images/placeholder.jpg')
-                                                      as ImageProvider,
-                                            ),
-                                            title: Row(
-                                              children: [
-                                                Text(
-                                                  username,
-                                                  style: const TextStyle(
-                                                      color: Colors.white),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-
-                                  /// 🔄 Bottom loader while fetching more
-                                  if (_isFetchingMore)
-                                    Positioned(
-                                      bottom: 20,
-                                      left: 0,
-                                      right: 0,
-                                      child: Center(
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 16,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: const Color.fromARGB(
-                                                    221, 63, 63, 63)
-                                                .withOpacity(0.6),
-                                            borderRadius:
-                                                BorderRadius.circular(25),
-                                          ),
-                                          child: const SizedBox(
-                                            height: 18,
-                                            width: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white70,
-                                            ),
-                                          ),
+                                              BorderRadius.circular(6),
                                         ),
                                       ),
                                     ),
-                                ],
-                              ),
-                      ),
-                    ),
-            ),
-          )
+                                  ],
+                                ),
+                              );
+                            }),
+                          ),
+                        )
+                      : Container(
+                          key: const ValueKey("content"),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            switchInCurve: Curves.easeOut,
+                            switchOutCurve: Curves.easeIn,
+                            child: _users.isEmpty
+                                ? const Center(
+                                    key: ValueKey("empty"),
+                                    child: Text(
+                                      "No users found",
+                                      style: TextStyle(color: Colors.white70),
+                                    ),
+                                  )
+                                : Stack(
+                                    key: const ValueKey("list"),
+                                    children: [
+                                      ListView.builder(
+                                        controller: _scrollController,
+                                        itemCount: _users.length,
+                                        itemBuilder: (context, index) {
+                                          final data = _users[index].data()
+                                              as Map<String, dynamic>;
 
-          // if (_isLoading)
-          //   Container(
-          //     key: const ValueKey("skeleton"),
-          //     height: 200,
-          //     padding: const EdgeInsets.symmetric(horizontal: 16),
-          //     child: Column(
-          //       mainAxisAlignment: MainAxisAlignment.center,
-          //       children: List.generate(4, (index) {
-          //         return Padding(
-          //           padding: const EdgeInsets.symmetric(vertical: 8),
-          //           child: Row(
-          //             children: [
-          //               const CircleAvatar(
-          //                 radius: 18,
-          //                 backgroundColor: Color(0xFF181818),
-          //               ),
-          //               const SizedBox(width: 12),
-          //               Expanded(
-          //                 child: Container(
-          //                   height: 14,
-          //                   decoration: BoxDecoration(
-          //                     color: const Color(0xFF181818),
-          //                     borderRadius: BorderRadius.circular(6),
-          //                   ),
-          //                 ),
-          //               ),
-          //             ],
-          //           ),
-          //         );
-          //       }),
-          //     ),
-          //   )
-          // else
+                                          final id = _users[index].id;
+                                          final username =
+                                              data['username'] ?? '';
+                                          final photoUrl =
+                                              data['photoUrl'] ?? '';
 
-          /// 👥 PAGINATED USER LIST
-        ],
+                                          return TweenAnimationBuilder<double>(
+                                            key: ValueKey(_users[index].id),
+                                            tween: Tween(begin: 0, end: 1),
+                                            duration: Duration(
+                                                milliseconds:
+                                                    250 + (index % 8) * 25),
+                                            curve: Curves.easeOutCubic,
+                                            builder: (context, value, child) {
+                                              return Opacity(
+                                                opacity: value,
+                                                child: Transform.translate(
+                                                  offset: Offset(
+                                                      0, 15 * (1 - value)),
+                                                  child: child,
+                                                ),
+                                              );
+                                            },
+                                            child: InkWell(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              onTap: () async {
+                                                final receiverId = id;
+                                                final senderUsername =
+                                                    Provider.of<UserProvider>(
+                                                            context,
+                                                            listen: false)
+                                                        .getUser!
+                                                        .username;
+
+                                                await FirestoreMethods()
+                                                    .sendMessage(
+                                                  senderUsername:
+                                                      senderUsername,
+                                                  mediaOwnerId:
+                                                      widget.post['uid'],
+                                                  mediaOwnerUsername:
+                                                      widget.post['username'],
+                                                  receiverId: receiverId,
+                                                  type: widget.type,
+                                                  postId: widget.type == 'post'
+                                                      ? widget.post['postId']
+                                                      : null,
+                                                  reelId: widget.type == 'reel'
+                                                      ? widget.post['reelId']
+                                                      : null,
+                                                );
+
+                                                FirestoreMethods()
+                                                    .sendPushNotification(
+                                                  receiverUid: receiverId,
+                                                  type: widget.type,
+                                                  senderUsername:
+                                                      senderUsername,
+                                                  mediaOwnerId:
+                                                      widget.post['uid'],
+                                                  mediaOwnerUsername:
+                                                      widget.post['username'],
+                                                );
+
+                                                if (!mounted) return;
+
+                                                Navigator.pop(context);
+
+                                                showSnackBar(context,
+                                                    "${widget.type[0].toUpperCase() + widget.type.substring(1)} sent to $username");
+                                              },
+                                              child: ListTile(
+                                                leading: CircleAvatar(
+                                                  radius: 18,
+                                                  backgroundColor:
+                                                      Colors.grey.shade800,
+                                                  backgroundImage: photoUrl
+                                                          .toString()
+                                                          .isNotEmpty
+                                                      ? CachedNetworkImageProvider(
+                                                          photoUrl,
+                                                          cacheManager:
+                                                              InstaCacheManager(),
+                                                        )
+                                                      : const AssetImage(
+                                                              'assets/images/placeholder.jpg')
+                                                          as ImageProvider,
+                                                ),
+                                                title: Row(
+                                                  children: [
+                                                    Text(
+                                                      username,
+                                                      style: const TextStyle(
+                                                          color: Colors.white),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+
+                                      /// 🔄 Bottom loader while fetching more
+                                      if (_isFetchingMore)
+                                        Positioned(
+                                          bottom: 20,
+                                          left: 0,
+                                          right: 0,
+                                          child: Center(
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 16,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: const Color.fromARGB(
+                                                        221, 63, 63, 63)
+                                                    .withOpacity(0.6),
+                                                borderRadius:
+                                                    BorderRadius.circular(25),
+                                              ),
+                                              child: const SizedBox(
+                                                height: 18,
+                                                width: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white70,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                ),
+              )
+
+              // if (_isLoading)
+              //   Container(
+              //     key: const ValueKey("skeleton"),
+              //     height: 200,
+              //     padding: const EdgeInsets.symmetric(horizontal: 16),
+              //     child: Column(
+              //       mainAxisAlignment: MainAxisAlignment.center,
+              //       children: List.generate(4, (index) {
+              //         return Padding(
+              //           padding: const EdgeInsets.symmetric(vertical: 8),
+              //           child: Row(
+              //             children: [
+              //               const CircleAvatar(
+              //                 radius: 18,
+              //                 backgroundColor: Color(0xFF181818),
+              //               ),
+              //               const SizedBox(width: 12),
+              //               Expanded(
+              //                 child: Container(
+              //                   height: 14,
+              //                   decoration: BoxDecoration(
+              //                     color: const Color(0xFF181818),
+              //                     borderRadius: BorderRadius.circular(6),
+              //                   ),
+              //                 ),
+              //               ),
+              //             ],
+              //           ),
+              //         );
+              //       }),
+              //     ),
+              //   )
+              // else
+
+              /// 👥 PAGINATED USER LIST
+            ],
+          ),
+        ),
       ),
     );
   }

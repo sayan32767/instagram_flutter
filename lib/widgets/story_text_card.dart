@@ -28,7 +28,7 @@ class StoryTextCard extends StatelessWidget {
       children: [
         Container(
           width: MediaQuery.of(context).size.width * 0.33,
-          height: 200,
+          height: 150,
           decoration: BoxDecoration(
             color: Color(int.parse(color.substring(1), radix: 16)),
             borderRadius: BorderRadius.circular(12.0),

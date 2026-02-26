@@ -128,33 +128,44 @@ class _SearchUsersListState extends State<SearchUsersList> {
         Provider.of<UserProvider>(context, listen: false).getUser!.uid;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 8.0),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: AppFirestore.collection('search_histories')
-            .doc(currentUid)
-            .collection('search_history')
-            .orderBy('timestamp', descending: true)
-            .limit(20)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: Text("No recent searches"));
-          }
+      padding: const EdgeInsets.only(top: 0.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 0, 12),
+            child: Text('Recent Searches'),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: AppFirestore.collection('search_histories')
+                  .doc(currentUid)
+                  .collection('search_history')
+                  .orderBy('timestamp', descending: true)
+                  .limit(20)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: Text("No recent searches"));
+                }
 
-          final docs = snapshot.data!.docs;
+                final docs = snapshot.data!.docs;
 
-          if (docs.isEmpty) {
-            return const Center(child: Text("No recent searches"));
-          }
+                if (docs.isEmpty) {
+                  return const Center(child: Text("No recent searches"));
+                }
 
-          return ListView.builder(
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final searchedUid = docs[index]['uid'];
-              return _buildHistoryTile(currentUid, searchedUid);
-            },
-          );
-        },
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final searchedUid = docs[index]['uid'];
+                    return _buildHistoryTile(currentUid, searchedUid);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -288,43 +299,46 @@ class _SearchUsersListState extends State<SearchUsersList> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.black,
-        elevation: 0,
-        title: MyTextformfield(
-          leading: PhosphorIcon(
-            PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.regular),
-            size: 22,
-            color: Colors.white70,
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.black,
+          elevation: 0,
+          title: MyTextformfield(
+            leading: PhosphorIcon(
+              PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.regular),
+              size: 22,
+              color: Colors.white70,
+            ),
+
+            controller: _controller,
+            // autofocus: true,
+            onChanged: (value) {
+              if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+              _debounce = Timer(const Duration(milliseconds: 350), () {
+                _searchUsers(value.trim());
+              });
+            },
+            autofocus: true,
+            inputFormatters: [
+              FilteringTextInputFormatter.deny(RegExp(r'\s{2,}')),
+            ],
+            hintText: "Search for a user...",
           ),
-
-          controller: _controller,
-          // autofocus: true,
-          onChanged: (value) {
-            if (_debounce?.isActive ?? false) _debounce!.cancel();
-
-            _debounce = Timer(const Duration(milliseconds: 350), () {
-              _searchUsers(value.trim());
-            });
-          },
-          autofocus: true,
-          inputFormatters: [
-            FilteringTextInputFormatter.deny(RegExp(r'\s{2,}')),
-          ],
-          hintText: "Search for a user...",
         ),
+        body: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.white70),
+              )
+            : _controller.text.isEmpty
+                ? _buildSearchHistory()
+                : _users.isEmpty
+                    ? const Center(child: Text("No users found"))
+                    : _buildResults(),
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.white70),
-            )
-          : _controller.text.isEmpty
-              ? _buildSearchHistory()
-              : _users.isEmpty
-                  ? const Center(child: Text("No users found"))
-                  : _buildResults(),
     );
   }
 }

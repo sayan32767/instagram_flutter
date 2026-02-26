@@ -122,96 +122,99 @@ class _StoryScreenState extends State<StoryScreen> {
     final model.User user =
         Provider.of<UserProvider>(context, listen: false).getUser!;
 
-    return Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            "Create a Story",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          foregroundColor: Colors.white,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent,
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              "Create a Story",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            surfaceTintColor: Colors.transparent,
 
-          /// ⭐ Dark gradient only in AppBar area
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black87,
-                  Colors.black54,
-                  Colors.transparent,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+            /// ⭐ Dark gradient only in AppBar area
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black87,
+                    Colors.black54,
+                    Colors.transparent,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
             ),
           ),
-        ),
-        backgroundColor: mobileBackgroundColor,
-        body: _isStoryChooser
-            ? Column(
-                children: [
-                  _isStoryPosting
-                      ? LinearProgressIndicator(
-                          color: Colors.white,
-                          backgroundColor: Colors.white24,
-                        )
-                      : SizedBox.shrink(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 20),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: ListTile(
-                          leading: user.photoUrl == null
-                              ? CircleAvatar(
-                                  radius: 20,
-                                  backgroundImage: AssetImage(
-                                      'assets/images/placeholder.jpg'),
-                                  backgroundColor: Colors.grey[300],
-                                )
-                              : ProgressImageDots(url: user.photoUrl!),
-                          title: Row(
-                            children: [
-                              Text('Posting as ${user.username}'),
-                              SizedBox(
-                                width: 5,
-                              ),
-                            ],
+          backgroundColor: mobileBackgroundColor,
+          body: _isStoryChooser
+              ? Column(
+                  children: [
+                    _isStoryPosting
+                        ? LinearProgressIndicator(
+                            color: Colors.white,
+                            backgroundColor: Colors.white24,
+                          )
+                        : SizedBox.shrink(),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: ListTile(
+                            leading: user.photoUrl == null
+                                ? CircleAvatar(
+                                    radius: 20,
+                                    backgroundImage: AssetImage(
+                                        'assets/images/placeholder.jpg'),
+                                    backgroundColor: Colors.grey[300],
+                                  )
+                                : ProgressImageDots(url: user.photoUrl!),
+                            title: Row(
+                              children: [
+                                Text('Posting as ${user.username}'),
+                                SizedBox(
+                                  width: 5,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 20),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 24.0),
-                        child: Text('Choose the type of story...'),
-                      ),
-                      // SizedBox(height: 20),
-                      GridView.count(
-                        padding: const EdgeInsets.all(18.0),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 0.0,
-                        mainAxisSpacing: 0.0,
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        children: [
-                          _buildCard(
-                              PhosphorIconsRegular.pencilSimple, 'Text Story'),
-                          _buildCard(PhosphorIconsRegular.musicNoteSimple,
-                              'Audio Story'),
-                          _buildCard(PhosphorIconsRegular.trashSimple,
-                              'Remove Your\nStory',
-                              user: user),
-                        ],
-                      )
-                    ],
-                  ),
-                ],
-              )
-            : SizedBox());
+                        SizedBox(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 24.0),
+                          child: Text('Choose the type of story...'),
+                        ),
+                        // SizedBox(height: 20),
+                        GridView.count(
+                          padding: const EdgeInsets.all(18.0),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 0.0,
+                          mainAxisSpacing: 0.0,
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          children: [
+                            _buildCard(PhosphorIconsRegular.pencilSimple,
+                                'Text Story'),
+                            _buildCard(PhosphorIconsRegular.musicNoteSimple,
+                                'Audio Story'),
+                            _buildCard(PhosphorIconsRegular.trashSimple,
+                                'Remove Your\nStory',
+                                user: user),
+                          ],
+                        )
+                      ],
+                    ),
+                  ],
+                )
+              : SizedBox()),
+    );
   }
 
   Widget _buildCard(IconData icon, String text, {model.User? user}) {

@@ -159,12 +159,14 @@ class FeedScreenState extends State<FeedScreen>
   Widget build(BuildContext context) {
     super.build(context);
     return SafeArea(
+      top: false,
       child: Scaffold(
         backgroundColor: mobileBackgroundColor,
         body: RefreshIndicator(
           color: Colors.white70,
           onRefresh: _refreshPosts,
           child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             controller: _scrollController,
             slivers: [
               // ---------- APP BAR ----------
@@ -211,10 +213,13 @@ class FeedScreenState extends State<FeedScreen>
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: SvgPicture.asset(
-                          'assets/images/ic_instagram.svg',
-                          color: primaryColor,
+                        padding: const EdgeInsets.only(top: 0),
+                        child: SizedBox(
+                          height: 32,
+                          child: SvgPicture.asset(
+                            'assets/images/ic_instagram.svg',
+                            color: primaryColor,
+                          ),
                         ),
                       ),
                       Padding(
@@ -287,36 +292,43 @@ class FeedScreenState extends State<FeedScreen>
                         ),
                       ),
                     )
-                  : SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          // trigger pagination
-                          if (index >= _posts.length - 2) {
-                            _loadMorePosts();
-                          }
+                  : _isLoading
+                      ? SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 0.0),
+                            child: _SinglePostSkeleton(),
+                          ),
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              // trigger pagination
+                              if (index >= _posts.length - 2) {
+                                _loadMorePosts();
+                              }
 
-                          return TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0, end: 1),
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, 30 * (1 - value)),
-                                  child: child,
-                                ),
+                              return TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 0, end: 1),
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.easeOutCubic,
+                                builder: (context, value, child) {
+                                  return Opacity(
+                                    opacity: value,
+                                    child: Transform.translate(
+                                      offset: Offset(0, 30 * (1 - value)),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: PostCard(
+                                    // snap:
+                                    //     _posts[index].data() as Map<String, dynamic>,
+                                    post: Post.fromSnap(_posts[index])),
                               );
                             },
-                            child: PostCard(
-                                // snap:
-                                //     _posts[index].data() as Map<String, dynamic>,
-                                post: Post.fromSnap(_posts[index])),
-                          );
-                        },
-                        childCount: _posts.length,
-                      ),
-                    ),
+                            childCount: _posts.length,
+                          ),
+                        ),
 
               // ---------- BOTTOM LOADER ----------
               SliverToBoxAdapter(
@@ -361,4 +373,120 @@ class FeedScreenState extends State<FeedScreen>
   //     ),
   //   );
   // }
+}
+
+class _SinglePostSkeleton extends StatelessWidget {
+  const _SinglePostSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🔹 Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Color(0xFF181818),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF181818),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 80,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF181818),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+
+          // 🔹 Image Placeholder
+          Container(
+            height: MediaQuery.of(context).size.width * 3 / 4,
+            width: double.infinity,
+            color: const Color(0xFF181818),
+          ),
+
+          const SizedBox(height: 12),
+
+          // 🔹 Actions Row
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16),
+          //   child: Row(
+          //     children: [
+          //       Container(
+          //         width: 24,
+          //         height: 24,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFF181818),
+          //           borderRadius: BorderRadius.circular(4),
+          //         ),
+          //       ),
+          //       const SizedBox(width: 16),
+          //       Container(
+          //         width: 24,
+          //         height: 24,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFF181818),
+          //           borderRadius: BorderRadius.circular(4),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+
+          // const SizedBox(height: 12),
+
+          // 🔹 Caption Lines
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16),
+          //   child: Column(
+          //     crossAxisAlignment: CrossAxisAlignment.start,
+          //     children: [
+          //       Container(
+          //         height: 12,
+          //         width: double.infinity,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFF181818),
+          //           borderRadius: BorderRadius.circular(6),
+          //         ),
+          //       ),
+          //       const SizedBox(height: 8),
+          //       Container(
+          //         height: 12,
+          //         width: MediaQuery.of(context).size.width * 0.6,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFF181818),
+          //           borderRadius: BorderRadius.circular(6),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+
+          // const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
 }

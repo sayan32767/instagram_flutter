@@ -31,6 +31,7 @@ class ProfileScreenPostsState extends State<ProfileScreenPosts> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      top: false,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -145,60 +146,61 @@ class _SinglePostSkeleton extends StatelessWidget {
           const SizedBox(height: 12),
 
           // 🔹 Actions Row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF181818),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF181818),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16),
+          //   child: Row(
+          //     children: [
+          //       Container(
+          //         width: 24,
+          //         height: 24,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFF181818),
+          //           borderRadius: BorderRadius.circular(4),
+          //         ),
+          //       ),
+          //       const SizedBox(width: 16),
+          //       Container(
+          //         width: 24,
+          //         height: 24,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFF181818),
+          //           borderRadius: BorderRadius.circular(4),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
-          const SizedBox(height: 12),
+          // const SizedBox(height: 12),
 
           // 🔹 Caption Lines
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                Container(
-                  height: 12,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF181818),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  height: 12,
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF181818),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16),
+          //   child: Column(
+          //     crossAxisAlignment: CrossAxisAlignment.start,
+          //     children: [
+          //       Container(
+          //         height: 12,
+          //         width: double.infinity,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFF181818),
+          //           borderRadius: BorderRadius.circular(6),
+          //         ),
+          //       ),
+          //       const SizedBox(height: 8),
+          //       Container(
+          //         height: 12,
+          //         width: MediaQuery.of(context).size.width * 0.6,
+          //         decoration: BoxDecoration(
+          //           color: const Color(0xFF181818),
+          //           borderRadius: BorderRadius.circular(6),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
-          const SizedBox(height: 20),
+          // const SizedBox(height: 20),
         ],
       ),
     );

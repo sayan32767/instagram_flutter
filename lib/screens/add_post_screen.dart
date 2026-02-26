@@ -74,64 +74,67 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // automaticallyImplyLeading: false,
-        title: const Text(
-          "Create Post",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(
+          // automaticallyImplyLeading: false,
+          title: const Text(
+            "Create Post",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
 
-        /// ⭐ Dark gradient only in AppBar area
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.black87,
-                Colors.black54,
-                Colors.transparent,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+          /// ⭐ Dark gradient only in AppBar area
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black87,
+                  Colors.black54,
+                  Colors.transparent,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: MediaQuery.sizeOf(context).height * 0.01),
-            GenerateButton(
-              hintText: "Pick Image From Gallery",
-              onPressed: _pickImage,
-            ),
-            const SizedBox(height: 20),
-            GenerateButton(
-              hintText: "Pick Video From Gallery",
-              onPressed: _pickVideo,
-            ),
-            const SizedBox(height: 20),
-            GenerateButton(
-              hintText: "Generate Image",
-              onPressed: _generateImage,
-            ),
-            const SizedBox(height: 20),
-            GenerateButton(
-                hintText: "Add a Story",
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => StoryScreen()),
-                  );
-                }),
-          ],
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.01),
+              GenerateButton(
+                hintText: "Pick Image From Gallery",
+                onPressed: _pickImage,
+              ),
+              const SizedBox(height: 20),
+              GenerateButton(
+                hintText: "Pick Video From Gallery",
+                onPressed: _pickVideo,
+              ),
+              const SizedBox(height: 20),
+              GenerateButton(
+                hintText: "Generate Image",
+                onPressed: _generateImage,
+              ),
+              const SizedBox(height: 20),
+              GenerateButton(
+                  hintText: "Add a Story",
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => StoryScreen()),
+                    );
+                  }),
+            ],
+          ),
         ),
       ),
     );

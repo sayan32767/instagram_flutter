@@ -33,39 +33,41 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.2
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.1
-  cloud_firestore: ^5.4.4
-  firebase_storage: ^12.4.10
-  flutter_svg: ^2.0.9
-  image_picker: ^1.0.5
+  cupertino_icons:
+  firebase_core:
+  firebase_auth:
+  cloud_firestore:
+  firebase_storage:
+  flutter_svg:
+  image_picker:
   provider:
   uuid:
   intl:
   flutter_staggered_grid_view:
   flutter_image_compress:
-  image: ^4.1.3
+  image:
   skeleton_loader:
-  flutter_native_splash: ^2.4.1
+  flutter_native_splash:
   http:
-  flutter_dotenv: ^5.0.2
-  audioplayers: ^6.1.0
-  google_fonts: ^6.2.1
-  story_view: ^0.16.5
-  scrollable_positioned_list: ^0.3.8
-  photo_view: ^0.15.0
-  video_player: ^2.8.2
-  video_compress: ^3.1.2
-  youtube_player_flutter: ^9.0.0
-  cached_network_image: ^3.3.1
-  flutter_cache_manager: ^3.4.1
-  video_thumbnail: ^0.5.3
-  path_provider: ^2.1.2
+  flutter_dotenv:
+  audioplayers:
+  google_fonts:
+  story_view:
+  scrollable_positioned_list:
+  photo_view:
+  video_player:
+  video_compress:
+  youtube_player_flutter:
+  cached_network_image:
+  flutter_cache_manager:
+  video_thumbnail:
+  path_provider:
   shared_preferences:
-  ffmpeg_kit_flutter_new_min_gpl: ^2.1.1
-  phosphor_flutter: ^2.1.0
-  connectivity_plus: ^7.0.0
+  ffmpeg_kit_flutter_new_min_gpl:
+  phosphor_flutter:
+  connectivity_plus:
+  firebase_messaging:
+  flutter_local_notifications:
 
 dev_dependencies:
   flutter_test:

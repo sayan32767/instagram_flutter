@@ -66,10 +66,13 @@ class _GroupGateScreenState extends State<GroupGateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: mobileBackgroundColor,
-      body: Center(
-        child: CircularProgressIndicator(color: Colors.white70),
+    return SafeArea(
+      top: false,
+      child: const Scaffold(
+        backgroundColor: mobileBackgroundColor,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white70),
+        ),
       ),
     );
   }

@@ -269,7 +269,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         showSnackBar(context, 'Reel uploaded successfully');
       }
     } else {
-      showSnackBar(context, cleanMessage(res));
+      showSnackBar(context, 'Failed to upload reel, please try again');
     }
   }
 

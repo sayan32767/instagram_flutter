@@ -1,25 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
-import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/feed_screen.dart';
-import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/utils/utils.dart';
-import 'package:instagram_flutter/widgets/instagram_searchbar.dart';
 import 'package:instagram_flutter/widgets/my_textformfield.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+// APPLE MUSIC API INTEGRATION FOR AUDIO STORIES
 class AudioStoryScreen extends StatefulWidget {
   const AudioStoryScreen({super.key});
 
@@ -28,20 +25,20 @@ class AudioStoryScreen extends StatefulWidget {
 }
 
 class _AudioStoryScreenState extends State<AudioStoryScreen> {
-  final FirestoreMethods _firestoreMethods = FirestoreMethods();
-  late TextEditingController _searchController;
-  late TextEditingController _storyController;
-  List<dynamic> _tracks = [];
-  AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
-  Map<String, bool> _loadingMap = {};
-  bool _isLoading = false;
-  bool _isPreviewLoading = false;
-  bool _isPaused = false;
-  String? _playingPreviewUrl;
-  bool _isStoryChooser = true;
-  bool _isAudioStoryChosen = false;
+  List<dynamic> _tracks = [];
+  bool _isSearching = false;
   bool _isStoryPosting = false;
+  late TextEditingController _searchController;
+  final FirestoreMethods _firestoreMethods = FirestoreMethods();
+
+  String? _currentUrl;
+  bool _isLoadingAudio = false;
+  PlayerState _playerState = PlayerState.stopped;
+
+  late StreamSubscription<PlayerState> _playerStateSub;
+  late StreamSubscription<void> _playerCompleteSub;
 
   _postToStory(var story) async {
     setState(() {
@@ -56,7 +53,14 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
     await Future.delayed(Duration(seconds: 1));
 
     String res = await _firestoreMethods.postToStory(
-      story: story,
+      // ONLY ADD CERTAIN FIELDS TO STORY DATA TO AVOID WASTE
+      story: {
+        'trackName': story['trackName'],
+        'artistName': story['artistName'],
+        'collectionName': story['collectionName'],
+        'artworkUrl100': story['artworkUrl100'],
+        'previewUrl': story['previewUrl'] ?? story['trackViewUrl'] ?? '',
+      },
       username: username,
       photoUrl: photoUrl,
     );
@@ -132,129 +136,101 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
   }
 
   Future<void> _searchTracks() async {
-    final query = _searchController.text;
+    final query = _searchController.text.trim();
 
-    if (_searchController.text.isEmpty) {
-      setState(() {
-        _tracks.clear();
-      });
+    if (query.isEmpty) {
+      // setState(() => _tracks.clear());
       return;
     }
 
     setState(() {
+      _isSearching = true;
       _tracks.clear();
-      _isLoading = true;
     });
 
-    final queryParams = {
-      'query': query,
-    };
-
-    // final url = 'http://192.168.29.153:8080/search?query=$query';
-    final String baseUrl = dotenv.get('BASE_URL', fallback: '');
-
-    final uri =
-        Uri.parse('$baseUrl/search').replace(queryParameters: queryParams);
-
-    var response;
+    final uri = Uri.parse(
+      "https://itunes.apple.com/search"
+      "?term=${Uri.encodeComponent(query)}"
+      "&entity=song"
+      "&limit=25"
+      "&country=IN",
+    );
 
     try {
-      response = await http.get(uri);
-    } catch (_) {
-      return;
-    }
+      final response = await http.get(uri);
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (response.statusCode == 200) {
-      _tracks = jsonDecode(response.body);
-
-      if (mounted)
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
         setState(() {
-          _tracks = _getUniqueTracks();
+          _tracks = data['results'];
         });
-    } else {
-      print('Failed to search tracks');
+      }
+    } catch (_) {}
+
+    setState(() => _isSearching = false);
+  }
+
+  Future<void> _playOrPause(String url) async {
+    if (_currentUrl == url) {
+      if (_playerState == PlayerState.playing) {
+        await _audioPlayer.pause();
+      } else if (_playerState == PlayerState.paused) {
+        await _audioPlayer.resume();
+      }
+      return;
     }
-  }
-
-  List<dynamic> _getUniqueTracks() {
-    final seen = <String>{};
-
-    return _tracks.where((track) {
-      final key = track['spotify_url'] ?? track['name']; // unique fallback
-      if (seen.contains(key)) return false;
-      seen.add(key);
-      return true;
-    }).toList();
-  }
-
-  void _pauseOrPlayMusic() async {
-    if (_audioPlayer.state == PlayerState.playing) {
-      await _audioPlayer.pause();
-      setState(() {
-        _isPaused = true;
-      });
-    } else if (_audioPlayer.state == PlayerState.paused) {
-      await _audioPlayer.resume();
-      setState(() {
-        _isPaused = false;
-      });
-    } else {
-      return null;
-    }
-  }
-
-  void _playPreview(String url) async {
-    await _audioPlayer.stop();
 
     setState(() {
-      _loadingMap.clear();
-      _loadingMap[url] = true;
-      _isPreviewLoading = true;
+      _isLoadingAudio = true;
+      _currentUrl = url;
     });
 
     try {
-      await _audioPlayer.play(
-        UrlSource(url),
-      );
+      await _audioPlayer.stop();
+      await _audioPlayer.play(UrlSource(url));
     } catch (_) {
-      setState(() {
-        _loadingMap[url] = false;
-        _isPreviewLoading = false;
-      });
-
-      showSnackBar(context, 'Sorry, can\'t play that audio!');
-      return;
+      if (!mounted) return;
+      showSnackBar(context, "Couldn't play audio");
     }
-  }
 
-  _stopProcesses() async {
-    await _audioPlayer.stop();
-    await _audioPlayer.dispose();
+    setState(() {
+      _isLoadingAudio = false;
+    });
   }
 
   @override
   void dispose() {
+    _playerStateSub.cancel();
+    _playerCompleteSub.cancel();
+    _audioPlayer.dispose();
+    _searchController.dispose();
     super.dispose();
-    _stopProcesses();
   }
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _storyController = TextEditingController();
-    _storyController.addListener(() {
-      setState(() {}); // Update the UI when the text changes
+
+    _playerStateSub = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
+      setState(() {
+        _playerState = state;
+      });
+    });
+
+    _playerCompleteSub = _audioPlayer.onPlayerComplete.listen((event) {
+      if (!mounted) return;
+      setState(() {
+        _currentUrl = null;
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      top: false,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -301,20 +277,23 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: MyTextformfield(
-                      onFieldSubmitted: (_) {
-                        if (_searchController.text.isEmpty) {
-                          setState(() {
-                            _tracks.clear();
-                          });
-                          return;
-                        } else {
-                          _searchTracks();
-                        }
-                      },
-                      onChanged: (_) {},
-                      controller: _searchController,
-                      hintText: 'Search for a song...',
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: MyTextformfield(
+                        onFieldSubmitted: (_) {
+                          if (_searchController.text.isEmpty) {
+                            // setState(() {
+                            //   _tracks.clear();
+                            // });
+                            return;
+                          } else {
+                            _searchTracks();
+                          }
+                        },
+                        onChanged: (_) {},
+                        controller: _searchController,
+                        hintText: 'Search for a song...',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -347,84 +326,67 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
                 ],
               ),
             ),
-            _tracks.isNotEmpty
+            _isSearching
                 ? Expanded(
-                    child: ListView.builder(
-                      itemCount: _tracks.length,
-                      itemBuilder: (context, index) {
-                        final track = _tracks[index];
-                        final previewUrl = track['preview_url'];
-                        final isPlaying = previewUrl != null &&
-                            _playingPreviewUrl == previewUrl;
-                        final isLoading =
-                            _loadingMap[track['preview_url']] ?? false;
+                    child: Center(
+                        child:
+                            CircularProgressIndicator(color: Colors.white70)),
+                  )
+                : _tracks.isNotEmpty
+                    ? Expanded(
+                        child: ListView.builder(
+                          itemCount: _tracks.length,
+                          itemBuilder: (context, index) {
+                            final track = _tracks[index];
+                            final previewUrl = track['previewUrl'];
+                            final isCurrent = previewUrl == _currentUrl;
+                            final isPlaying = isCurrent &&
+                                _playerState == PlayerState.playing;
+                            final isLoading = isCurrent && _isLoadingAudio;
 
-                        return ListTile(
-                          leading: track['album_art_url'] != null
-                              ? CachedNetworkImage(
-                                  imageUrl: track['album_art_url'],
-                                  width: 50,
-                                  height: 50,
-                                  cacheManager: InstaCacheManager(),
-                                )
-                              : PhosphorIcon(
-                                  PhosphorIconsRegular.speakerSimpleLow,
-                                  size: 40,
-                                  color: Colors.white70,
-                                ),
-                          title: Text(track['name']),
-                          subtitle:
-                              Text('${track['artist']} • ${track['album']}'),
-                          onTap: () {
-                            _showModal(track);
+                            return ListTile(
+                              leading: track['artworkUrl100'] != null
+                                  ? CachedNetworkImage(
+                                      imageUrl: track['artworkUrl100'],
+                                      width: 50,
+                                      height: 50,
+                                      cacheManager: InstaCacheManager(),
+                                    )
+                                  : PhosphorIcon(
+                                      PhosphorIconsRegular.speakerSimpleLow,
+                                      size: 40,
+                                      color: Colors.white70,
+                                    ),
+                              title: Text(track['trackName']),
+                              subtitle: Text(
+                                  '${track['artistName']} • ${track['collectionName']}'),
+                              onTap: () {
+                                _showModal(track);
+                              },
+                              trailing: previewUrl == null
+                                  ? Icon(Icons.block, color: Colors.grey)
+                                  : GestureDetector(
+                                      onTap: () => _playOrPause(previewUrl),
+                                      child: isLoading
+                                          ? SizedBox(
+                                              height: 24,
+                                              width: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white70,
+                                              ),
+                                            )
+                                          : Icon(
+                                              isPlaying
+                                                  ? Icons.pause
+                                                  : Icons.play_arrow,
+                                            ),
+                                    ),
+                            );
                           },
-                          trailing: track['preview_url'] == null
-                              ? PhosphorIcon(
-                                  PhosphorIconsRegular.speakerSimpleSlash,
-                                  size: 24,
-                                  color: Colors.grey,
-                                )
-                              : InkWell(
-                                  onTap: () {
-                                    if (_playingPreviewUrl ==
-                                        track['preview_url']) {
-                                      _pauseOrPlayMusic();
-                                    } else {
-                                      _playPreview(track['preview_url']);
-                                    }
-                                  },
-                                  child: isLoading
-                                      ? SizedBox(
-                                          height: 24,
-                                          width: 24,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white70,
-                                          ),
-                                        )
-                                      // : Icon(isPlaying && !_isPaused
-                                      //     ? Icons.pause
-                                      //     : Icons.play_arrow),
-                                      : PhosphorIcon(
-                                          isPlaying && !_isPaused
-                                              ? PhosphorIconsRegular.pause
-                                              : PhosphorIconsRegular.play,
-                                          size: 24,
-                                          color: Colors.white70,
-                                        ),
-                                ),
-                        );
-                      },
-                    ),
-                  )
-                : Expanded(
-                    child: !_isLoading
-                        ? Center(child: Text('Results will be displayed here'))
-                        : Center(
-                            child: CircularProgressIndicator(
-                                color: Colors.white70),
-                          ),
-                  )
+                        ),
+                      )
+                    : SizedBox()
           ],
         ),
       ),

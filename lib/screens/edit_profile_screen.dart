@@ -123,8 +123,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         setState(() {
           _isLoading = false;
         });
-        showSnackBar(
-            context, 'Failed to update profile, please try again, $res');
+        showSnackBar(context, 'Failed to update profile, please try again');
       } else {
         await Provider.of<UserProvider>(context, listen: false).refreshUser();
         setState(() {
@@ -138,121 +137,125 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).getUser;
-    return Scaffold(
-        appBar: AppBar(
-          backgroundColor: mobileBackgroundColor,
-          centerTitle: false,
-          title: Text('Edit Profile',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          actions: [],
-        ),
-        body: SafeArea(
-            child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          width: double.infinity,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Flexible(flex: 2, child: Container()),
-              GestureDetector(
-                onTap: selectImage,
-                child: Stack(
-                  children: [
-                    _image != null
-                        ? CircleAvatar(
-                            radius: 64, backgroundImage: MemoryImage(_image!))
-                        : clickFlag
-                            ? CircleAvatar(
-                                radius: 64,
-                                backgroundImage:
-                                    AssetImage('assets/images/placeholder.jpg'),
-                                backgroundColor: Colors.grey[300],
-                              )
-                            : widget.userData == null
-                                ? CircleAvatar(
-                                    radius: 64,
-                                    backgroundImage: AssetImage(
-                                        'assets/images/placeholder.jpg'),
-                                    backgroundColor: Colors.grey[300],
-                                  )
-                                : user?.photoUrl == null ||
-                                        user?.photoUrl.toString().isEmpty ==
-                                            true
-                                    ? CircleAvatar(
-                                        radius: 64,
-                                        backgroundImage: AssetImage(
-                                            'assets/images/placeholder.jpg'),
-                                        backgroundColor: Colors.grey[300],
-                                      )
-                                    : ProgressImageDots(
-                                        url: user?.photoUrl ?? '', radius: 64),
-                    Positioned(
-                        bottom: -10,
-                        left: 80,
-                        child: IconButton(
-                            onPressed: selectImage,
-                            icon: const Icon(Icons.add_a_photo)))
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              TextButton(
-                  onPressed: () {
-                    setState(() {
-                      clickFlag = true;
-                      _image = null;
-                    });
-                  },
-                  child: Text(
-                    'Remove photo',
-                    style: TextStyle(
-                      color: blueColor,
-                    ),
-                  )),
-
-              // TODO: UPDATING USERNAME IS CURRENTLY DISABLED AS IT REQUIRES SIGNIFICANT CHANGES IN THE BACKEND AND OTHER PARTS OF THE APP. THE CODE FOR UPDATING USERNAME IS KEPT COMMENTED FOR FUTURE IMPLEMENTATION.
-
-              // TextFieldInput(
-              //     textEditingController: _usernameController,
-              //     textInputFormatter: LowerCaseTextFormatter(),
-              //     textInputType: TextInputType.text,
-              //     hintText: 'Enter new username'),
-              // const SizedBox(height: 12),
-              TextFieldInput(
-                  textEditingController: _bioController,
-                  textInputType: TextInputType.text,
-                  hintText: 'Enter new bio'),
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: updateUser,
-                child: Container(
-                  width: double.infinity,
-                  height: 60,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: const ShapeDecoration(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(40)),
-                      ),
-                      color: blueColor),
-                  child: _isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                          color: Colors.white70,
-                        ))
-                      : const Text(
-                          'Update Details',
-                        ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                flex: 2,
-                child: Container(),
-              ),
-            ],
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: mobileBackgroundColor,
+            centerTitle: false,
+            title: Text('Edit Profile',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            actions: [],
           ),
-        )));
+          body: SafeArea(
+              child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Flexible(flex: 2, child: Container()),
+                GestureDetector(
+                  onTap: selectImage,
+                  child: Stack(
+                    children: [
+                      _image != null
+                          ? CircleAvatar(
+                              radius: 64, backgroundImage: MemoryImage(_image!))
+                          : clickFlag
+                              ? CircleAvatar(
+                                  radius: 64,
+                                  backgroundImage: AssetImage(
+                                      'assets/images/placeholder.jpg'),
+                                  backgroundColor: Colors.grey[300],
+                                )
+                              : widget.userData == null
+                                  ? CircleAvatar(
+                                      radius: 64,
+                                      backgroundImage: AssetImage(
+                                          'assets/images/placeholder.jpg'),
+                                      backgroundColor: Colors.grey[300],
+                                    )
+                                  : user?.photoUrl == null ||
+                                          user?.photoUrl.toString().isEmpty ==
+                                              true
+                                      ? CircleAvatar(
+                                          radius: 64,
+                                          backgroundImage: AssetImage(
+                                              'assets/images/placeholder.jpg'),
+                                          backgroundColor: Colors.grey[300],
+                                        )
+                                      : ProgressImageDots(
+                                          url: user?.photoUrl ?? '',
+                                          radius: 64),
+                      Positioned(
+                          bottom: -10,
+                          left: 80,
+                          child: IconButton(
+                              onPressed: selectImage,
+                              icon: const Icon(Icons.add_a_photo)))
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                TextButton(
+                    onPressed: () {
+                      setState(() {
+                        clickFlag = true;
+                        _image = null;
+                      });
+                    },
+                    child: Text(
+                      'Remove photo',
+                      style: TextStyle(
+                        color: blueColor,
+                      ),
+                    )),
+
+                // TODO: UPDATING USERNAME IS CURRENTLY DISABLED AS IT REQUIRES SIGNIFICANT CHANGES IN THE BACKEND AND OTHER PARTS OF THE APP. THE CODE FOR UPDATING USERNAME IS KEPT COMMENTED FOR FUTURE IMPLEMENTATION.
+
+                // TextFieldInput(
+                //     textEditingController: _usernameController,
+                //     textInputFormatter: LowerCaseTextFormatter(),
+                //     textInputType: TextInputType.text,
+                //     hintText: 'Enter new username'),
+                // const SizedBox(height: 12),
+                TextFieldInput(
+                    textEditingController: _bioController,
+                    textInputType: TextInputType.text,
+                    hintText: 'Enter new bio'),
+                const SizedBox(height: 24),
+                GestureDetector(
+                  onTap: updateUser,
+                  child: Container(
+                    width: double.infinity,
+                    height: 60,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: const ShapeDecoration(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(40)),
+                        ),
+                        color: blueColor),
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                            color: Colors.white70,
+                          ))
+                        : const Text(
+                            'Update Details',
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  flex: 2,
+                  child: Container(),
+                ),
+              ],
+            ),
+          ))),
+    );
   }
 }
 

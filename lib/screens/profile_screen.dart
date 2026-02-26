@@ -366,28 +366,29 @@ class ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Color(0xFF1E1E1E),
+                  // color: Color(0xFF1E1E1E),
+                  color: const Color.fromARGB(255, 16, 16, 16),
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(24),
                   ),
                 ),
                 child: Column(
                   children: [
-                    // const SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
-                    /// 🔥 CUSTOM SMALL HANDLE
-                    // Container(
-                    //   width: 32,
-                    //   height: 3,
-                    //   decoration: BoxDecoration(
-                    //     color: Colors.white30,
-                    //     borderRadius: BorderRadius.circular(10),
-                    //   ),
-                    // ),
-                    // SizedBox(height: 8),
+                    // 🔥 CUSTOM SMALL HANDLE
+                    Container(
+                      width: 32,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: Colors.white30,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    SizedBox(height: 8),
                     Expanded(
                       child: Container(
-                        color: mobileBackgroundColor,
+                        color: const Color.fromARGB(255, 16, 16, 16),
                         child: SingleChildScrollView(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -511,7 +512,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Color(0xFF1E1E1E),
+                  color: const Color.fromARGB(255, 16, 16, 16),
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(24),
                   ),
@@ -519,24 +520,24 @@ class ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // const SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
                     // /// 🔥 CUSTOM SMALL HANDLE
-                    // Container(
-                    //   width: 32,
-                    //   height: 3,
-                    //   decoration: BoxDecoration(
-                    //     color: Colors.white30,
-                    //     borderRadius: BorderRadius.circular(10),
-                    //   ),
-                    // ),
+                    Container(
+                      width: 32,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: Colors.white30,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
 
-                    // const SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
                     /// 🔥 CONTENT
                     Expanded(
                       child: Container(
-                        color: mobileBackgroundColor,
+                        color: const Color.fromARGB(255, 16, 16, 16),
                         child: SingleChildScrollView(
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
@@ -618,172 +619,180 @@ class ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return isLoading
-        ? Scaffold(
-            backgroundColor: mobileBackgroundColor,
-            body: const Center(
-                child: CircularProgressIndicator(
-              color: Colors.white70,
-            )),
-          )
-        : Scaffold(
-            appBar: AppBar(
+        ? SafeArea(
+            top: false,
+            child: Scaffold(
               backgroundColor: mobileBackgroundColor,
-              title: Row(
-                children: [
-                  /// LEFT → username + badge
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            userData['username'] ?? "",
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  /// RIGHT → Switch group
-                  if (FirebaseAuth.instance.currentUser!.uid == widget.uid)
-                    GestureDetector(
-                      onTap: () {
-                        // showModalBottomSheet(
-                        //   useRootNavigator: true,
-                        //   context: context,
-                        //   isScrollControlled: true,
-                        //   showDragHandle: false, // ❌ disable default
-                        //   backgroundColor: Colors.transparent,
-                        //   builder: (_) => FractionallySizedBox(
-                        //     heightFactor: 0.94,
-                        //     child: Container(
-                        //       decoration: BoxDecoration(
-                        //         color: Color(0xFF1E1E1E),
-                        //         borderRadius: BorderRadius.vertical(
-                        //           top: Radius.circular(24),
-                        //         ),
-                        //       ),
-                        //       child: Column(
-                        //         mainAxisSize: MainAxisSize.min,
-                        //         children: [
-                        //           const SizedBox(height: 8),
-
-                        //           /// 🔥 CUSTOM SMALL HANDLE
-                        //           Container(
-                        //             width: 32,
-                        //             height: 3, // 👈 smaller height
-                        //             decoration: BoxDecoration(
-                        //               color: Colors.white30,
-                        //               borderRadius: BorderRadius.circular(10),
-                        //             ),
-                        //           ),
-
-                        //           const SizedBox(height: 8),
-
-                        //           const Expanded(
-                        //             child: GroupChooserScreen(),
-                        //           ),
-                        //         ],
-                        //       ),
-                        //     ),
-                        //   ),
-                        // );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => GroupChooserScreen(),
-                          ),
-                        );
-                      },
+              body: const Center(
+                  child: CircularProgressIndicator(
+                color: Colors.white70,
+              )),
+            ),
+          )
+        : SafeArea(
+            top: false,
+            child: Scaffold(
+              appBar: AppBar(
+                backgroundColor: mobileBackgroundColor,
+                title: Row(
+                  children: [
+                    /// LEFT → username + badge
+                    Expanded(
                       child: Row(
-                        children: const [
-                          Text(
-                            'Switch Group',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              userData['username'] ?? "",
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                          ),
-                          Icon(
-                            Icons.keyboard_arrow_down,
-                            color: Colors.white70,
                           ),
                         ],
                       ),
                     ),
-                ],
-              ),
-            ),
-            body: DefaultTabController(
-              length: 2,
-              child: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) {
-                  return [
-                    /// 👤 PROFILE HEADER
-                    SliverToBoxAdapter(
-                      child: _buildProfileHeader(),
-                    ),
 
-                    /// 📑 TAB BAR
-                    SliverAppBar(
-                      pinned: true,
-                      floating: false,
-                      automaticallyImplyLeading: false,
-                      elevation: 0,
+                    /// RIGHT → Switch group
+                    if (FirebaseAuth.instance.currentUser!.uid == widget.uid)
+                      GestureDetector(
+                        onTap: () {
+                          // showModalBottomSheet(
+                          //   useRootNavigator: true,
+                          //   context: context,
+                          //   isScrollControlled: true,
+                          //   showDragHandle: false, // ❌ disable default
+                          //   backgroundColor: Colors.transparent,
+                          //   builder: (_) => FractionallySizedBox(
+                          //     heightFactor: 0.94,
+                          //     child: Container(
+                          //       decoration: BoxDecoration(
+                          //         color: Color(0xFF1E1E1E),
+                          //         borderRadius: BorderRadius.vertical(
+                          //           top: Radius.circular(24),
+                          //         ),
+                          //       ),
+                          //       child: Column(
+                          //         mainAxisSize: MainAxisSize.min,
+                          //         children: [
+                          //           const SizedBox(height: 8),
 
-                      /// 🎨 Theme-aware background
-                      backgroundColor:
-                          Theme.of(context).scaffoldBackgroundColor,
+                          //           /// 🔥 CUSTOM SMALL HANDLE
+                          //           Container(
+                          //             width: 32,
+                          //             height: 3, // 👈 smaller height
+                          //             decoration: BoxDecoration(
+                          //               color: Colors.white30,
+                          //               borderRadius: BorderRadius.circular(10),
+                          //             ),
+                          //           ),
 
-                      /// 👇 Reduce tab height
-                      bottom: PreferredSize(
-                        preferredSize:
-                            const Size.fromHeight(0), // 🔥 smaller height
-                        child: TabBar(
-                          indicatorSize: TabBarIndicatorSize.tab,
+                          //           const SizedBox(height: 8),
 
-                          /// 🎨 Theme-aware colors
-                          indicatorColor:
-                              Theme.of(context).textTheme.bodyLarge!.color,
-                          labelColor:
-                              Theme.of(context).textTheme.bodyLarge!.color,
-                          unselectedLabelColor: Theme.of(context)
-                              .textTheme
-                              .bodySmall!
-                              .color
-                              ?.withOpacity(0.6),
-
-                          tabs: [
-                            Tab(
-                              icon: PhosphorIcon(
-                                PhosphorIcons.gridFour(),
-                                size: 26,
+                          //           const Expanded(
+                          //             child: GroupChooserScreen(),
+                          //           ),
+                          //         ],
+                          //       ),
+                          //     ),
+                          //   ),
+                          // );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => GroupChooserScreen(),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            Text(
+                              'Switch Group',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
                               ),
                             ),
-                            Tab(
-                              icon: PhosphorIcon(
-                                PhosphorIcons.video(),
-                                size: 26,
-                              ),
+                            SizedBox(width: 4),
+                            PhosphorIcon(
+                              PhosphorIcons.caretDown(),
+                              size: 16,
+                              color: Colors.white70,
                             ),
                           ],
                         ),
                       ),
-                    )
-                  ];
-                },
-
-                /// 📱 TAB CONTENT
-                body: TabBarView(
-                  children: [
-                    // _buildPostsGrid(),
-                    ProfilePostsGrid(
-                      uid: widget.uid,
-                      key: _postsKey,
-                    ),
-                    ProfileReelsGrid(uid: widget.uid, key: _reelsKey),
                   ],
+                ),
+              ),
+              body: DefaultTabController(
+                length: 2,
+                child: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      /// 👤 PROFILE HEADER
+                      SliverToBoxAdapter(
+                        child: _buildProfileHeader(),
+                      ),
+
+                      /// 📑 TAB BAR
+                      SliverAppBar(
+                        pinned: true,
+                        floating: false,
+                        automaticallyImplyLeading: false,
+                        elevation: 0,
+
+                        /// 🎨 Theme-aware background
+                        backgroundColor:
+                            Theme.of(context).scaffoldBackgroundColor,
+
+                        /// 👇 Reduce tab height
+                        bottom: PreferredSize(
+                          preferredSize:
+                              const Size.fromHeight(0), // 🔥 smaller height
+                          child: TabBar(
+                            indicatorSize: TabBarIndicatorSize.tab,
+
+                            /// 🎨 Theme-aware colors
+                            indicatorColor:
+                                Theme.of(context).textTheme.bodyLarge!.color,
+                            labelColor:
+                                Theme.of(context).textTheme.bodyLarge!.color,
+                            unselectedLabelColor: Theme.of(context)
+                                .textTheme
+                                .bodySmall!
+                                .color
+                                ?.withOpacity(0.6),
+
+                            tabs: [
+                              Tab(
+                                icon: PhosphorIcon(
+                                  PhosphorIcons.gridFour(),
+                                  size: 26,
+                                ),
+                              ),
+                              Tab(
+                                icon: PhosphorIcon(
+                                  PhosphorIcons.video(),
+                                  size: 26,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    ];
+                  },
+
+                  /// 📱 TAB CONTENT
+                  body: TabBarView(
+                    children: [
+                      // _buildPostsGrid(),
+                      ProfilePostsGrid(
+                        uid: widget.uid,
+                        key: _postsKey,
+                      ),
+                      ProfileReelsGrid(uid: widget.uid, key: _reelsKey),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -919,10 +928,23 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid>
     super.build(context);
     // 🔹 Initial loader
     if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(
-        color: Colors.white70,
-      ));
+      return CustomScrollView(
+        slivers: [
+          SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 0.5,
+              mainAxisSpacing: 0.5,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                return const _GridSkeletonTile();
+              },
+              childCount: 12, // show 12 fake tiles
+            ),
+          ),
+        ],
+      );
     }
 
     // 🔹 No posts
@@ -938,8 +960,8 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid>
             SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 0,
-                mainAxisSpacing: 0,
+                crossAxisSpacing: 0.5,
+                mainAxisSpacing: 0.5,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -959,8 +981,9 @@ class _ProfilePostsGridState extends State<ProfilePostsGrid>
                       );
                     },
                     child: Padding(
-                      padding: const EdgeInsets.only(
-                          bottom: 1, right: 1, top: 0.5, left: 0.5),
+                      // padding: const EdgeInsets.only(
+                      //     bottom: 1, right: 1, top: 0.5, left: 0.5),
+                      padding: const EdgeInsets.all(0.0),
                       child: ClipRRect(
                         borderRadius:
                             BorderRadius.circular(0), // 👈 adjust radius
@@ -1115,10 +1138,23 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid>
     super.build(context);
     // 🔹 Initial loader
     if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(
-        color: Colors.white70,
-      ));
+      return CustomScrollView(
+        slivers: [
+          SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 0.5,
+              mainAxisSpacing: 0.5,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                return const _GridSkeletonTile();
+              },
+              childCount: 12, // show 12 fake tiles
+            ),
+          ),
+        ],
+      );
     }
 
     // 🔹 No reels
@@ -1134,8 +1170,8 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid>
             SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 0,
-                mainAxisSpacing: 0,
+                crossAxisSpacing: 0.5,
+                mainAxisSpacing: 0.5,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -1156,8 +1192,7 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid>
                       fit: StackFit.expand,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(
-                              bottom: 1, right: 1, top: 0.5, left: 0.5),
+                          padding: const EdgeInsets.all(0.0),
                           child: ClipRRect(
                             borderRadius:
                                 BorderRadius.circular(0), // 👈 adjust radius
@@ -1213,6 +1248,47 @@ class _ProfileReelsGridState extends State<ProfileReelsGrid>
             ),
           ),
       ],
+    );
+  }
+}
+
+class _GridSkeletonTile extends StatefulWidget {
+  const _GridSkeletonTile();
+
+  @override
+  State<_GridSkeletonTile> createState() => _GridSkeletonTileState();
+}
+
+class _GridSkeletonTileState extends State<_GridSkeletonTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: 0.3, end: 0.7).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: Container(
+        color: const Color(0xFF1A1A1A),
+      ),
     );
   }
 }

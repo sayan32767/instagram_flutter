@@ -199,26 +199,26 @@ class _PostCardState extends State<PostCard> {
                   alignment: Alignment.center,
                   children: [
                     SizedBox(
-                        height: MediaQuery.of(context).size.width * 3 / 4,
-                        child: CachedNetworkImage(
-                          imageUrl: widget.post.postUrl,
-                          fit: BoxFit.cover,
-                          cacheManager:
-                              InstaCacheManager(), // ⭐ long-term cache
+                      height: MediaQuery.of(context).size.width * 3 / 4,
+                      child: CachedNetworkImage(
+                        imageUrl: widget.post.postUrl,
+                        fit: BoxFit.cover,
+                        cacheManager: InstaCacheManager(), // ⭐ long-term cache
 
-                          placeholder: (context, url) => Container(
-                            color: const Color.fromARGB(255, 24, 24, 24),
-                          ),
+                        placeholder: (context, url) => Container(
+                          color: const Color.fromARGB(255, 24, 24, 24),
+                        ),
 
-                          errorWidget: (context, url, error) => const Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('Could not load image'),
-                              ],
-                            ),
+                        errorWidget: (context, url, error) => const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Could not load image'),
+                            ],
                           ),
-                        )),
+                        ),
+                      ),
+                    ),
                     AnimatedOpacity(
                       duration: const Duration(
                         milliseconds: 200,
@@ -519,7 +519,7 @@ String cleanCaption(String text) {
   text = text.replaceAll(RegExp(r'\s+'), ' ');
 
   // Limit extreme repeated characters (aaaaaaa → aaa)
-  text = text.replaceAll(RegExp(r'(.)\1{5,}'), r'\1\1\1');
+  // text = text.replaceAll(RegExp(r'(.)\1{5,}'), r'\1\1\1');
 
   return text;
 }

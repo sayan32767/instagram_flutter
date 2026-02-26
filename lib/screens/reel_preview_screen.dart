@@ -130,7 +130,7 @@ class _ReelPreviewScreenState extends State<ReelPreviewScreen> {
         showSnackBar(context, "Reel uploaded");
       }
     } else {
-      showSnackBar(context, cleanMessage(res));
+      showSnackBar(context, 'Failed to upload reel, please try again');
     }
   }
 
@@ -143,91 +143,94 @@ class _ReelPreviewScreenState extends State<ReelPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0, // 🔥 IMPORTANT
-        surfaceTintColor: Colors.transparent, // 🔥 VERY IMPORTANT
-        backgroundColor: Colors.black,
-        title: const Text("Post Reel",
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          !_isLoading
-              ? TextButton(
-                  onPressed: _uploadReel,
-                  child: const Text(
-                    "Post",
-                    style: TextStyle(
-                      color: Colors.blueAccent,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              : const SizedBox()
-        ],
-      ),
-      body: Column(
-        children: [
-          _isLoading
-              ? const LinearProgressIndicator(
-                  color: Colors.blueAccent,
-                )
-              : const SizedBox(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              inputFormatters: [
-                FilteringTextInputFormatter.deny(RegExp(r'\s{2,}')),
-              ],
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: "Write a caption...",
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (_videoController.value.isInitialized)
-            GestureDetector(
-              onTap: _toggleMute,
-              child: SizedBox(
-                height: 500,
-                width: double.infinity,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Center(
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: SizedBox(
-                          width: _videoController.value.size.width,
-                          height: _videoController.value.size.height,
-                          child: VideoPlayer(_videoController),
-                        ),
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(
+          elevation: 0,
+          scrolledUnderElevation: 0, // 🔥 IMPORTANT
+          surfaceTintColor: Colors.transparent, // 🔥 VERY IMPORTANT
+          backgroundColor: Colors.black,
+          title: const Text("Post Reel",
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          actions: [
+            !_isLoading
+                ? TextButton(
+                    onPressed: _uploadReel,
+                    child: const Text(
+                      "Post",
+                      style: TextStyle(
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    AnimatedOpacity(
-                      opacity: _videoController.value.volume < 1 ? 1 : 0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.black38,
-                          shape: BoxShape.circle,
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        child: PhosphorIcon(
-                          PhosphorIcons.speakerSimpleSlash(),
-                          color: Colors.white,
-                          size: 50,
-                        ),
-                      ),
-                    ),
-                  ],
+                  )
+                : const SizedBox()
+          ],
+        ),
+        body: Column(
+          children: [
+            _isLoading
+                ? const LinearProgressIndicator(
+                    color: Colors.blueAccent,
+                  )
+                : const SizedBox(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                inputFormatters: [
+                  FilteringTextInputFormatter.deny(RegExp(r'\s{2,}')),
+                ],
+                controller: _descriptionController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: "Write a caption...",
+                  border: InputBorder.none,
                 ),
               ),
-            )
-        ],
+            ),
+            const SizedBox(height: 12),
+            if (_videoController.value.isInitialized)
+              GestureDetector(
+                onTap: _toggleMute,
+                child: SizedBox(
+                  height: 500,
+                  width: double.infinity,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Center(
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: SizedBox(
+                            width: _videoController.value.size.width,
+                            height: _videoController.value.size.height,
+                            child: VideoPlayer(_videoController),
+                          ),
+                        ),
+                      ),
+                      AnimatedOpacity(
+                        opacity: _videoController.value.volume < 1 ? 1 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.black38,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(20),
+                          child: PhosphorIcon(
+                            PhosphorIcons.speakerSimpleSlash(),
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+          ],
+        ),
       ),
     );
   }

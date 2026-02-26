@@ -48,6 +48,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      top: false,
       child: Scaffold(
         appBar: AppBar(
           elevation: 0,
@@ -124,7 +125,7 @@ class _SearchScreenGridState extends State<SearchScreenGrid> {
 
   DocumentSnapshot? _lastDoc;
 
-  static const int _limit = 15;
+  static const int _limit = 18;
 
   // Refresh
   Future<void> _refresh() async {

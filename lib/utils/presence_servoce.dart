@@ -97,18 +97,12 @@
 // }
 
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class PresenceService with WidgetsBindingObserver {
-  final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
-
-  Timer? _heartbeatTimer;
-
-  // StreamSubscription? _connectivitySub; // ✅ replaced firestore listener
 
   final ValueNotifier<bool> isOffline = ValueNotifier(false);
 
@@ -134,18 +128,11 @@ class PresenceService with WidgetsBindingObserver {
 
     _authSub = _auth.authStateChanges().listen((user) {
       if (user != null) {
-        _updateLastActive();
         _listenToConnection();
       } else {
-        _heartbeatTimer?.cancel();
         isOffline.value = false;
       }
     });
-
-    _heartbeatTimer = Timer.periodic(
-      const Duration(seconds: 60),
-      (_) => _updateLastActive(),
-    );
 
     _listenToConnection(); // ✅ start listening immediately
   }
@@ -177,27 +164,8 @@ class PresenceService with WidgetsBindingObserver {
     updateRawConnectionState(!hasNetwork);
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _updateLastActive();
-    }
-  }
-
-  Future<void> _updateLastActive() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return;
-
-    try {
-      await _firestore.collection('user').doc(uid).update({
-        'lastActive': FieldValue.serverTimestamp(),
-      });
-    } catch (_) {}
-  }
-
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _heartbeatTimer?.cancel();
     _connectivitySub?.cancel(); // ✅ changed
     _debounceTimer?.cancel();
     _authSub.cancel();
