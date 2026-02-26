@@ -1,6 +1,8 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/models/user.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/story_screen.dart';
@@ -18,7 +20,7 @@ class AddToStoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final User? user = Provider.of<UserProvider>(context).getUser;
+    final GroupMember? user = Provider.of<GroupMemberProvider>(context).getUser;
     return GestureDetector(
       onTap: () {
         Navigator.push(

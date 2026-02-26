@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
@@ -68,9 +69,13 @@ class _TextStoryScreenState extends State<TextStoryScreen> {
     });
 
     final String username =
-        Provider.of<UserProvider>(context, listen: false).getUser!.username;
+        Provider.of<GroupMemberProvider>(context, listen: false)
+            .getUser!
+            .username;
     final String? photoUrl =
-        Provider.of<UserProvider>(context, listen: false).getUser!.photoUrl;
+        Provider.of<GroupMemberProvider>(context, listen: false)
+            .getUser!
+            .photoUrl;
 
     // String res = 'success';
     String res = await _firestoreMethods.postToStoryText(

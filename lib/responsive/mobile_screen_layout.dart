@@ -18,6 +18,7 @@ import 'package:instagram_flutter/utils/colors.dart';
 import 'package:instagram_flutter/utils/global_variables.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/utils/update_last_seen.dart';
+import 'package:instagram_flutter/utils/utils.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -39,12 +40,35 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
   late final List<Widget> homeScreenItems;
 
+  bool _initialized = false;
+
+  Future<void> _initializeGroupMember() async {
+    setState(() {
+      _initialized = false;
+    });
+    final user = context.read<UserProvider>().getUser;
+    if (user == null) return;
+
+    final res = await context.read<GroupMemberProvider>().refreshUser();
+    if (res != "success") {
+      // If we fail to load the group member, we log out the user to prevent any inconsistent state
+      await FirebaseAuth.instance.signOut();
+      await context.read<UserProvider>().clearUser();
+    } else {
+      setState(() {
+        _initialized = true;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
     pageController = PageController();
     _presence = UpdateLastSeen()..start();
+
+    _initializeGroupMember();
 
     homeScreenItems = [
       FeedScreen(key: globalKey),
@@ -168,6 +192,8 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   //   return true;
   // }
 
+  DateTime? _lastBackPressed;
+
   Future<bool> _onWillPop() async {
     if (_page != 0) {
       pageController.jumpToPage(0);
@@ -186,6 +212,17 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
         if (!state.isAtTop) {
           state.scrollToTop();
           return false;
+        } else {
+          final now = DateTime.now();
+
+          if (_lastBackPressed == null ||
+              now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
+            _lastBackPressed = now;
+            showSnackBar(context, "Press back again to exit");
+            return false;
+          }
+
+          return true; // 🔥 second press → exit
         }
       }
     }
@@ -228,15 +265,20 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
         //     );
         //   },
         // ),
-        body: PageView(
-          onPageChanged: onPageChanged,
-          controller: pageController,
-          children: homeScreenItems,
-          physics: const BouncingScrollPhysics(
-            decelerationRate: ScrollDecelerationRate.fast,
-          ),
-          allowImplicitScrolling: true,
-        ),
+        body: !_initialized
+            ? const Center(
+                child: CircularProgressIndicator(
+                color: Colors.white70,
+              ))
+            : PageView(
+                onPageChanged: onPageChanged,
+                controller: pageController,
+                children: homeScreenItems,
+                physics: const BouncingScrollPhysics(
+                  decelerationRate: ScrollDecelerationRate.fast,
+                ),
+                allowImplicitScrolling: true,
+              ),
         bottomNavigationBar: CupertinoTabBar(
           border: const Border(
             top: BorderSide(color: Color.fromARGB(255, 38, 38, 38), width: 0.5),

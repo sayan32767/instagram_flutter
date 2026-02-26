@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/feed_screen.dart';
@@ -46,9 +47,13 @@ class _AudioStoryScreenState extends State<AudioStoryScreen> {
     });
 
     final String username =
-        Provider.of<UserProvider>(context, listen: false).getUser!.username;
+        Provider.of<GroupMemberProvider>(context, listen: false)
+            .getUser!
+            .username;
     final String? photoUrl =
-        Provider.of<UserProvider>(context, listen: false).getUser!.photoUrl;
+        Provider.of<GroupMemberProvider>(context, listen: false)
+            .getUser!
+            .photoUrl;
 
     await Future.delayed(Duration(seconds: 1));
 

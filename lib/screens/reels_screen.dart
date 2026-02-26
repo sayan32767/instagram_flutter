@@ -11,6 +11,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/core/route_observer.dart';
+import 'package:instagram_flutter/models/group_member.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
@@ -488,10 +490,10 @@ class ReelsScreenState extends State<ReelsScreen>
 
                       final reel =
                           snapshot.data!.data() as Map<String, dynamic>;
-                      final uid =
-                          Provider.of<UserProvider>(context, listen: false)
-                              .getUser!
-                              .uid;
+                      final uid = Provider.of<GroupMemberProvider>(context,
+                              listen: false)
+                          .getUser!
+                          .uid;
                       final isLiked = (reel['likes'] as List).contains(uid);
                       final likeCount =
                           reel['likeCount'] ?? (reel['likes'] as List).length;

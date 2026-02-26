@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/models/user.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
@@ -52,7 +53,7 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<UserProvider>().getUser;
+    final user = context.watch<GroupMemberProvider>().getUser;
 
     if (user == null) {
       return const SizedBox.shrink();

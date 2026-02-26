@@ -296,7 +296,7 @@ class FirestoreMethods {
 
         AppFirestore.posts().doc(postId).set(post.toJson());
 
-        await _firestore.collection('user').doc(uid).update({
+        await AppFirestore.collection('members').doc(uid).update({
           'lastPostTime': DateTime.now(),
         });
 

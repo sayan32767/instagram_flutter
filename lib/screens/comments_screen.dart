@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/models/user.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/widgets/comment_card.dart';
@@ -90,7 +92,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
   }
 
   // 🔹 Post comment
-  Future<void> _postComment(User user) async {
+  Future<void> _postComment(GroupMember user) async {
     if (controller.text.trim().isEmpty) return;
 
     final text = controller.text.trim();
@@ -142,7 +144,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final User user = Provider.of<UserProvider>(context).getUser!;
+    final GroupMember user = Provider.of<GroupMemberProvider>(context).getUser!;
 
     return SafeArea(
       top: false,

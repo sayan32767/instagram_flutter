@@ -89,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 64,
                         color: primaryColor,
                       ),
-                      const SizedBox(height: 64),
+                      const SizedBox(height: 24),
                       TextFieldInput(
                         textEditingController: _emailController,
                         textInputType: TextInputType.emailAddress,
@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               : const Text('Login'),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 40),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

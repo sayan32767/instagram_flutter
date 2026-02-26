@@ -219,6 +219,10 @@ class _ReelPreviewState extends State<_ReelPreview> {
       return const SizedBox(
         width: 150,
         height: 220,
+        child: Center(
+            child: CircularProgressIndicator(
+          color: Colors.white70,
+        )),
       );
     }
 

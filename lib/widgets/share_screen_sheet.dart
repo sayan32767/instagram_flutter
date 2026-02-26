@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
@@ -297,12 +298,12 @@ class _ShareSheetState extends State<ShareSheet> {
                                                   BorderRadius.circular(12),
                                               onTap: () async {
                                                 final receiverId = id;
-                                                final senderUsername =
-                                                    Provider.of<UserProvider>(
+                                                final senderUsername = Provider
+                                                        .of<GroupMemberProvider>(
                                                             context,
                                                             listen: false)
-                                                        .getUser!
-                                                        .username;
+                                                    .getUser!
+                                                    .username;
 
                                                 await FirestoreMethods()
                                                     .sendMessage(

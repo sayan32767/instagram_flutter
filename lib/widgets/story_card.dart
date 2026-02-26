@@ -2,7 +2,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/models/user.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/utils/image_cache_manager.dart';
@@ -34,7 +36,7 @@ class StoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final playerStateProvider = Provider.of<PlayerStateProvider>(context);
-    final User user = Provider.of<UserProvider>(context).getUser!;
+    final GroupMember user = Provider.of<GroupMemberProvider>(context).getUser!;
 
     return Stack(
       children: [
@@ -54,6 +56,14 @@ class StoryCard extends StatelessWidget {
                     imageUrl: albumArtUrl,
                     fit: BoxFit.cover,
                     cacheManager: InstaCacheManager(),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[900],
+                      child: PhosphorIcon(
+                        PhosphorIconsRegular.musicNoteSimple,
+                        color: Colors.white54,
+                        size: 40,
+                      ),
+                    ),
                   ),
                 ),
               ),

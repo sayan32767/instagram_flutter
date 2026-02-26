@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/responsive/mobile_screen_layout.dart';
 import 'package:instagram_flutter/responsive/responsive_layout_screen.dart';
@@ -40,14 +42,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
 
     _bioController = TextEditingController(
-      text:
-          Provider.of<UserProvider>(context, listen: false).getUser?.bio ?? '',
+      text: Provider.of<GroupMemberProvider>(context, listen: false)
+              .getUser
+              ?.bio ??
+          '',
     );
 
     _usernameController = TextEditingController(
-      text:
-          Provider.of<UserProvider>(context, listen: false).getUser?.username ??
-              '',
+      text: Provider.of<GroupMemberProvider>(context, listen: false)
+              .getUser
+              ?.username ??
+          '',
     );
   }
 
@@ -125,7 +130,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
         showSnackBar(context, 'Failed to update profile, please try again');
       } else {
-        await Provider.of<UserProvider>(context, listen: false).refreshUser();
+        await Provider.of<GroupMemberProvider>(context, listen: false)
+            .refreshUser();
         setState(() {
           _isLoading = false;
         });
@@ -136,7 +142,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<UserProvider>(context).getUser;
+    final GroupMember user = Provider.of<GroupMemberProvider>(context).getUser!;
     return SafeArea(
       top: false,
       child: Scaffold(

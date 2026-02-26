@@ -24,7 +24,7 @@ class UpdateLastSeen with WidgetsBindingObserver {
     });
 
     _heartbeatTimer = Timer.periodic(
-      const Duration(seconds: 2),
+      const Duration(seconds: 60),
       (_) => _updateLastActive(),
     );
   }

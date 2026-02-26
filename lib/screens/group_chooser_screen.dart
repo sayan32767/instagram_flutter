@@ -408,170 +408,177 @@ class _GroupChooserScreenState extends State<GroupChooserScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: mobileBackgroundColor,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent,
-          automaticallyImplyLeading: false,
-          titleSpacing: 0,
-          title: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                // 👤 Profile Image
-                Consumer<UserProvider>(
-                  builder: (context, userProvider, _) {
-                    final user = userProvider.getUser;
+    return Consumer<UserProvider>(builder: (context, userProvider, _) {
+      final user = userProvider.getUser;
 
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 2.5),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.grey[800],
-                            backgroundImage: user?.photoUrl != null &&
-                                    user!.photoUrl!.isNotEmpty
-                                ? NetworkImage(user.photoUrl!)
-                                : const AssetImage(
-                                        'assets/images/placeholder.jpg')
-                                    as ImageProvider,
+      if (user?.username == null) {
+        return const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(color: Colors.white70),
+          ),
+        );
+      }
+
+      return SafeArea(
+        top: false,
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: mobileBackgroundColor,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            surfaceTintColor: Colors.transparent,
+            automaticallyImplyLeading: false,
+            titleSpacing: 0,
+            title: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  // 👤 Profile Image
+
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2.5),
+                    child: Row(
+                      children: [
+                        // CircleAvatar(
+                        //   radius: 18,
+                        //   backgroundColor: Colors.grey[800],
+                        //   backgroundImage: user?.photoUrl != null &&
+                        //           user!.photoUrl!.isNotEmpty
+                        //       ? NetworkImage(user.photoUrl!)
+                        //       : const AssetImage(
+                        //               'assets/images/placeholder.jpg')
+                        //           as ImageProvider,
+                        // ),
+
+                        // const SizedBox(width: 10),
+
+                        // 🧑 Username
+                        Text(
+                          user?.username ?? '',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                          const SizedBox(width: 10),
+                  const Spacer(),
 
-                          // 🧑 Username
-                          Text(
-                            user?.username ?? '',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-
-                const Spacer(),
-
-                // 🚪 Logout Button
-                IconButton(
-                  icon: PhosphorIcon(PhosphorIcons.signOut(),
-                      color: Colors.white),
-                  onPressed: () async {
-                    await AuthMethods().signOut(context);
-                    Navigator.of(context, rootNavigator: true)
-                        .pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (_) => const LoginScreen(),
-                      ),
-                      (route) => false,
-                    );
-                  },
-                ),
-              ],
+                  // 🚪 Logout Button
+                  IconButton(
+                    icon: PhosphorIcon(PhosphorIcons.signOut(),
+                        color: Colors.white),
+                    onPressed: () async {
+                      await AuthMethods().signOut(context);
+                      Navigator.of(context, rootNavigator: true)
+                          .pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const LoginScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        backgroundColor: mobileBackgroundColor,
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.white70),
-              )
-            : _groups.isEmpty
-                ? _buildEmptyState()
-                : Column(
-                    children: [
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            ListView.separated(
-                              controller: _scrollController,
-                              itemCount: _groups.length,
-                              separatorBuilder: (_, __) =>
-                                  const Divider(color: Colors.white12),
-                              itemBuilder: (context, index) {
-                                final doc = _groups[index];
-                                final groupId = doc.id;
-                                final data = doc.data();
-                                final groupName =
-                                    data['name'] ?? "Unnamed Group";
+          backgroundColor: mobileBackgroundColor,
+          body: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.white70),
+                )
+              : _groups.isEmpty
+                  ? _buildEmptyState()
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              ListView.separated(
+                                controller: _scrollController,
+                                itemCount: _groups.length,
+                                separatorBuilder: (_, __) =>
+                                    const Divider(color: Colors.white12),
+                                itemBuilder: (context, index) {
+                                  final doc = _groups[index];
+                                  final groupId = doc.id;
+                                  final data = doc.data();
+                                  final groupName =
+                                      data['name'] ?? "Unnamed Group";
 
-                                final currentGroupId =
-                                    AppFirestore.currentGroupId;
+                                  final currentGroupId =
+                                      AppFirestore.currentGroupId;
 
-                                return ListTile(
-                                  selected: groupId == currentGroupId,
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.white12,
-                                    child: PhosphorIcon(
-                                      PhosphorIcons.users(),
+                                  return ListTile(
+                                    selected: groupId == currentGroupId,
+                                    leading: CircleAvatar(
+                                      backgroundColor: Colors.white12,
+                                      child: PhosphorIcon(
+                                        PhosphorIcons.users(),
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      groupName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    subtitle: const Text(
+                                      "Tap to enter this group",
+                                      style: TextStyle(color: Colors.white38),
+                                    ),
+                                    onTap: () async {
+                                      // await GroupStorage.save(groupId);
+                                      // AppFirestore.setGroup(groupId);
+
+                                      // if (!mounted) return;
+
+                                      // Navigator.of(context, rootNavigator: true)
+                                      //     .pushAndRemoveUntil(
+                                      //   MaterialPageRoute(
+                                      //     builder: (_) => const ResponsiveLayout(
+                                      //       webScreenLayout: WebScreenLayout(),
+                                      //       mobileScreenLayout:
+                                      //           MobileScreenLayout(),
+                                      //     ),
+                                      //   ),
+                                      //   (route) => false,
+                                      // );
+                                      await GroupStorage.save(groupId);
+                                      AppFirestore.setGroup(groupId);
+
+                                      MyApp.restart(context);
+                                    },
+                                  );
+                                },
+                              ),
+                              if (_isFetchingMore)
+                                const Positioned(
+                                  bottom: 20,
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
                                       color: Colors.white70,
                                     ),
                                   ),
-                                  title: Text(
-                                    groupName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  subtitle: const Text(
-                                    "Tap to enter this group",
-                                    style: TextStyle(color: Colors.white38),
-                                  ),
-                                  onTap: () async {
-                                    // await GroupStorage.save(groupId);
-                                    // AppFirestore.setGroup(groupId);
-
-                                    // if (!mounted) return;
-
-                                    // Navigator.of(context, rootNavigator: true)
-                                    //     .pushAndRemoveUntil(
-                                    //   MaterialPageRoute(
-                                    //     builder: (_) => const ResponsiveLayout(
-                                    //       webScreenLayout: WebScreenLayout(),
-                                    //       mobileScreenLayout:
-                                    //           MobileScreenLayout(),
-                                    //     ),
-                                    //   ),
-                                    //   (route) => false,
-                                    // );
-                                    await GroupStorage.save(groupId);
-                                    AppFirestore.setGroup(groupId);
-
-                                    MyApp.restart(context);
-                                  },
-                                );
-                              },
-                            ),
-                            if (_isFetchingMore)
-                              const Positioned(
-                                bottom: 20,
-                                left: 0,
-                                right: 0,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white70,
-                                  ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      _bottomActions(),
-                    ],
-                  ),
-      ),
-    );
+                        _bottomActions(),
+                      ],
+                    ),
+        ),
+      );
+    });
   }
 
   Widget _buildEmptyState() {

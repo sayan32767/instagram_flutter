@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/route_observer.dart';
 import 'package:instagram_flutter/firebase_options.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/group_provider.dart';
 import 'package:instagram_flutter/providers/player_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
@@ -66,6 +67,7 @@ class _MyAppState extends State<MyApp> {
       key: _appKey, // 🔥 this forces full rebuild
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => GroupMemberProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => PlayerStateProvider()),
         ChangeNotifierProvider(create: (_) => GlobalKeyProvier()),

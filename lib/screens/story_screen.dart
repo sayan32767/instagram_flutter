@@ -1,7 +1,9 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/models/user.dart' as model;
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/audio_story_screen.dart';
@@ -119,8 +121,8 @@ class _StoryScreenState extends State<StoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final model.User user =
-        Provider.of<UserProvider>(context, listen: false).getUser!;
+    final GroupMember user =
+        Provider.of<GroupMemberProvider>(context, listen: false).getUser!;
 
     return SafeArea(
       top: false,
@@ -217,7 +219,7 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
-  Widget _buildCard(IconData icon, String text, {model.User? user}) {
+  Widget _buildCard(IconData icon, String text, {GroupMember? user}) {
     return GestureDetector(
       onTap: () async {
         if (text == 'Text Story') {

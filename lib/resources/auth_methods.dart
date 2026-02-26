@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/models/group_member.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/storage_methods.dart';
 import 'package:instagram_flutter/models/user.dart' as model;
@@ -249,11 +250,13 @@ class AuthMethods {
           .update({
         'fcmTokens': FieldValue.arrayRemove([token])
       });
-      await _auth.signOut();
       await Provider.of<UserProvider>(context, listen: false).clearUser();
+      await Provider.of<GroupMemberProvider>(context, listen: false)
+          .clearUser();
       await InstaCacheManager().emptyCache();
       await GroupStorage.clear();
       AppFirestore.setGroup(null);
+      await _auth.signOut();
     } catch (e) {
       print("Sign out error: $e");
     }

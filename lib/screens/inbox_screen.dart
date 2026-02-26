@@ -148,13 +148,12 @@ class _InboxScreenState extends State<InboxScreen> {
         i + 10 > userIds.length ? userIds.length : i + 10,
       );
 
-      FirebaseFirestore.instance
-          .collection('user')
+      AppFirestore.collection('members')
           .where(FieldPath.documentId, whereIn: chunk)
           .snapshots()
           .listen((snap) {
         for (final doc in snap.docs) {
-          _usersMap[doc.id] = doc.data();
+          _usersMap[doc.id] = doc.data() as Map<String, dynamic>;
         }
         if (mounted) setState(() {});
       });

@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/models/user.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/story_full_screen.dart';
 import 'package:instagram_flutter/utils/utils.dart';
@@ -21,7 +23,8 @@ class StoryListWidgets extends StatefulWidget {
 class _StoryListWidgetsState extends State<StoryListWidgets> {
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<UserProvider>(context, listen: false).getUser!;
+    final user =
+        Provider.of<GroupMemberProvider>(context, listen: false).getUser!;
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: AppFirestore.stories()
@@ -105,7 +108,7 @@ class _StoryListWidgetsState extends State<StoryListWidgets> {
     );
   }
 
-  Widget _buildAddStoryOnly(User user) {
+  Widget _buildAddStoryOnly(GroupMember user) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 12, 16),
       child: AddToStoryCard(

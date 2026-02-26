@@ -118,13 +118,15 @@ class StorageMethods {
           resized = img.copyResize(image, height: 960);
         }
       } else {
+        debugPrint(
+            "===============================HAHAHA NO RESIZE NEEDED===============================");
         resized = image;
       }
 
       // Light sharpen
       // resized = img.unsharpMask(resized, amount: 0.6);
 
-      int quality = 78;
+      int quality = 85;
 
       result = Uint8List.fromList(
         img.encodeJpg(resized, quality: quality),
@@ -133,8 +135,8 @@ class StorageMethods {
       if (result == null) throw Exception("Failed to upload image");
 
       // Reduce until under 700KB
-      while (result!.lengthInBytes > 700 * 1024 && quality > 60) {
-        quality -= 4;
+      while (result!.lengthInBytes > 1000 * 1024 && quality > 85) {
+        quality -= 2;
         result = Uint8List.fromList(
           img.encodeJpg(resized, quality: quality),
         );

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
 import 'package:instagram_flutter/widgets/my_textformfield.dart';
@@ -125,7 +126,7 @@ class _SearchUsersListState extends State<SearchUsersList> {
   // 🔥 SEARCH HISTORY
   Widget _buildSearchHistory() {
     final currentUid =
-        Provider.of<UserProvider>(context, listen: false).getUser!.uid;
+        Provider.of<GroupMemberProvider>(context, listen: false).getUser!.uid;
 
     return Padding(
       padding: const EdgeInsets.only(top: 0.0),
@@ -223,7 +224,7 @@ class _SearchUsersListState extends State<SearchUsersList> {
 
   Future<void> _addToSearchHistory(String searchedUid) async {
     final currentUid =
-        Provider.of<UserProvider>(context, listen: false).getUser!.uid;
+        Provider.of<GroupMemberProvider>(context, listen: false).getUser!.uid;
 
     await AppFirestore.collection('search_histories')
         .doc(currentUid)

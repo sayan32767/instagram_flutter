@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/models/user.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/widgets/progress_image_dots.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +24,7 @@ class StoryTextCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final User user = Provider.of<UserProvider>(context).getUser!;
+    final GroupMember user = Provider.of<GroupMemberProvider>(context).getUser!;
 
     return Stack(
       children: [

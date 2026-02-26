@@ -7,8 +7,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image/image.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:instagram_flutter/models/group_member.dart';
 import 'package:instagram_flutter/models/user.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/feed_screen.dart';
@@ -311,7 +313,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
     final queryParams = {
       'prompt': prompt,
-      'uid': Provider.of<UserProvider>(context, listen: false).getUser!.uid,
+      'uid':
+          Provider.of<GroupMemberProvider>(context, listen: false).getUser!.uid,
     };
 
     final String baseUrl = dotenv.get('BASE_URL', fallback: '');
@@ -361,7 +364,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final User user = Provider.of<UserProvider>(context).getUser!;
+    final GroupMember user =
+        Provider.of<GroupMemberProvider>(context, listen: true).getUser!;
 
     return _file == null && _videoFile == null
         ? Scaffold(

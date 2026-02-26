@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/feed_screen.dart';
@@ -37,7 +38,8 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
   }
 
   Future<void> postImage() async {
-    final user = Provider.of<UserProvider>(context, listen: false).getUser!;
+    final user =
+        Provider.of<GroupMemberProvider>(context, listen: false).getUser!;
 
     setState(() => _isLoading = true);
 
@@ -81,7 +83,7 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<UserProvider>(context).getUser!;
+    final user = Provider.of<GroupMemberProvider>(context).getUser!;
 
     return SafeArea(
       top: false,

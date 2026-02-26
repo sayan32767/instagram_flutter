@@ -9,6 +9,7 @@ import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/core/navigation_keys.dart';
 import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/providers/global_key_provier.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/auth_methods.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
@@ -65,7 +66,8 @@ class ProfileScreenState extends State<ProfileScreen> {
   void refresh() async {
     await loadProfileData();
 
-    await Provider.of<UserProvider>(context, listen: false).refreshUser();
+    await Provider.of<GroupMemberProvider>(context, listen: false)
+        .refreshUser();
 
     _postsKey.currentState?.refreshPosts();
     _reelsKey.currentState?.refreshReels();
@@ -78,7 +80,7 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     try {
       final results = await Future.wait<dynamic>([
-        _firestore.collection('user').doc(widget.uid).get(),
+        AppFirestore.collection('members').doc(widget.uid).get(),
         AppFirestore.posts().where('uid', isEqualTo: widget.uid).count().get(),
         AppFirestore.reels().where('uid', isEqualTo: widget.uid).count().get(),
       ]);
@@ -107,7 +109,7 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileHeader() {
     final currentUser =
-        Provider.of<UserProvider>(context, listen: true).getUser;
+        Provider.of<GroupMemberProvider>(context, listen: true).getUser;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -191,13 +193,13 @@ class ProfileScreenState extends State<ProfileScreen> {
                                   borderColor: Colors.grey,
                                   onPressed: () async {
                                     await AuthMethods().signOut(context);
-                                    Navigator.of(context, rootNavigator: true)
-                                        .pushAndRemoveUntil(
-                                      MaterialPageRoute(
-                                        builder: (_) => const LoginScreen(),
-                                      ),
-                                      (route) => false,
-                                    );
+                                    // Navigator.of(context, rootNavigator: true)
+                                    //     .pushAndRemoveUntil(
+                                    //   MaterialPageRoute(
+                                    //     builder: (_) => const LoginScreen(),
+                                    //   ),
+                                    //   (route) => false,
+                                    // );
                                   },
                                 )
                               : const SizedBox.shrink(),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/screens/image_preview_screen.dart';
 import 'package:instagram_flutter/utils/utils.dart';
@@ -52,7 +53,8 @@ class _GeneratedImagePreviewScreenState
 
     final queryParams = {
       'prompt': prompt,
-      'uid': Provider.of<UserProvider>(context, listen: false).getUser!.uid,
+      'uid':
+          Provider.of<GroupMemberProvider>(context, listen: false).getUser!.uid,
     };
 
     final String baseUrl = dotenv.get('BASE_URL', fallback: '');

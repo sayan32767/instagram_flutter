@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:instagram_flutter/core/app_firestore.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/providers/user_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
@@ -223,7 +224,7 @@ class _ChatScreenState extends State<ChatScreen> {
     HapticFeedback.lightImpact(); // subtle tap feel
 
     await FirestoreMethods().sendMessage(
-      senderUsername: Provider.of<UserProvider>(context, listen: false)
+      senderUsername: Provider.of<GroupMemberProvider>(context, listen: false)
           .getUser!
           .username, // ⭐ pass sender username
       mediaOwnerId: null,
@@ -237,7 +238,7 @@ class _ChatScreenState extends State<ChatScreen> {
       text: text,
       receiverUid: widget.otherUid,
       type: 'text',
-      senderUsername: Provider.of<UserProvider>(context, listen: false)
+      senderUsername: Provider.of<GroupMemberProvider>(context, listen: false)
           .getUser!
           .username, // ⭐ pass sender username
     );
@@ -264,7 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUid =
-        Provider.of<UserProvider>(context, listen: false).getUser!.uid;
+        Provider.of<GroupMemberProvider>(context, listen: false).getUser!.uid;
     return SafeArea(
       top: false,
       child: Scaffold(
@@ -372,15 +373,12 @@ class _ChatHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUid =
-        Provider.of<UserProvider>(context, listen: false).getUser!.uid;
+        Provider.of<GroupMemberProvider>(context, listen: false).getUser!.uid;
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => ProfileScreen(uid: otherUid))),
       child: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('user')
-            .doc(otherUid)
-            .snapshots(),
+        stream: AppFirestore.collection('members').doc(otherUid).snapshots(),
         builder: (context, userSnap) {
           if (!userSnap.hasData) return const SizedBox();
 
