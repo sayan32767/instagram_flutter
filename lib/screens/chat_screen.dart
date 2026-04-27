@@ -241,6 +241,8 @@ class _ChatScreenState extends State<ChatScreen> {
       senderUsername: Provider.of<GroupMemberProvider>(context, listen: false)
           .getUser!
           .username, // ⭐ pass sender username
+
+      mediaOwnerUsername: null,
     );
 
     _controller.clear();

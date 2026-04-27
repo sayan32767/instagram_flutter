@@ -9,6 +9,7 @@ import 'package:instagram_flutter/models/post.dart';
 import 'package:instagram_flutter/screens/add_post_screen.dart';
 import 'package:instagram_flutter/screens/group_chooser_screen.dart';
 import 'package:instagram_flutter/screens/inbox_screen.dart';
+import 'package:instagram_flutter/screens/notification_list_screen.dart';
 import 'package:instagram_flutter/screens/story_screen.dart';
 import 'package:instagram_flutter/utils/utils.dart';
 import 'package:instagram_flutter/widgets/post_card.dart';
@@ -222,18 +223,34 @@ class FeedScreenState extends State<FeedScreen>
                           ),
                         ),
                       ),
+                      // Padding(
+                      //   padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                      //   child: GestureDetector(
+                      //     child: PhosphorIcon(
+                      //       PhosphorIcons.users(PhosphorIconsStyle.regular),
+                      //       color: Colors.white,
+                      //       size: 22,
+                      //     ),
+                      //     onTap: () {
+                      //       Navigator.of(context).push(MaterialPageRoute(
+                      //           builder: (context) =>
+                      //               const GroupChooserScreen()));
+                      //     },
+                      //   ),
+                      // ),
+                      // const SizedBox(width: 0),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 15.0),
                         child: GestureDetector(
                           child: PhosphorIcon(
-                            PhosphorIcons.users(PhosphorIconsStyle.regular),
+                            PhosphorIcons.bell(PhosphorIconsStyle.regular),
                             color: Colors.white,
                             size: 22,
                           ),
                           onTap: () {
                             Navigator.of(context).push(MaterialPageRoute(
                                 builder: (context) =>
-                                    const GroupChooserScreen()));
+                                    const NotificationsScreen()));
                           },
                         ),
                       ),

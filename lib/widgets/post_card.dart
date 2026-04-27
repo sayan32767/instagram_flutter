@@ -29,9 +29,12 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> {
   bool isLikeAnimating = false;
+  late List<dynamic> likes;
+
   @override
   void initState() {
     super.initState();
+    likes = widget.post.likes;
   }
 
   void _openShareSheet(Map<String, dynamic> postData) {
@@ -175,14 +178,70 @@ class _PostCardState extends State<PostCard> {
               );
             },
             onDoubleTap: () async {
-              await FirestoreMethods().likePost(
-                  'posts', user.uid, widget.post.postId, widget.post.likes);
+              if (likes.contains(user.uid)) {
+                setState(() {
+                  isLikeAnimating = true;
+                });
+                return; // already liked, just show animation
+              }
+              // await FirestoreMethods().likePost(
+              //     collectionName: 'posts',
+              //     uid: user.uid,
+              //     profilePic: user.photoUrl,
+              //     targetPreviewUrl: widget.post.postUrl,
+              //     receiverUid: widget.post.uid,
+              //     username: user.username,
+              //     postId: widget.post.postId,
+              //     likes: widget.post.likes);
+              // setState(() {
+              //   isLikeAnimating = true;
+              //   widget.post.likes.contains(user.uid)
+              //       ? widget.post.likes.remove(user.uid)
+              //       : widget.post.likes.add(user.uid);
+              // });
+              // backup original state
+              final oldLikes = List<dynamic>.from(likes);
+
+              // create optimistic copy
+              final newLikes = List<dynamic>.from(likes);
+
+              if (newLikes.contains(user.uid)) {
+                newLikes.remove(user.uid);
+              } else {
+                newLikes.add(user.uid);
+              }
+
+              // update UI instantly
               setState(() {
-                isLikeAnimating = true;
-                widget.post.likes.contains(user.uid)
-                    ? widget.post.likes.remove(user.uid)
-                    : widget.post.likes.add(user.uid);
+                if (oldLikes.contains(user.uid)) {
+                  isLikeAnimating = false; // no animation on unlike
+                } else {
+                  isLikeAnimating = true;
+                }
+                likes = newLikes;
               });
+
+              try {
+                await FirestoreMethods().likePost(
+                    collectionName: 'posts',
+                    uid: user.uid,
+                    targetPreviewUrl: widget.post.postUrl,
+                    profilePic: user.photoUrl,
+                    receiverUid: widget.post.uid,
+                    username: user.username,
+                    postId: widget.post.postId,
+                    likes: oldLikes);
+                // setState(() {
+                //   widget.post.likes.contains(user.uid)
+                //       ? widget.post.likes.remove(user.uid)
+                //       : widget.post.likes.add(user.uid);
+                // });
+              } catch (e) {
+                // revert to original state on error
+                setState(() {
+                  likes = oldLikes;
+                });
+              }
             },
             child: SizedBox(
               width: double.infinity,
@@ -269,21 +328,52 @@ class _PostCardState extends State<PostCard> {
                 ),
                 GestureDetector(
                   onTap: () async {
-                    await FirestoreMethods().likePost('posts', user.uid,
-                        widget.post.postId, widget.post.likes);
+                    // backup original state
+                    final oldLikes = List<dynamic>.from(likes);
+
+                    // create optimistic copy
+                    final newLikes = List<dynamic>.from(likes);
+
+                    if (newLikes.contains(user.uid)) {
+                      newLikes.remove(user.uid);
+                    } else {
+                      newLikes.add(user.uid);
+                    }
+
+                    // update UI instantly
                     setState(() {
-                      widget.post.likes.contains(user.uid)
-                          ? widget.post.likes.remove(user.uid)
-                          : widget.post.likes.add(user.uid);
+                      likes = newLikes;
                     });
+
+                    try {
+                      await FirestoreMethods().likePost(
+                          collectionName: 'posts',
+                          uid: user.uid,
+                          targetPreviewUrl: widget.post.postUrl,
+                          profilePic: user.photoUrl,
+                          receiverUid: widget.post.uid,
+                          username: user.username,
+                          postId: widget.post.postId,
+                          likes: oldLikes);
+                      // setState(() {
+                      //   widget.post.likes.contains(user.uid)
+                      //       ? widget.post.likes.remove(user.uid)
+                      //       : widget.post.likes.add(user.uid);
+                      // });
+                    } catch (e) {
+                      // revert to original state on error
+                      setState(() {
+                        likes = oldLikes;
+                      });
+                    }
                   },
                   child: Row(
                     children: [
                       LikeAnimation(
-                        isAnimating: widget.post.likes.contains(user.uid),
+                        isAnimating: likes.contains(user.uid),
                         smallLike: true,
                         child: Container(
-                            child: widget.post.likes.contains(user.uid)
+                            child: likes.contains(user.uid)
                                 ? PhosphorIcon(
                                     PhosphorIcons.heart(
                                         PhosphorIconsStyle.fill),
@@ -295,13 +385,11 @@ class _PostCardState extends State<PostCard> {
                                     color: Colors.white,
                                   )),
                       ),
-                      if (widget.post.likes.length > 0)
+                      if (likes.length > 0)
                         Padding(
                           padding: const EdgeInsets.only(left: 4),
                           child: Text(
-                            widget.post.likes.length == 1
-                                ? '1'
-                                : '${widget.post.likes.length}',
+                            likes.length == 1 ? '1' : '${likes.length}',
                             style: TextStyle(color: Colors.white, fontSize: 13),
                           ),
                         )

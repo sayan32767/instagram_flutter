@@ -10,6 +10,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:instagram_flutter/core/app_firestore.dart';
 import 'package:instagram_flutter/core/route_observer.dart';
+import 'package:instagram_flutter/providers/group_member_provider.dart';
 import 'package:instagram_flutter/resources/firestore_methods.dart';
 import 'package:instagram_flutter/screens/comments_screen.dart';
 import 'package:instagram_flutter/screens/profile_screen.dart';
@@ -18,6 +19,7 @@ import 'package:instagram_flutter/utils/image_cache_manager.dart';
 import 'package:instagram_flutter/widgets/like_animation.dart';
 import 'package:instagram_flutter/widgets/share_screen_sheet.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 class SingleReelScreen extends StatefulWidget {
@@ -37,9 +39,12 @@ class SingleReelScreenState extends State<SingleReelScreen>
   final uid = FirebaseAuth.instance.currentUser!.uid;
   bool _isLiking = false;
 
+  late List likes;
+
   @override
   void initState() {
     super.initState();
+    likes = widget.snap['likes'] ?? [];
     WidgetsBinding.instance.addObserver(this);
     _createController(widget.snap['fileId']);
   }
@@ -188,6 +193,10 @@ class SingleReelScreenState extends State<SingleReelScreen>
 
   @override
   Widget build(BuildContext context) {
+    final photoUrl =
+        Provider.of<GroupMemberProvider>(context).getUser?.photoUrl;
+    final username =
+        Provider.of<GroupMemberProvider>(context).getUser?.username;
     return SafeArea(
       top: false,
       child: Scaffold(
@@ -239,19 +248,55 @@ class SingleReelScreenState extends State<SingleReelScreen>
               child: GestureDetector(
                 onTap: _toggleMute,
                 onDoubleTap: () async {
-                  _likeAnim.value = true;
-
                   if (_isLiking) return;
-                  _isLiking = true;
 
-                  await FirestoreMethods().likePost(
-                    'reels',
-                    uid,
-                    reelData['reelId'],
-                    reelData['likes'] ?? [],
-                  );
+                  if (likes.contains(uid)) {
+                    // already liked, just show animation
+                    _likeAnim.value = true;
+                    return;
+                  }
 
-                  _isLiking = false;
+                  final oldLikes = List<dynamic>.from(likes);
+
+                  // create optimistic copy
+                  final newLikes = List<dynamic>.from(likes);
+
+                  if (newLikes.contains(uid)) {
+                    newLikes.remove(uid);
+                  } else {
+                    newLikes.add(uid);
+                  }
+
+                  // update UI instantly
+                  setState(() {
+                    if (oldLikes.contains(uid)) {
+                      _isLiking = false; // no animation on unlike
+                      _likeAnim.value = false;
+                    } else {
+                      _isLiking = true;
+                      _likeAnim.value = true;
+                    }
+                    likes = newLikes;
+                  });
+
+                  try {
+                    await FirestoreMethods().likePost(
+                        collectionName: 'reels',
+                        uid: uid,
+                        profilePic: photoUrl ?? '',
+                        receiverUid: reelData['uid'],
+                        username: username ?? '',
+                        postId: reelData['reelId'],
+                        targetPreviewUrl: reelData['thumbnailUrl'] ?? '',
+                        likes: oldLikes);
+                  } catch (e) {
+                    // revert on error
+                    setState(() {
+                      likes = oldLikes;
+                    });
+                  } finally {
+                    _isLiking = false;
+                  }
                 },
                 behavior: HitTestBehavior.opaque,
                 child: Stack(
@@ -387,29 +432,61 @@ class SingleReelScreenState extends State<SingleReelScreen>
                                     child: IconButton(
                                       onPressed: () async {
                                         if (_isLiking) return;
-                                        _isLiking = true;
-                                        await FirestoreMethods().likePost(
-                                          'reels',
-                                          uid,
-                                          reelData['reelId'],
-                                          reelData['likes'] ?? [],
-                                        );
-                                        _isLiking = false;
+
+                                        final oldLikes =
+                                            List<dynamic>.from(likes);
+
+                                        // create optimistic copy
+                                        final newLikes =
+                                            List<dynamic>.from(likes);
+
+                                        if (newLikes.contains(uid)) {
+                                          newLikes.remove(uid);
+                                        } else {
+                                          newLikes.add(uid);
+                                        }
+
+                                        // update UI instantly
+                                        setState(() {
+                                          _isLiking =
+                                              true; // prevent spamming like button
+                                          likes = newLikes;
+                                        });
+                                        try {
+                                          await FirestoreMethods().likePost(
+                                              collectionName: 'reels',
+                                              uid: uid,
+                                              profilePic:
+                                                  widget.snap['profImage'],
+                                              receiverUid: reelData['uid'],
+                                              username: widget.snap['username'],
+                                              postId: reelData['reelId'],
+                                              targetPreviewUrl:
+                                                  reelData['thumbnailUrl'] ??
+                                                      '',
+                                              likes: oldLikes);
+                                        } catch (e) {
+                                          // revert on error
+                                          setState(() {
+                                            likes = oldLikes;
+                                          });
+                                        } finally {
+                                          _isLiking = false;
+                                        }
                                       },
                                       icon: PhosphorIcon(
-                                        (reelData['likes'] ?? []).contains(uid)
+                                        likes.contains(uid)
                                             ? PhosphorIcons.heart(
                                                 PhosphorIconsStyle.fill)
                                             : PhosphorIcons.heart(
                                                 PhosphorIconsStyle.regular),
-                                        color: (reelData['likes'] ?? [])
-                                                .contains(uid)
+                                        color: likes.contains(uid)
                                             ? Colors.red
                                             : Colors.white,
                                       ),
                                     ));
                               }),
-                          Text(reelData['likes'].length.toString(),
+                          Text(likes.length.toString(),
                               style: const TextStyle(
                                   color: Colors.white70, fontSize: 12)),
                           const SizedBox(height: 8),

@@ -494,6 +494,16 @@ class ReelsScreenState extends State<ReelsScreen>
                               listen: false)
                           .getUser!
                           .uid;
+                      final username = Provider.of<GroupMemberProvider>(context,
+                              listen: false)
+                          .getUser!
+                          .username;
+
+                      final profilePic = Provider.of<GroupMemberProvider>(
+                              context,
+                              listen: false)
+                          .getUser!
+                          .photoUrl;
                       final isLiked = (reel['likes'] as List).contains(uid);
                       final likeCount =
                           reel['likeCount'] ?? (reel['likes'] as List).length;
@@ -502,9 +512,26 @@ class ReelsScreenState extends State<ReelsScreen>
                       return GestureDetector(
                         onTap: _toggleMute,
                         onDoubleTap: () async {
-                          _likeAnim.value = true;
+                          if (reel['likes'] != null &&
+                              (reel['likes'] as List).contains(uid)) {
+                            setState(() {
+                              _likeAnim.value =
+                                  true; // already liked, just show animation
+                            });
+                            return; // already liked, just show animation
+                          }
+
+                          _likeAnim.value = !(reel['likes'] != null &&
+                              (reel['likes'] as List).contains(uid));
                           await FirestoreMethods().likePost(
-                              'reels', uid, data['reelId'], reel['likes']);
+                              collectionName: 'reels',
+                              uid: uid,
+                              profilePic: profilePic,
+                              receiverUid: data['uid'],
+                              username: username,
+                              postId: data['reelId'],
+                              targetPreviewUrl: data['thumbnailUrl'] ?? '',
+                              likes: reel['likes'] ?? []);
                         },
                         behavior: HitTestBehavior.opaque,
                         child: Stack(
@@ -654,10 +681,16 @@ class ReelsScreenState extends State<ReelsScreen>
                                           child: IconButton(
                                             onPressed: () async {
                                               await FirestoreMethods().likePost(
-                                                  'reels',
-                                                  uid,
-                                                  data['reelId'],
-                                                  data['likes']);
+                                                  collectionName: 'reels',
+                                                  uid: uid,
+                                                  profilePic: profilePic,
+                                                  receiverUid: data['uid'],
+                                                  username: username,
+                                                  postId: data['reelId'],
+                                                  targetPreviewUrl:
+                                                      data['thumbnailUrl'] ??
+                                                          '',
+                                                  likes: reel['likes'] ?? []);
                                             },
                                             icon: PhosphorIcon(
                                                 isLiked

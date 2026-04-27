@@ -99,12 +99,15 @@ class _CommentsScreenState extends State<CommentsScreen> {
     controller.clear();
 
     await FirestoreMethods().postComment(
-      widget.collectionName,
-      _docId,
-      text,
-      user.uid,
-      user.username,
-      user.photoUrl ?? "",
+      collectionName: widget.collectionName,
+      targetPreviewUrl:
+          widget.snap['postUrl'] ?? widget.snap['thumbnailUrl'] ?? "",
+      postId: _docId,
+      text: text,
+      uid: user.uid,
+      name: user.username,
+      profilePic: user.photoUrl ?? "",
+      receiverUid: widget.snap['uid'],
     );
 
     // 🔥 Add instantly to UI (Instagram behavior)

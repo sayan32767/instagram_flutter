@@ -329,10 +329,9 @@ class _ShareSheetState extends State<ShareSheet> {
                                                   type: widget.type,
                                                   senderUsername:
                                                       senderUsername,
-                                                  mediaOwnerId:
-                                                      widget.post['uid'],
                                                   mediaOwnerUsername:
                                                       widget.post['username'],
+                                                  text: null,
                                                 );
 
                                                 if (!mounted) return;

@@ -308,8 +308,175 @@ class FirestoreMethods {
     return res;
   }
 
+  /* 
+    {
+      "type": "like",          // like | comment
+      "actorUid": "uid2",
+      "actorUsername": "john",
+      "actorPhotoUrl": "...",
+
+      "targetType": "post",    // post | reel
+      "targetId": "post123",
+
+      "commentId": null,       // only used for comments
+      "previewText": null,     // comment preview
+
+      "createdAt": Timestamp,
+      "isRead": false
+    }
+  */
+
+  // Future<void> storeNotification({
+  //   required String type, // like | comment
+  //   required String actorUid,
+  //   required String receiverUid,
+  //   required String actorUsername,
+  //   String? actorPhotoUrl,
+  //   required String targetType, // post | reel
+  //   required String targetId,
+  //   String?
+  //       targetPreviewUrl, // post image URL or reel thumbnail URL for preview
+  //   String? commentId, // only for comments
+  //   String? previewText, // only for comments
+  // }) async {
+  //   try {
+  //     final notificationId = const Uuid().v1();
+  //     final notificationRef = AppFirestore.collection('members')
+  //         .doc(receiverUid)
+  //         .collection('notifications')
+  //         .doc(notificationId);
+
+  //     await notificationRef.set({
+  //       'type': type,
+  //       'actorUid': actorUid,
+  //       'receiverUid':
+  //           receiverUid, // Notification stored under receiver's document
+  //       'actorUsername': actorUsername,
+  //       'actorPhotoUrl': actorPhotoUrl,
+  //       'targetType': targetType,
+  //       'targetId': targetId,
+  //       'targetPreviewUrl': targetPreviewUrl,
+  //       'commentId': commentId,
+  //       'previewText': previewText,
+  //       'createdAt': FieldValue.serverTimestamp(),
+  //       'isRead': false,
+  //     });
+  //   } catch (e) {
+  //     debugPrint('Error storing notification: $e');
+  //   }
+  // }
+
+  Future<void> storeNotification({
+    required String type, // like | comment
+    required String actorUid,
+    required String receiverUid,
+    required String actorUsername,
+    String? actorPhotoUrl,
+    required String targetType, // post | reel
+    required String targetId,
+    String? targetPreviewUrl,
+    String? commentId,
+    String? previewText,
+  }) async {
+    try {
+      final notificationsRef = AppFirestore.collection('members')
+          .doc(receiverUid)
+          .collection('notifications');
+
+      final actorData = {
+        'actorUid': actorUid,
+        'username': actorUsername,
+        'photoUrl': actorPhotoUrl,
+      };
+
+      /// COMMENTS → always new notification
+      if (type == 'comment') {
+        final docRef = notificationsRef.doc();
+
+        await docRef.set({
+          'type': type,
+          'receiverUid': receiverUid,
+          'actorUid': actorUid,
+          'actorData': actorData,
+          'targetType': targetType,
+          'targetId': targetId,
+          'targetPreviewUrl': targetPreviewUrl,
+          'commentId': commentId,
+          'previewText': previewText,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
+
+        return;
+      }
+
+      /// GROUPED EVENTS (likes)
+      final notificationId = "${type}_${targetType}_$targetId";
+      final docRef = notificationsRef.doc(notificationId);
+
+      final snapshot = await docRef.get();
+
+      final now = DateTime.now();
+
+      if (!snapshot.exists) {
+        await docRef.set({
+          'type': type,
+          'actorUid': actorUid,
+          'receiverUid': receiverUid,
+          'targetType': targetType,
+          'targetId': targetId,
+          'targetPreviewUrl': targetPreviewUrl,
+          'count': 1,
+          'actorPreview': [actorData],
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastUpdateAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
+        return;
+      }
+
+      final data = snapshot.data()!;
+      List actorPreview = List.from(data['actorPreview'] ?? []);
+
+      /// prevent duplicate like
+      bool alreadyExists = actorPreview.any((e) => e['actorUid'] == actorUid);
+
+      actorPreview.removeWhere((e) => e['actorUid'] == actorUid);
+      actorPreview.insert(0, actorData);
+
+      if (actorPreview.length > 2) {
+        actorPreview = actorPreview.sublist(0, 2);
+      }
+
+      Timestamp? lastUpdate = data['lastUpdateAt'];
+      bool shouldUpdateCreatedAt = true;
+
+      if (lastUpdate != null) {
+        final diff = now.difference(lastUpdate.toDate());
+        shouldUpdateCreatedAt = diff.inSeconds > 30;
+      }
+
+      await docRef.set({
+        if (!alreadyExists) 'count': FieldValue.increment(1),
+        'actorPreview': actorPreview,
+        'lastUpdateAt': FieldValue.serverTimestamp(),
+        if (shouldUpdateCreatedAt) 'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error storing notification: $e');
+    }
+  }
+
   Future<void> likePost(
-      String collectionName, String uid, String postId, List likes) async {
+      {required String collectionName,
+      required String uid,
+      required String username,
+      required String receiverUid,
+      String? profilePic,
+      required String postId,
+      required String targetPreviewUrl,
+      required List likes}) async {
     try {
       if (likes.contains(uid)) {
         await AppFirestore.collection(collectionName).doc(postId).update({
@@ -319,6 +486,24 @@ class FirestoreMethods {
         await AppFirestore.collection(collectionName).doc(postId).update({
           'likes': FieldValue.arrayUnion([uid]),
         });
+
+        // store a notification for the post owner
+        if (uid == receiverUid) {
+          return; // Don't store notification if user liked their own post
+        }
+
+        await storeNotification(
+          type: 'like',
+          actorUid: uid,
+          receiverUid: receiverUid,
+          actorUsername: username,
+
+          actorPhotoUrl:
+              profilePic, // Assuming current user has a photo URL || null
+          targetType: collectionName,
+          targetId: postId,
+          targetPreviewUrl: targetPreviewUrl,
+        );
       }
     } catch (e) {
       print(
@@ -327,8 +512,15 @@ class FirestoreMethods {
     }
   }
 
-  Future<void> postComment(String collectionName, String postId, String text,
-      String uid, String name, String profilePic) async {
+  Future<void> postComment(
+      {required String collectionName,
+      required String targetPreviewUrl,
+      required String postId,
+      required String text,
+      required String uid,
+      required String name,
+      required String profilePic,
+      required String receiverUid}) async {
     try {
       if (text.isNotEmpty) {
         String commentId = const Uuid().v1();
@@ -346,6 +538,25 @@ class FirestoreMethods {
         await docRef.update({
           'commentCount': FieldValue.increment(1),
         });
+
+        // store a notification for the post owner
+        debugPrint("Receiver UID: $receiverUid, Actor UID: $uid");
+        if (uid == receiverUid) {
+          return; // Don't store notification if user commented on their own post
+        }
+
+        await storeNotification(
+          type: 'comment',
+          actorUid: uid,
+          receiverUid: receiverUid,
+          actorUsername: name,
+          actorPhotoUrl: profilePic,
+          targetType: collectionName,
+          targetId: postId,
+          commentId: commentId,
+          targetPreviewUrl: targetPreviewUrl,
+          previewText: text.length > 30 ? text.substring(0, 30) + '...' : text,
+        );
       } else {
         debugPrint('Text is empty');
       }
@@ -442,12 +653,16 @@ class FirestoreMethods {
     required String receiverUid,
     required String senderUsername,
     String? mediaOwnerUsername,
-    String? mediaOwnerId,
     String type = 'text', // text | reel | post
     String? text,
   }) async {
     final String baseUrl = dotenv.get('BASE_URL_MESSAGING', fallback: '');
     debugPrint("Sending push notification to $receiverUid via $baseUrl");
+
+    if (receiverUid == FirebaseAuth.instance.currentUser!.uid) {
+      debugPrint("Not sending push notification to self");
+      return; // Don't send notification if sender and receiver are the same
+    }
 
     try {
       await AppFirestore.collection('members')
@@ -459,17 +674,35 @@ class FirestoreMethods {
           return null;
         }
 
+        // final body = type == 'text'
+        //     ? text ?? "Sent you a message"
+        //     : (type == 'reel' && mediaOwnerUsername != senderUsername)
+        //         ? "📹 Sent you a reel by $mediaOwnerUsername"
+        //         : "📷 Sent you a post by $mediaOwnerUsername") :
+
+        final String? body;
+
+        if (type == 'text') {
+          body = text ?? "Sent you a message";
+        } else if (type == 'reel' && mediaOwnerUsername != senderUsername) {
+          body = "📹 Sent you a reel by $mediaOwnerUsername";
+        } else if (type == 'post' && mediaOwnerUsername != senderUsername) {
+          body = "📷 Sent you a post by $mediaOwnerUsername";
+        } else if (type == 'reel') {
+          body = "📹 Sent you their reel";
+        } else if (type == 'post') {
+          body = "📷 Sent you their post";
+        } else {
+          body = "Sent you a message";
+        }
+
         final result = await http.post(
           Uri.parse("$baseUrl/send-dm-push"),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
             "receiverId": receiverUid,
             "title": senderUsername,
-            "body": type == 'text'
-                ? text ?? "Sent you a message"
-                : (type == 'reel'
-                    ? "🎥 Sent a reel by $mediaOwnerUsername"
-                    : "📷 Sent a post by $mediaOwnerUsername"),
+            "body": body,
           }),
         );
 
