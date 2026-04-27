@@ -1,16 +1,20 @@
-# Insta 📸
+# Insta
 
-This project is a clone (with some added goodness) of Instagram built using Flutter and Firebase. It replicates the core features of Instagram, such as user authentication, image sharing, adding comments, liking posts, and following other users.
+This project is a clone (with some added goodness) of Instagram built using Flutter and Firebase. It replicates the core features of Instagram, such as user authentication, image sharing, video sharing, adding text/audio stories, adding comments, liking posts, sharing posts, sending messages and also notifications for activities.
 
 ## Features
 
-- **🔑 User Authentication:** Users can sign up, log in, and manage their profiles using Firebase Authentication.
-- **🖼️ Image Upload:** Users can upload and share photos with others, using Firebase Storage for image hosting.
-- **💬 Likes & Comments:** Users can like posts and leave comments, with real-time updates.
-- **🫂 Follow/Unfollow:** Users can follow or unfollow other users, similar to the original Instagram functionality.
-- **🔎 Searching Users:** Users can Search for other users, and see all their posts directly.
-- **📋 Edit Profile:** Users can edit their profile anytime they want.
-- **✨ Generative AI:** Users can generate images from prompt, and directly post it.
+- **User Authentication:** Users can sign up, log in, and manage their profiles using Firebase Authentication.
+- **Image Upload:** Users can upload and share photos with others, using Cloudinary for image hosting.
+- **Reel Upload:** Users can upload and share short form videos with others, using Telegram for video hosting.
+- **Likes & Comments:** Users can like posts and leave comments, with real-time updates.
+- **Posting Stories:** Users can post an audio story/text story based on their mood.
+- **Notifications:** Users get notifications for likes/comments on their posts/reels also for new messages in their dm.
+- **Shares:** Users can share images or videos.
+- **Chat:** Users can open a chat window and text with each other.
+- **Searching Users:** Users can Search for other users, and see all their posts directly.
+- **Edit Profile:** Users can edit their profile anytime they want.
+- **Generative AI:** Users can generate images from prompt, and directly post it.
 
 ## Getting Started
 
@@ -85,14 +89,31 @@ Here are some screenshots of the app:
 
 ### Home Feed & Search Screen
 <div style="display: flex; gap: 10px;">
-    <img src="https://raw.githubusercontent.com/sayan32767/instagram_flutter/main/screenshots/Screenshot_20240817_113638_Insta.jpg" alt="Home Feed" width="150"/>
-    <img src="https://raw.githubusercontent.com/sayan32767/instagram_flutter/main/screenshots/screenshot2.jpg" alt="Search Screen" width="150"/>
+    <img src="./screenshots/feed_new.jpg" alt="Home Feed" width="150"/>
+    <img src="./screenshots/search.jpg" alt="Search Screen" width="150"/>
 </div>
 
-### Image Generation and Post Details
+### Stories Section
 <div style="display: flex; gap: 10px;">
-   <img src="https://raw.githubusercontent.com/sayan32767/instagram_flutter/main/screenshots/Screenshot_1723875662.png" alt="Image Generation" width="150"/>
-   <img src="https://raw.githubusercontent.com/sayan32767/instagram_flutter/main/screenshots/Screenshot_20240817_113937_Insta.jpg" alt="Post Details" width="150"/>
+    <img src="./screenshots/story_picker.jpg" alt="Story" width="150"/>
+    <img src="./screenshots/text_story.jpg" alt="Story" width="150"/>
+    <img src="./screenshots/audio_story.jpg" alt="Story" width="150"/>
+    <img src="./screenshots/audio_picker.jpg" alt="Story" width="150"/>
+</div>
+
+### Image Generation
+<div style="display: flex; gap: 10px;">
+   <img src="./screenshots/genai.jpg" width="150"/>
+</div>
+
+### Profile Section
+<div style="display: flex; gap: 10px;">
+   <img src="./screenshots/profile.jpg" width="150"/>
+</div>
+
+### Chat Section
+<div style="display: flex; gap: 10px;">
+   <img src="./screenshots/chat.jpg" width="150"/>
 </div>
 
 ## Contributing
@@ -126,4 +147,5 @@ Contributions are welcome! Please follow these steps:
 - **The Flutter Community:** For the open-source libraries and resources that help in building and improving the app.
 - **IconFinder & Unsplash:** For the free icons and images used in the app design.
 - **Stack Overflow:** For the community support and solutions to common issues faced during development.
+- **Apple Music API:** For the free api for audio stories.
 - **[Pollinations AI](https://pollinations.ai/)**: This project utilizes code and concepts from [Pollinations AI](https://pollinations.ai/). Special thanks to the contributors for their valuable work.
